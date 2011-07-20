@@ -1,0 +1,120 @@
+#!/usr/bin/python
+
+# Copyright (C) 2010 Intel Inc.  All rights reserved.
+# This program is free software; it may be used, copied, modified
+# and distributed under the terms of the GNU General Public Licence,
+# either version 2, or version 3 (at your option).
+
+import sys
+import mic3.cmdln as cmdln
+import optparse as _optparse
+
+try:
+    import mic3.__version__
+    VERSION = mic3.__version__.version
+except:
+    VERSION = 'unknown'
+
+class MIC3(cmdln.Cmdln):
+    """Usage: mic [GLOBALOPTS] SUBCOMMAND [OPTS] [ARGS...]
+    or: mic help SUBCOMMAND
+
+    MeeGo Image Tool.
+    Type 'mic help <subcommand>' for help on a specific subcommand.
+
+    ${command_list}
+    ${help_list}
+    global ${option_list}
+    For additional information, see
+    * http://www.meego.com/
+    """
+
+    name = 'mic'
+    version = VERSION
+
+    @cmdln.option("-v", "--verbose", action="store_true",
+                           help="print extra information")
+
+    def get_cmd_help(self, cmdname):
+        doc = self._get_cmd_handler(cmdname).__doc__
+        doc = self._help_reindent(doc)
+        doc = self._help_preprocess(doc, cmdname)
+        doc = doc.rstrip() + '\n' # trim down trailing space
+        return self._str(doc)
+
+    """ create image """
+    @cmdln.alias('cr')
+    @cmdln.option("-c", "--config", type="string", dest="config",
+                    help="Path to kickstart config file")
+
+    @cmdln.option("-f", "--format", type="string", dest="format",
+                    help="Image format, you can specify as fs, livecd, liveusb, loop, raw, nand, mrstnand, ubi, jffs2, vdi or vmdk")
+
+    @cmdln.option("-t", "--tmpdir", type="string",
+                      dest="tmpdir",
+                      help="Temporary directory to use (default: /var/tmp)")
+    @cmdln.option("-k", "--cache", type="string",
+                      dest="cachedir", default=None,
+                      help="Cache directory to use (default: private cache)")
+    @cmdln.option("-o", "--outdir", type="string",
+                      dest="outdir", default=None,
+                      help="Output directory to use (default: current work dir)")
+    @cmdln.option("", "--release", type="string",
+                      dest="release", default=None,
+                      help="Generate a MeeGo release with all necessary files for publishing.")
+    @cmdln.option("", "--genchecksum", action="store_true",
+                      dest="genchecksum", default=False,
+                      help="Generate checksum for image file if this option is provided")
+    @cmdln.option("-P", "--prefix", type="string",
+                      dest="prefix", default=None,
+                      help="Image name prefix (default: meego)")
+    @cmdln.option("-S", "--suffix", type="string",
+                      dest="suffix", default=None,
+                      help="Image name suffix (default: date stamp)")
+    @cmdln.option("-a", "--arch", type="string",
+                      dest="arch", default=None,
+                      help="Specify target arch of image, for example: arm")
+    @cmdln.option("", "--use-comps", action="store_true",
+                      dest="use_comps", default=False,
+                      help="Use comps instead of patterns if comps exists")
+    @cmdln.option("", "--record-pkgs", type="string",
+                      dest="record_pkgs", default=None,
+                      help="Record the installed packages, valid values: name, content")
+    @cmdln.option("", "--fstype", type="string",
+                      dest="fstype", default="vfat",
+                      help="File system type for live USB file image, ext3 or vfat, the default is vfat.")
+    @cmdln.option("", "--overlay-size-mb", type="int", default=64,
+                      help="Overlay size in MB as unit, it means how size changes you can save in your live USB disk.")
+    @cmdln.option('-d', '--debug', action='store_true',
+                      help='Output debugging information')
+    @cmdln.option('-v', '--verbose', dest='verbose', action='store_true',
+                      help='Output verbose information')
+    @cmdln.option('', '--logfile', type="string", dest="file",
+                      help='Save debug information to FILE')
+    @cmdln.option("", "--save-kernel", action="store_true",
+                      dest="save_kernel", default=False,
+                      help="Save kernel image file into outdir")
+    @cmdln.option("", "--pkgmgr", type="string",
+                      help="Specify the package manager, the available package managers have zypper and yum currently.")
+    @cmdln.option("", "--volumeid", type="string", default=None,
+                      help="Specify volume id, valid only for livecd")
+    def do_create(self, subcmd, opts, *args):
+        """${cmd_name}: Create an image
+
+        This command is used to create various images, including
+        live CD, live USB, loop, raw/KVM/QEMU, VMWare/vmdk,
+        VirtualBox/vdi, Moorestown/mrstnand, jffs2 and ubi.
+
+        Examples:
+           mic create                         # create an image according to the default config
+           mic create --format=liveusb        # create a live USB image
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        print subcmd, opts, args
+
+if __name__ == "__main__":
+    mic = MIC3()
+    sys.exit(mic.main(sys.argv))

@@ -1,0 +1,67 @@
+#!/usr/bin/python -t
+
+import sys, os, os.path, string
+import micng.utils.argparse as argparse
+import micng.configmgr as configmgr
+import micng.pluginmgr as pluginmgr
+
+class Creator(object):
+    name = 'create'
+
+    def __init__(self):
+        self.configmgr = configmgr.getConfigMgr()
+        self.pluginmgr = pluginmgr.PluginMgr()
+        self.pluginmgr.loadPlugins()
+        self.plugincmds = self.pluginmgr.getPluginByCateg('imager')
+
+    def main(self, argv=None):
+#        import pdb
+#        pdb.set_trace()
+        if os.getuid() != 0:
+            print "Please run the program as root"
+            return 0
+        prog = os.path.basename(sys.argv[0])
+        parser = argparse.ArgumentParser(
+                  usage='%s [COMMONOPT] <subcommand> [SUBOPT] ARGS' % prog,
+                  ) 
+        parser.add_argument('-k', '--cache', dest='cache', help='cache diretory')
+        parser.add_argument('-o', '--outdir', dest='outdir', help='output diretory')
+        parser.add_argument('-t', '--tmpdir', dest='tmpdir', help='temp diretory')
+
+
+        subparsers = parser.add_subparsers(title='subcommands')
+        for subcmd, klass in self.plugincmds:
+            subcmd_help = 'create ' + subcmd + ' image'
+            subcmd_parser = subparsers.add_parser(
+                              subcmd, 
+                              usage=prog+' [COMMONOPT] '+subcmd+'  [SUBOPT] ARGS',
+                              help=subcmd_help
+                              )
+            if hasattr(klass, 'do_options'):
+                add_subopt = getattr(klass, 'do_options')
+                add_subopt(subcmd_parser)
+            if hasattr(klass, 'do_create'):
+                do_create = getattr(klass, 'do_create')
+                subcmd_parser.set_defaults(func=do_create)
+
+        if not argv:
+            parser.print_help()
+            return True
+
+        args = parser.parse_args(argv)
+        if args.outdir:
+            self.configmgr.setProperty('outdir', args.outdir)
+        if args.tmpdir:
+            self.configmgr.setProperty('tmpdir', args.tmpdir)
+        if args.cache:
+            self.configmgr.setProperty('cache', args.cache)
+#        print 'outdir', self.configmgr.getProperty('outdir')
+#        print 'tmpdir', self.configmgr.getProperty('tmpdir')
+#        print 'cache', self.configmgr.getProperty('cache')
+        args.func(args)
+        return True
+
+if __name__ == "__main__":
+    create = Creator()
+    ret = create.main(sys.argv[1:])
+    sys.exit(ret)

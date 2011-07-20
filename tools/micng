@@ -1,0 +1,35 @@
+#!/usr/bin/python -t
+
+import sys, os
+import subprocess
+import micng.utils.cmdln as cmdln
+
+class Mic(cmdln.Cmdln):
+    def run_subcmd(self, subcmd, opts, args):
+        creator = "mic-image-create"
+        tools = {
+                 "cr":creator, "create":creator,
+                }
+        
+        argv = [tools[subcmd]]
+        argv.extend(args)
+        subprocess.call(argv)        
+	
+    @cmdln.alias("cr")
+    def do_create(self, argv):
+        """${cmd_name}: create image
+
+           ${cmd_usage}
+           ${cmd_option_list}
+        """
+        self.run_subcmd("create", None, argv[1:])
+    
+    @cmdln.alias("cv")
+    def do_convert(self, argv):
+        """${cmd_name}: convert an image format to another one
+        """
+
+if __name__ == "__main__":
+	mic = Mic()
+	ret = mic.main()
+	sys.exit(ret)
