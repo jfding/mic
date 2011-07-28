@@ -787,24 +787,28 @@ class ImagerPlugin(PluginBase):
         self.do_umount()
         self.do_package()
 
+    def _base_on(self, base_on):
+        """Support Image Convertor, unpack the source image for building the instroot directory.
+        
+            Subclass need a actual implementation.
+        """
+        shutil.copyfile(base_on, self._image)
+
     def _mount_srcimg(self, srcimg):
         """Mount source image.
     
-           This method may be used by subclasses to mount source image for convertor/chroot,
-           e.g. mount a raw image. There is no default implementation.
+           This method may be used by subclasses to mount source image for Chroot,
+           There is no default implementation. 
+           e.g.
+           "livecd":
+               imgcreate.DiskMount(imgcreate.LoopbackDisk(self.img, 0), self.imgmnt)
         """
         pass
 
     def _umount_srcimg(self, srcimg):
         """Umount source image.
     
-           This method may be used by subclasses to umount source image for convertor/chroot,
+           This method may be used by subclasses to umount source image for Chroot,
            e.g. umount a raw image. There is no default implementation.
         """
         pass
-    
-    def pack(self):
-        self.do_package()
-        
-    def unpack(self, srcimg):
-        self._mount_srcimg(srcimg)
