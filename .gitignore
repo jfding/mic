@@ -1,0 +1,4 @@
+*.py[oc]
+*~
+*.swp
+micng/__version__.py
