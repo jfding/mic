@@ -17,6 +17,7 @@ class Creator(cmdln.Cmdln):
     ${help_list}
     ${option_list}
     """
+    name = 'micng create(cr)'
     conf = None
     man_header = None
     man_footer = None
