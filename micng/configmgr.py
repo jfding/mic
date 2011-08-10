@@ -5,7 +5,6 @@ import sys
 import logging
 import micng.utils as utils
 
-DEFAULT_NAME='meego'
 DEFAULT_OUTDIR='.'
 DEFAULT_TMPDIR='/var/tmp'
 DEFAULT_CACHEDIR='/var/cache'
@@ -22,7 +21,6 @@ class ConfigMgr(object):
         self.siteconf = siteconf
         self.ksconf = ksconf
 
-        self.create['name'] = DEFAULT_NAME
         self.create["tmpdir"] = DEFAULT_TMPDIR
         self.create["cachedir"] = DEFAULT_CACHEDIR
         self.create["outdir"] = DEFAULT_OUTDIR

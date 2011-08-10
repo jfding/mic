@@ -28,9 +28,10 @@ dist-gz:
 		gzip  > $(PKGNAME)-$(TAGVER).tar.gz
 
 install-plugins:
-	install -d ${DESTDIR}/${PLUGIN_DIR}
-	install -D -m 644 plugins/imager/* ${DESTDIR}/${PLUGIN_DIR}/imager
-	install -D -m 644 plugins/backend/* ${DESTDIR}/${PLUGIN_DIR}/backend
+	install -d ${DESTDIR}/${PLUGIN_DIR}/imager
+	install -m 644 plugins/imager/* ${DESTDIR}/${PLUGIN_DIR}/imager
+	install -d ${DESTDIR}/${PLUGIN_DIR}/backend
+	install -m 644 plugins/backend/* ${DESTDIR}/${PLUGIN_DIR}/backend
 
 install: all install-plugins
 	$(PYTHON) setup.py install  --prefix=$(DESTDIR)/$(PREFIX)
