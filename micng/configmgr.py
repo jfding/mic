@@ -72,6 +72,7 @@ class ConfigMgr(object):
             self.repometadata = utils.misc.get_metadata_from_repos(self.ksrepos, self.create['cachedir'])
             self.create['ks'] = self.kickstart
             self.create['repomd'] = self.repometadata
+            self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
         except OSError, e:
             raise Exception("failed to create image: %s" % e)
         except Exception, e:
