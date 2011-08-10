@@ -6,17 +6,18 @@ import logging
 import shutil
 
 from micng.pluginbase.imager_plugin import ImagerPlugin
-import micng.chroot as chroot
+import micng.imager.liveusb as liveusb
 import micng.utils.misc as misc
 import micng.utils.fs_related as fs_related
 import micng.utils.cmdln as cmdln
 import micng.configmgr as configmgr
 import micng.pluginmgr as pluginmgr
-import micng.imager.livecd as livecd
+from micng.utils.partitionedfs import PartitionedMount
 from micng.utils.errors import *
+import micng.chroot as chroot
 
-class LiveCDPlugin(ImagerPlugin):
-
+class LiveUSBPlugin(ImagerPlugin):
+    #@cmdln.option
     @classmethod
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create livecd image
@@ -31,20 +32,18 @@ class LiveCDPlugin(ImagerPlugin):
         else:
             raise errors.Usage("Extra arguments given")
 
+
         cfgmgr = configmgr.getConfigMgr()
-        cfgmgr.setProperty("ksconf", ksconf)
         creatoropts = cfgmgr.create
+        cfgmgr.setProperty("ksconf", args[0])
         plgmgr = pluginmgr.PluginMgr()
-        plgmgr.loadPlugins()
-        
+        plgmgr.loadPlugins()       
+
         for (key, pcls) in plgmgr.getBackendPlugins():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
-
-        if not pkgmgr:
-            raise CreatorError("Can't find backend %s" % pkgmgr)
-
-        creator = livecd.LiveCDImageCreator(creatoropts, pkgmgr)
+    
+        creator = liveusb.LiveUSBImageCreator(creatoropts, pkgmgr)
         try:
             creator.check_depend_tools()
             creator.mount(None, creatoropts["cachedir"])
@@ -56,18 +55,21 @@ class LiveCDPlugin(ImagerPlugin):
             creator.print_outimage_info()
             outimage = creator.outimage
         except CreatorError, e:
+            logging.exception(e)
             raise CreatorError("failed to create image : %s" % e)
         finally:
             creator.cleanup()
-#        if not creatoropts["image_info"]:
             print "Finished."
         return 0
 
-    @classmethod
+    @classmethod    
     def do_chroot(cls, target):
         img = target
+        imgsize = misc.get_file_size(img) * 1024L * 1024L
         imgmnt = misc.mkdtemp()
-        imgloop = fs_related.DiskMount(fs_related.LoopbackDisk(img, 0), imgmnt)
+        disk = fs_related.SparseLoopbackDisk(img, imgsize)
+        imgloop = PartitionedMount({'/dev/sdb':disk}, imgmnt, skipformat = True)
+        imgloop.add_partition(imgsize/1024/1024, "/dev/sdb", "/", "vfat", boot=False)
         try:
             imgloop.mount()
         except MountError, e:
@@ -104,7 +106,7 @@ class LiveCDPlugin(ImagerPlugin):
         tfstype = "ext3"
         tlabel = "ext3 label"
         MyDiskMount = fs_related.ExtDiskMount
-        #if misc.fstype_is_btrfs(os_image):
+        #if imgcreate.fstype_is_btrfs(os_image):
         #    tfstype = "btrfs"
         #    tlabel = "btrfs label"
         #    MyDiskMount = fs_related.BtrfsDiskMount
@@ -125,12 +127,12 @@ class LiveCDPlugin(ImagerPlugin):
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
+            chroot.cleanup_after_chroot("img", extloop, None, None)
             print >> sys.stderr, "Failed to chroot to %s." % img
-        finally:
-            chroot.cleanup_after_chroot("img",extloop,None,None)
             return 1
-        
-    def do_pack(self):              
+    
+    @classmethod
+    def do_pack(cls, base_on):              
         def __mkinitrd(instance):
             kernelver = instance._get_kernel_versions().values()[0][0]
             args = [ "/usr/libexec/mkliveinitrd", "/boot/initrd-%s.img" % kernelver, "%s" % kernelver ]
@@ -146,23 +148,35 @@ class LiveCDPlugin(ImagerPlugin):
                 subprocess.call(args, preexec_fn = instance._chroot)
             except OSError, (err, msg):
                raise CreatorError("Failed to run post cleanups: %s" % msg)
-               
+        
+        convertoropts = configmgr.getConfigMgr().convert
+        convertoropts["ks"] = None
+        convertor = liveusb.LiveUSBImageCreator(convertoropts)        #consistent with destfmt
+        srcimgsize = (misc.get_file_size(base_on)) * 1024L * 1024L
+        convertor._set_fstype("ext3")
+        convertor._set_image_size(srcimgsize)
+        convertor._image = base_on
+        #convertor.check_depend_tools()
         __mkinitrd(convertor)
         convertor._create_bootconfig()
         __run_post_cleanups(convertor)
         convertor.unmount()
         convertor.package()
-        convertor.print_outimage_info()
-            
-    def do_unpack(self):
+        #convertor.print_outimage_info()
+    
+    @classmethod        
+    def do_unpack(cls, srcimg):
         convertoropts = configmgr.getConfigMgr().convert
-        convertor = convertoropts["convertor"](convertoropts)        #consistent with destfmt
-        srcimgsize = (misc.get_file_size(convertoropts["srcimg"])) * 1024L * 1024L
+        convertoropts["ks"] = None
+        convertor = liveusb.LiveUSBImageCreator(convertoropts)        #consistent with destfmt
+        srcimgsize = (misc.get_file_size(srcimg)) * 1024L * 1024L
+        convertor._srcfmt = 'livecd'
         convertor._set_fstype("ext3")
         convertor._set_image_size(srcimgsize)
-        base_on = convertoropts["srcimg"]
-        convertor.check_depend_tools()
-        convertor.mount(base_on, None)
-        return convertor
+        #convertor.check_depend_tools()
+        convertor.mount(srcimg, None)
 
-mic_plugin = ["livecd", LiveCDPlugin]
+        return convertor._image, convertor._instroot
+
+mic_plugin = ["liveusb", LiveUSBPlugin]
+

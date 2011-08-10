@@ -43,8 +43,8 @@ except ImportError:
     import cElementTree
 xmlparse = cElementTree.parse
 
-import errors as errors
-import fs_related as fs_related
+from errors import *
+from fs_related import *
 
 chroot_lockfd = -1
 chroot_lock = ""
@@ -1292,7 +1292,7 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
         
         for i in range(len(fileOutput)):
             if fileOutput[i].find("ARM") > 0:
-                qemu_emulator = setup_qemu_emulator.(chrootdir, "arm")
+                qemu_emulator = setup_qemu_emulator(chrootdir, "arm")
                 architecture_found = True
                 break
             if fileOutput[i].find("Intel") > 0:

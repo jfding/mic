@@ -16,6 +16,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+class Usage(Exception):
+    def __init__(self, msg=None):
+        Exception.__init__(self, msg)
+
 class CreatorError(Exception):
     """An exception base class for all imgcreate errors."""
     def __init__(self, msg):

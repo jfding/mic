@@ -1,2 +1,0 @@
-import BaseImageCreator
-import livecd

@@ -32,15 +32,11 @@ import rpm
 
 from micng.utils.errors import *
 from micng.utils.fs_related import *
-from micng.utils import kickstart
-from micng.utils import pkgmanagers
 from micng.utils.rpmmisc import *
 from micng.utils.misc import *
+from micng.utils import kickstart
 
-FSLABEL_MAXLEN = 32
-"""The maximum string length supported for LoopImageCreator.fslabel."""
-
-class ImageCreator(object):
+class BaseImageCreator(object):
     """Installs a system to a chroot directory.
 
     ImageCreator is the simplest creator class available; it will install and
@@ -54,7 +50,7 @@ class ImageCreator(object):
 
     """
 
-    def __init__(self, ks, name):
+    def __init__(self, createopts = None, pkgmgr = None):
         """Initialize an ImageCreator instance.
 
         ks -- a pykickstart.KickstartParser instance; this instance will be
@@ -65,68 +61,63 @@ class ImageCreator(object):
                 filesystem labels
 
         """
+        print "@@@@@",pkgmgr
+        self.pkgmgr = pkgmgr 
 
-        """ Initialize package managers """
-#package plugin manager
-        self.pkgmgr = pkgmanagers.pkgManager()
-        self.pkgmgr.load_pkg_managers()
+        if createopts:
+            # A pykickstart.KickstartParser instance."""
+            self.ks = createopts['ks']
+            self.repometadata = createopts['repomd']
 
-        self.ks = ks
-        """A pykickstart.KickstartParser instance."""
+            # A name for the image."""
+            self.name = createopts['name']
 
-        self.name = name
-        """A name for the image."""
+            # The directory in which all temporary files will be created."""
+            self.tmpdir = createopts['tmpdir']
 
-        self.distro_name = "MeeGo"
+            self.cachedir = createopts['cachedir']
 
-        """Output image file names"""
-        self.outimage = []
-
-        """A flag to generate checksum"""
-        self._genchecksum = False
-
-        self.tmpdir = "/var/tmp"
-        """The directory in which all temporary files will be created."""
-
-        self.cachedir = None
-
-        self._alt_initrd_name = None
-
+            self.destdir = createopts['outdir']
+        else:
+            self.ks = None
+            self.repometadata = None
+            self.name = None
+            self.tmpdir = None
+            self.cachedir = None
+            self.destdir = None
+ 
         self.__builddir = None
         self.__bindmounts = []
 
-        """ Contains the compression method that is used to compress
-        the disk image after creation, e.g., bz2.
-        This value is set with compression_method function. """
-        self.__img_compression_method = None
-
-        # dependent commands to check
         self._dep_checks = ["ls", "bash", "cp", "echo", "modprobe", "passwd"]
 
+        ### to be obsolete
+        self.distro_name = "MeeGo"
+        # Output image file names"""
+        self.outimage = []
+        # A flag to generate checksum"""
+        self._genchecksum = False
+        self._alt_initrd_name = None
+        # the disk image after creation, e.g., bz2.
+        # This value is set with compression_method function. """
+        self.__img_compression_method = None
+        # dependent commands to check
         self._recording_pkgs = None
-
         self._include_src = None
-
         self._local_pkgs_path = None
-
         # available size in root fs, init to 0
         self._root_fs_avail = 0
-
         # target arch for non-x86 image
         self.target_arch = None
-
-        """ Name of the disk image file that is created. """
+        # Name of the disk image file that is created. """
         self._img_name = None
-
-        """ Image format """
+        # Image format """
         self.image_format = None
-
-        """ Save qemu emulator file name in order to clean up it finally """
+        # Save qemu emulator file name in order to clean up it finally """
         self.qemu_emulator = None
-
-        """ No ks provided when called by convertor, so skip the dependency check """
+        # No ks provided when called by convertor, so skip the dependency check """
         if self.ks:
-            """ If we have btrfs partition we need to check that we have toosl for those """
+            # If we have btrfs partition we need to check that we have toosl for those """
             for part in self.ks.handler.partition.partitions:
                 if part.fstype and part.fstype == "btrfs":
                     self._dep_checks.append("mkfs.btrfs")
@@ -774,8 +765,6 @@ class ImageCreator(object):
 
 
         # initialize pkg list to install
-        #import pdb
-        #pdb.set_trace()
         if self.ks:
             self.__sanity_check()
 
@@ -813,8 +802,6 @@ class ImageCreator(object):
 
         try:
             try:
-                #import pdb
-                #pdb.set_trace()
                 self.__select_packages(pkg_manager)
                 self.__select_groups(pkg_manager)
                 self.__deselect_packages(pkg_manager)
@@ -1011,11 +998,11 @@ class ImageCreator(object):
         configure(), unmount and package().
 
         """
-        self.mount()
+        self.mount(None, self.cachedir)
         self.install()
-        self.configure()
+        self.configure(self.repometadata)
         self.unmount()
-        self.package()
+        self.package(self.destdir)
 
     def print_outimage_info(self):
         print "Your new image can be found here:"
@@ -1080,524 +1067,7 @@ class ImageCreator(object):
 
         self.__img_compression_method = compression_method
 
-    def set_pkg_manager(self, name):
-        self.pkgmgr.set_default_pkg_manager(name)
-
     def get_pkg_manager(self, recording_pkgs=None):
-        pkgmgr_instance = self.pkgmgr.get_default_pkg_manager()
-        if not pkgmgr_instance:
-            raise CreatorError("No package manager available")
-        return pkgmgr_instance(creator = self, recording_pkgs = recording_pkgs)
+        return self.pkgmgr(creator = self, recording_pkgs = recording_pkgs)
 
-class LoopImageCreator(ImageCreator):
-    """Installs a system into a loopback-mountable filesystem image.
-
-    LoopImageCreator is a straightforward ImageCreator subclass; the system
-    is installed into an ext3 filesystem on a sparse file which can be
-    subsequently loopback-mounted.
-
-    """
-
-    def __init__(self, ks, name, fslabel = None):
-        """Initialize a LoopImageCreator instance.
-
-        This method takes the same arguments as ImageCreator.__init__() with
-        the addition of:
-
-        fslabel -- A string used as a label for any filesystems created.
-
-        """
-        ImageCreator.__init__(self, ks, name)
-
-        self.__fslabel = None
-        self.fslabel = fslabel
-
-        self.__minsize_KB = 0
-        self.__blocksize = 4096
-        if self.ks:
-            self.__fstype = kickstart.get_image_fstype(self.ks, "ext3")
-            self.__fsopts = kickstart.get_image_fsopts(self.ks, "defaults,noatime")
-        else:
-            self.__fstype = None
-            self.__fsopts = None
-
-        self.__instloop = None
-        self.__imgdir = None
-
-        if self.ks:
-            self.__image_size = kickstart.get_image_size(self.ks,
-                                                         4096L * 1024 * 1024)
-        else:
-            self.__image_size = 0
-
-        self._img_name = self.name + ".img"
-
-    def _set_fstype(self, fstype):
-        self.__fstype = fstype
-
-    def _set_image_size(self, imgsize):
-        self.__image_size = imgsize
-
-    #
-    # Properties
-    #
-    def __get_fslabel(self):
-        if self.__fslabel is None:
-            return self.name
-        else:
-            return self.__fslabel
-    def __set_fslabel(self, val):
-        if val is None:
-            self.__fslabel = None
-        else:
-            self.__fslabel = val[:FSLABEL_MAXLEN]
-    fslabel = property(__get_fslabel, __set_fslabel)
-    """A string used to label any filesystems created.
-
-    Some filesystems impose a constraint on the maximum allowed size of the
-    filesystem label. In the case of ext3 it's 16 characters, but in the case
-    of ISO9660 it's 32 characters.
-
-    mke2fs silently truncates the label, but mkisofs aborts if the label is too
-    long. So, for convenience sake, any string assigned to this attribute is
-    silently truncated to FSLABEL_MAXLEN (32) characters.
-
-    """
-
-    def __get_image(self):
-        if self.__imgdir is None:
-            raise CreatorError("_image is not valid before calling mount()")
-        return self.__imgdir + "/meego.img"
-    _image = property(__get_image)
-    """The location of the image file.
-
-    This is the path to the filesystem image. Subclasses may use this path
-    in order to package the image in _stage_final_image().
-
-    Note, this directory does not exist before ImageCreator.mount() is called.
-
-    Note also, this is a read-only attribute.
-
-    """
-
-    def __get_blocksize(self):
-        return self.__blocksize
-    def __set_blocksize(self, val):
-        if self.__instloop:
-            raise CreatorError("_blocksize must be set before calling mount()")
-        try:
-            self.__blocksize = int(val)
-        except ValueError:
-            raise CreatorError("'%s' is not a valid integer value "
-                               "for _blocksize" % val)
-    _blocksize = property(__get_blocksize, __set_blocksize)
-    """The block size used by the image's filesystem.
-
-    This is the block size used when creating the filesystem image. Subclasses
-    may change this if they wish to use something other than a 4k block size.
-
-    Note, this attribute may only be set before calling mount().
-
-    """
-
-    def __get_fstype(self):
-        return self.__fstype
-    def __set_fstype(self, val):
-        if val != "ext2" and val != "ext3":
-            raise CreatorError("Unknown _fstype '%s' supplied" % val)
-        self.__fstype = val
-    _fstype = property(__get_fstype, __set_fstype)
-    """The type of filesystem used for the image.
-
-    This is the filesystem type used when creating the filesystem image.
-    Subclasses may change this if they wish to use something other ext3.
-
-    Note, only ext2 and ext3 are currently supported.
-
-    Note also, this attribute may only be set before calling mount().
-
-    """
-
-    def __get_fsopts(self):
-        return self.__fsopts
-    def __set_fsopts(self, val):
-        self.__fsopts = val
-    _fsopts = property(__get_fsopts, __set_fsopts)
-    """Mount options of filesystem used for the image.
-
-    This can be specified by --fsoptions="xxx,yyy" in part command in
-    kickstart file.
-    """
-
-    #
-    # Helpers for subclasses
-    #
-    def _resparse(self, size = None):
-        """Rebuild the filesystem image to be as sparse as possible.
-
-        This method should be used by subclasses when staging the final image
-        in order to reduce the actual space taken up by the sparse image file
-        to be as little as possible.
-
-        This is done by resizing the filesystem to the minimal size (thereby
-        eliminating any space taken up by deleted files) and then resizing it
-        back to the supplied size.
-
-        size -- the size in, in bytes, which the filesystem image should be
-                resized to after it has been minimized; this defaults to None,
-                causing the original size specified by the kickstart file to
-                be used (or 4GiB if not specified in the kickstart).
-
-        """
-        return self.__instloop.resparse(size)
-
-    def _base_on(self, base_on):
-        shutil.copyfile(base_on, self._image)
-
-    #
-    # Actual implementation
-    #
-    def _mount_instroot(self, base_on = None):
-        self.__imgdir = self._mkdtemp()
-
-        if not base_on is None:
-            self._base_on(base_on)
-
-        if self.__fstype in ("ext2", "ext3", "ext4"):
-            MyDiskMount = ExtDiskMount
-        elif self.__fstype == "btrfs":
-            MyDiskMount = BtrfsDiskMount
-
-        self.__instloop = MyDiskMount(SparseLoopbackDisk(self._image, self.__image_size),
-                                       self._instroot,
-                                       self.__fstype,
-                                       self.__blocksize,
-                                       self.fslabel)
-
-        try:
-            self.__instloop.mount()
-        except MountError, e:
-            raise CreatorError("Failed to loopback mount '%s' : %s" %
-                               (self._image, e))
-
-    def _unmount_instroot(self):
-        if not self.__instloop is None:
-            self.__instloop.cleanup()
-
-    def _stage_final_image(self):
-        self._resparse()
-        shutil.move(self._image, self._outdir + "/" + self._img_name)
-
-class LiveImageCreatorBase(LoopImageCreator):
-    """A base class for LiveCD image creators.
-
-    This class serves as a base class for the architecture-specific LiveCD
-    image creator subclass, LiveImageCreator.
-
-    LiveImageCreator creates a bootable ISO containing the system image,
-    bootloader, bootloader configuration, kernel and initramfs.
-
-    """
-
-    def __init__(self, *args):
-        """Initialise a LiveImageCreator instance.
-
-        This method takes the same arguments as ImageCreator.__init__().
-
-        """
-        LoopImageCreator.__init__(self, *args)
-
-        self.skip_compression = False
-        """Controls whether to use squashfs to compress the image."""
-
-        self.skip_minimize = False
-        """Controls whether an image minimizing snapshot should be created.
-
-        This snapshot can be used when copying the system image from the ISO in
-        order to minimize the amount of data that needs to be copied; simply,
-        it makes it possible to create a version of the image's filesystem with
-        no spare space.
-
-        """
-
-        self.actasconvertor = False
-        """A flag which indicates i act as a convertor"""
-
-        if self.ks:
-            self._timeout = kickstart.get_timeout(self.ks, 10)
-        else:
-            self._timeout = 10
-        """The bootloader timeout from kickstart."""
-
-        if self.ks:
-            self._default_kernel = kickstart.get_default_kernel(self.ks, "kernel")
-        else:
-            self._default_kernel = None
-        """The default kernel type from kickstart."""
-
-        self.__isodir = None
-
-        self.__modules = ["=ata", "sym53c8xx", "aic7xxx", "=usb", "=firewire", "=mmc", "=pcmcia", "mptsas"]
-        if self.ks:
-            self.__modules.extend(kickstart.get_modules(self.ks))
-
-        self._dep_checks.extend(["isohybrid", "unsquashfs", "mksquashfs", "dd", "genisoimage"])
-
-    #
-    # Hooks for subclasses
-    #
-    def _configure_bootloader(self, isodir):
-        """Create the architecture specific booloader configuration.
-
-        This is the hook where subclasses must create the booloader
-        configuration in order to allow a bootable ISO to be built.
-
-        isodir -- the directory where the contents of the ISO are to be staged
-
-        """
-        raise CreatorError("Bootloader configuration is arch-specific, "
-                           "but not implemented for this arch!")
-    def _get_menu_options(self):
-        """Return a menu options string for syslinux configuration.
-
-        """
-        r = kickstart.get_menu_args(self.ks)
-        return r
-
-    def _get_kernel_options(self):
-        """Return a kernel options string for bootloader configuration.
-
-        This is the hook where subclasses may specify a set of kernel options
-        which should be included in the images bootloader configuration.
-
-        A sensible default implementation is provided.
-
-        """
-        r = kickstart.get_kernel_args(self.ks)
-        if os.path.exists(self._instroot + "/usr/bin/rhgb") or \
-           os.path.exists(self._instroot + "/usr/bin/plymouth"):
-            r += " rhgb"
-        return r
-
-    def _get_mkisofs_options(self, isodir):
-        """Return the architecture specific mkisosfs options.
-
-        This is the hook where subclasses may specify additional arguments to
-        mkisofs, e.g. to enable a bootable ISO to be built.
-
-        By default, an empty list is returned.
-
-        """
-        return []
-
-    #
-    # Helpers for subclasses
-    #
-    def _has_checkisomd5(self):
-        """Check whether checkisomd5 is available in the install root."""
-        def exists(instroot, path):
-            return os.path.exists(instroot + path)
-
-        if (exists(self._instroot, "/usr/lib/moblin-installer-runtime/checkisomd5") or
-            exists(self._instroot, "/usr/bin/checkisomd5")):
-            if (os.path.exists("/usr/bin/implantisomd5") or
-               os.path.exists("/usr/lib/anaconda-runtime/implantisomd5")):
-                return True
-
-        return False
-
-    def _uncompress_squashfs(self, squashfsimg, outdir):
-        """Uncompress file system from squshfs image"""
-        unsquashfs = find_binary_path("unsquashfs")
-        args = [unsquashfs, "-d", outdir, squashfsimg ]
-        rc = subprocess.call(args)
-        if (rc != 0):
-            raise CreatorError("Failed to uncompress %s." % squashfsimg)
-    #
-    # Actual implementation
-    #
-    def _base_on(self, base_on):
-        """Support Image Convertor"""
-        if self.actasconvertor:
-            if os.path.exists(base_on) and not os.path.isfile(base_on):
-                ddcmd = find_binary_path("dd")
-                args = [ ddcmd, "if=%s" % base_on, "of=%s" % self._image ]
-                print "dd %s -> %s" % (base_on, self._image)
-                rc = subprocess.call(args)
-                if rc != 0:
-                    raise CreatorError("Failed to dd from %s to %s" % (base_on, self._image))
-                self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
-            if os.path.isfile(base_on):
-                print "Copying file system..."
-                shutil.copyfile(base_on, self._image)
-                self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
-            return
-
-        """helper function to extract ext3 file system from a live CD ISO"""
-        isoloop = DiskMount(LoopbackDisk(base_on, 0), self._mkdtemp())
-
-        try:
-            isoloop.mount()
-        except MountError, e:
-            raise CreatorError("Failed to loopback mount '%s' : %s" %
-                               (base_on, e))
-
-        # legacy LiveOS filesystem layout support, remove for F9 or F10
-        if os.path.exists(isoloop.mountdir + "/squashfs.img"):
-            squashimg = isoloop.mountdir + "/squashfs.img"
-        else:
-            squashimg = isoloop.mountdir + "/LiveOS/squashfs.img"
-
-        tmpoutdir = self._mkdtemp()
-        # unsquashfs requires outdir mustn't exist
-        shutil.rmtree(tmpoutdir, ignore_errors = True)
-        self._uncompress_squashfs(squashimg, tmpoutdir)
-
-        try:
-            # legacy LiveOS filesystem layout support, remove for F9 or F10
-            if os.path.exists(tmpoutdir + "/os.img"):
-                os_image = tmpoutdir + "/os.img"
-            else:
-                os_image = tmpoutdir + "/LiveOS/ext3fs.img"
-
-            if not os.path.exists(os_image):
-                raise CreatorError("'%s' is not a valid live CD ISO : neither "
-                                   "LiveOS/ext3fs.img nor os.img exist" %
-                                   base_on)
-
-            print "Copying file system..."
-            shutil.copyfile(os_image, self._image)
-            self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
-        finally:
-            shutil.rmtree(tmpoutdir, ignore_errors = True)
-            isoloop.cleanup()
-
-    def _mount_instroot(self, base_on = None):
-        LoopImageCreator._mount_instroot(self, base_on)
-        self.__write_initrd_conf(self._instroot + "/etc/sysconfig/mkinitrd")
-
-    def _unmount_instroot(self):
-        try:
-            os.unlink(self._instroot + "/etc/sysconfig/mkinitrd")
-        except:
-            pass
-        LoopImageCreator._unmount_instroot(self)
-
-    def __ensure_isodir(self):
-        if self.__isodir is None:
-            self.__isodir = self._mkdtemp("iso-")
-        return self.__isodir
-
-    def _get_isodir(self):
-        return self.__ensure_isodir()
-
-    def _set_isodir(self, isodir = None):
-        self.__isodir = isodir
-
-    def _create_bootconfig(self):
-        """Configure the image so that it's bootable."""
-        self._configure_bootloader(self.__ensure_isodir())
-
-    def _get_post_scripts_env(self, in_chroot):
-        env = LoopImageCreator._get_post_scripts_env(self, in_chroot)
-
-        if not in_chroot:
-            env["LIVE_ROOT"] = self.__ensure_isodir()
-
-        return env
-
-    def __write_initrd_conf(self, path):
-        content = ""
-        if not os.path.exists(os.path.dirname(path)):
-            makedirs(os.path.dirname(path))
-        f = open(path, "w")
-
-        content += 'LIVEOS="yes"\n'
-        content += 'PROBE="no"\n'
-        content += 'MODULES+="squashfs ext3 ext2 vfat msdos "\n'
-        content += 'MODULES+="sr_mod sd_mod ide-cd cdrom "\n'
-
-        for module in self.__modules:
-            if module == "=usb":
-                content += 'MODULES+="ehci_hcd uhci_hcd ohci_hcd "\n'
-                content += 'MODULES+="usb_storage usbhid "\n'
-            elif module == "=firewire":
-                content += 'MODULES+="firewire-sbp2 firewire-ohci "\n'
-                content += 'MODULES+="sbp2 ohci1394 ieee1394 "\n'
-            elif module == "=mmc":
-                content += 'MODULES+="mmc_block sdhci sdhci-pci "\n'
-            elif module == "=pcmcia":
-                content += 'MODULES+="pata_pcmcia  "\n'
-            else:
-                content += 'MODULES+="' + module + ' "\n'
-        f.write(content)
-        f.close()
-
-    def __create_iso(self, isodir):
-        iso = self._outdir + "/" + self.name + ".iso"
-        genisoimage = find_binary_path("genisoimage")
-        args = [genisoimage,
-                "-J", "-r",
-                "-hide-rr-moved", "-hide-joliet-trans-tbl",
-                "-V", self.fslabel,
-                "-o", iso]
-
-        args.extend(self._get_mkisofs_options(isodir))
-
-        args.append(isodir)
-
-        if subprocess.call(args) != 0:
-            raise CreatorError("ISO creation failed!")
-
-        """ It should be ok still even if you haven't isohybrid """
-        isohybrid = None
-        try:
-            isohybrid = find_binary_path("isohybrid")
-        except:
-            pass
-
-        if isohybrid:
-            args = [isohybrid, "-partok", iso ]
-            if subprocess.call(args) != 0:
-             	raise CreatorError("Hybrid ISO creation failed!")
-
-        self.__implant_md5sum(iso)
-
-    def __implant_md5sum(self, iso):
-        """Implant an isomd5sum."""
-        if os.path.exists("/usr/bin/implantisomd5"):
-            implantisomd5 = "/usr/bin/implantisomd5"
-        elif os.path.exists("/usr/lib/anaconda-runtime/implantisomd5"):
-            implantisomd5 = "/usr/lib/anaconda-runtime/implantisomd5"
-        else:
-            logging.warn("isomd5sum not installed; not setting up mediacheck")
-            implantisomd5 = ""
-            return
-
-        subprocess.call([implantisomd5, iso], stdout=sys.stdout, stderr=sys.stderr)
-
-    def _stage_final_image(self):
-        try:
-            makedirs(self.__ensure_isodir() + "/LiveOS")
-
-            minimal_size = self._resparse()
-
-            if not self.skip_minimize:
-                create_image_minimizer(self.__isodir + "/LiveOS/osmin.img",
-                                       self._image, minimal_size)
-
-            if self.skip_compression:
-                shutil.move(self._image, self.__isodir + "/LiveOS/ext3fs.img")
-            else:
-                makedirs(os.path.join(os.path.dirname(self._image), "LiveOS"))
-                shutil.move(self._image,
-                            os.path.join(os.path.dirname(self._image),
-                                         "LiveOS", "ext3fs.img"))
-                mksquashfs(os.path.dirname(self._image),
-                           self.__isodir + "/LiveOS/squashfs.img")
-
-            self.__create_iso(self.__isodir)
-        finally:
-            shutil.rmtree(self.__isodir, ignore_errors = True)
-            self.__isodir = None
 

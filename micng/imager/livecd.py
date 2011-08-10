@@ -1,5 +1,5 @@
 #
-#live.py : LiveImageCreator class for creating Live CD images
+# livecd.py : LiveCDImageCreator class for creating Live CD images
 #
 # Copyright 2007, Red Hat  Inc.
 #
@@ -17,7 +17,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os
-import os.path
+import sys
 import glob
 import shutil
 import subprocess
@@ -25,14 +25,333 @@ import logging
 import re
 import time
 
+import micng.utils.kickstart as kickstart 
+import micng.utils.fs_related as fs_related
+import micng.utils.rpmmisc as rpmmisc
+import micng.utils.misc as misc
 from micng.utils.errors import *
-from micng.utils.fs_related import *
-from micng.utils.rpmmisc import *
-from BaseImageCreator import LiveImageCreatorBase
+from loop import LoopImageCreator
 
-class LivecdImageCreator(LiveImageCreatorBase):
+class LiveImageCreatorBase(LoopImageCreator):
+    """A base class for LiveCD image creators.
+
+        This class serves as a base class for the architecture-specific LiveCD
+        image creator subclass, LiveImageCreator.
+    
+        LiveImageCreator creates a bootable ISO containing the system image,
+        bootloader, bootloader configuration, kernel and initramfs.
+    """
+
+    def __init__(self, creatoropts = None, pkgmgr = None):
+        """Initialise a LiveImageCreator instance.
+
+           This method takes the same arguments as ImageCreator.__init__().
+        """
+        LoopImageCreator.__init__(self, creatoropts, pkgmgr)
+
+        #Controls whether to use squashfs to compress the image.
+        self.skip_compression = False 
+
+        #Controls whether an image minimizing snapshot should be created.
+        #
+        #This snapshot can be used when copying the system image from the ISO in
+        #order to minimize the amount of data that needs to be copied; simply,
+        #it makes it possible to create a version of the image's filesystem with
+        #no spare space.
+        self.skip_minimize = False 
+
+        #A flag which indicates i act as a convertor default false
+        if creatoropts.has_key('actasconvertor') and not creatoropts['actasconvertor']:
+            self.actasconvertor = creatoropts['actasconvertor']
+        else:
+            self.actasconvertor = False
+        
+        #The bootloader timeout from kickstart.
+        if self.ks:
+            self._timeout = kickstart.get_timeout(self.ks, 10)
+        else:
+            self._timeout = 10
+
+        #The default kernel type from kickstart.
+        if self.ks:
+            self._default_kernel = kickstart.get_default_kernel(self.ks, "kernel")
+        else:
+            self._default_kernel = None
+
+
+        self.__isodir = None
+
+        self.__modules = ["=ata", "sym53c8xx", "aic7xxx", "=usb", "=firewire", "=mmc", "=pcmcia", "mptsas"]
+        if self.ks:
+            self.__modules.extend(kickstart.get_modules(self.ks))
+
+        self._dep_checks.extend(["isohybrid", "unsquashfs", "mksquashfs", "dd", "genisoimage"])
+
+    #
+    # Hooks for subclasses
+    #
+    def _configure_bootloader(self, isodir):
+        """Create the architecture specific booloader configuration.
+
+            This is the hook where subclasses must create the booloader
+            configuration in order to allow a bootable ISO to be built.
+    
+            isodir -- the directory where the contents of the ISO are to be staged
+        """
+        raise CreatorError("Bootloader configuration is arch-specific, "
+                           "but not implemented for this arch!")
+    def _get_menu_options(self):
+        """Return a menu options string for syslinux configuration.
+        """
+        if self.actasconvertor:
+            return "bootinstall autoinst"
+        r = kickstart.get_menu_args(self.ks)
+        return r
+
+    def _get_kernel_options(self):
+        """Return a kernel options string for bootloader configuration.
+
+            This is the hook where subclasses may specify a set of kernel options
+            which should be included in the images bootloader configuration.
+    
+            A sensible default implementation is provided.
+        """
+        if self.actasconvertor:
+            r = "ro liveimg quiet"
+            if os.path.exists(instroot + "/usr/bin/rhgb"):
+                r += " rhgb"
+            if os.path.exists(instroot + "/usr/bin/plymouth"):
+                r += " rhgb"
+            return r
+        r = kickstart.get_kernel_args(self.ks)
+        if os.path.exists(self._instroot + "/usr/bin/rhgb") or \
+           os.path.exists(self._instroot + "/usr/bin/plymouth"):
+            r += " rhgb"
+        return r
+
+    def _get_mkisofs_options(self, isodir):
+        """Return the architecture specific mkisosfs options.
+
+            This is the hook where subclasses may specify additional arguments to
+            mkisofs, e.g. to enable a bootable ISO to be built.
+    
+            By default, an empty list is returned.
+        """
+        return []
+
+    #
+    # Helpers for subclasses
+    #
+    def _has_checkisomd5(self):
+        """Check whether checkisomd5 is available in the install root."""
+        def exists(instroot, path):
+            return os.path.exists(instroot + path)
+
+        if (exists(self._instroot, "/usr/lib/moblin-installer-runtime/checkisomd5") or
+            exists(self._instroot, "/usr/bin/checkisomd5")):
+            if (os.path.exists("/usr/bin/implantisomd5") or
+               os.path.exists("/usr/lib/anaconda-runtime/implantisomd5")):
+                return True
+
+        return False
+
+    def _uncompress_squashfs(self, squashfsimg, outdir):
+        """Uncompress file system from squshfs image"""
+        unsquashfs = fs_related.find_binary_path("unsquashfs")
+        args = [unsquashfs, "-d", outdir, squashfsimg ]
+        rc = subprocess.call(args)
+        if (rc != 0):
+            raise CreatorError("Failed to uncompress %s." % squashfsimg)
+    #
+    # Actual implementation
+    #
+    def _base_on(self, base_on):
+        """Support Image Convertor"""
+        if self.actasconvertor:
+            if os.path.exists(base_on) and not os.path.isfile(base_on):
+                ddcmd = fs_related.find_binary_path("dd")
+                args = [ ddcmd, "if=%s" % base_on, "of=%s" % self._image ]
+                print "dd %s -> %s" % (base_on, self._image)
+                rc = subprocess.call(args)
+                if rc != 0:
+                    raise CreatorError("Failed to dd from %s to %s" % (base_on, self._image))
+                self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
+            if os.path.isfile(base_on):
+                print "Copying file system..."
+                shutil.copyfile(base_on, self._image)
+                self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
+            return
+
+        #helper function to extract ext3 file system from a live CD ISO
+        isoloop = fs_related.DiskMount(fs_related.LoopbackDisk(base_on, 0), self._mkdtemp())
+
+        try:
+            isoloop.mount()
+        except MountError, e:
+            raise CreatorError("Failed to loopback mount '%s' : %s" %
+                               (base_on, e))
+
+        # legacy LiveOS filesystem layout support, remove for F9 or F10
+        if os.path.exists(isoloop.mountdir + "/squashfs.img"):
+            squashimg = isoloop.mountdir + "/squashfs.img"
+        else:
+            squashimg = isoloop.mountdir + "/LiveOS/squashfs.img"
+
+        tmpoutdir = self._mkdtemp()
+        # unsquashfs requires outdir mustn't exist
+        shutil.rmtree(tmpoutdir, ignore_errors = True)
+        self._uncompress_squashfs(squashimg, tmpoutdir)
+
+        try:
+            # legacy LiveOS filesystem layout support, remove for F9 or F10
+            if os.path.exists(tmpoutdir + "/os.img"):
+                os_image = tmpoutdir + "/os.img"
+            else:
+                os_image = tmpoutdir + "/LiveOS/ext3fs.img"
+
+            if not os.path.exists(os_image):
+                raise CreatorError("'%s' is not a valid live CD ISO : neither "
+                                   "LiveOS/ext3fs.img nor os.img exist" %
+                                   base_on)
+
+            print "Copying file system..."
+            shutil.copyfile(os_image, self._image)
+            self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
+        finally:
+            shutil.rmtree(tmpoutdir, ignore_errors = True)
+            isoloop.cleanup()
+
+    def _mount_instroot(self, base_on = None):
+        LoopImageCreator._mount_instroot(self, base_on)
+        self.__write_initrd_conf(self._instroot + "/etc/sysconfig/mkinitrd")
+
+    def _unmount_instroot(self):
+        try:
+            os.unlink(self._instroot + "/etc/sysconfig/mkinitrd")
+        except:
+            pass
+        LoopImageCreator._unmount_instroot(self)
+
+    def __ensure_isodir(self):
+        if self.__isodir is None:
+            self.__isodir = self._mkdtemp("iso-")
+        return self.__isodir
+
+    def _get_isodir(self):
+        return self.__ensure_isodir()
+
+    def _set_isodir(self, isodir = None):
+        self.__isodir = isodir
+
+    def _create_bootconfig(self):
+        """Configure the image so that it's bootable."""
+        self._configure_bootloader(self.__ensure_isodir())
+
+    def _get_post_scripts_env(self, in_chroot):
+        env = LoopImageCreator._get_post_scripts_env(self, in_chroot)
+
+        if not in_chroot:
+            env["LIVE_ROOT"] = self.__ensure_isodir()
+
+        return env
+
+    def __write_initrd_conf(self, path):
+        content = ""
+        if not os.path.exists(os.path.dirname(path)):
+            fs_related.makedirs(os.path.dirname(path))
+        f = open(path, "w")
+
+        content += 'LIVEOS="yes"\n'
+        content += 'PROBE="no"\n'
+        content += 'MODULES+="squashfs ext3 ext2 vfat msdos "\n'
+        content += 'MODULES+="sr_mod sd_mod ide-cd cdrom "\n'
+
+        for module in self.__modules:
+            if module == "=usb":
+                content += 'MODULES+="ehci_hcd uhci_hcd ohci_hcd "\n'
+                content += 'MODULES+="usb_storage usbhid "\n'
+            elif module == "=firewire":
+                content += 'MODULES+="firewire-sbp2 firewire-ohci "\n'
+                content += 'MODULES+="sbp2 ohci1394 ieee1394 "\n'
+            elif module == "=mmc":
+                content += 'MODULES+="mmc_block sdhci sdhci-pci "\n'
+            elif module == "=pcmcia":
+                content += 'MODULES+="pata_pcmcia  "\n'
+            else:
+                content += 'MODULES+="' + module + ' "\n'
+        f.write(content)
+        f.close()
+
+    def __create_iso(self, isodir):
+        iso = self._outdir + "/" + self.name + ".iso"
+        genisoimage = fs_related.find_binary_path("genisoimage")
+        args = [genisoimage,
+                "-J", "-r",
+                "-hide-rr-moved", "-hide-joliet-trans-tbl",
+                "-V", self.fslabel,
+                "-o", iso]
+
+        args.extend(self._get_mkisofs_options(isodir))
+
+        args.append(isodir)
+
+        if subprocess.call(args) != 0:
+            raise CreatorError("ISO creation failed!")
+
+        """ It should be ok still even if you haven't isohybrid """
+        isohybrid = None
+        try:
+            isohybrid = fs_related.find_binary_path("isohybrid")
+        except:
+            pass
+
+        if isohybrid:
+            args = [isohybrid, "-partok", iso ]
+            if subprocess.call(args) != 0:
+             	raise CreatorError("Hybrid ISO creation failed!")
+
+        self.__implant_md5sum(iso)
+
+    def __implant_md5sum(self, iso):
+        """Implant an isomd5sum."""
+        if os.path.exists("/usr/bin/implantisomd5"):
+            implantisomd5 = "/usr/bin/implantisomd5"
+        elif os.path.exists("/usr/lib/anaconda-runtime/implantisomd5"):
+            implantisomd5 = "/usr/lib/anaconda-runtime/implantisomd5"
+        else:
+            logging.warn("isomd5sum not installed; not setting up mediacheck")
+            implantisomd5 = ""
+            return
+
+        subprocess.call([implantisomd5, iso], stdout=sys.stdout, stderr=sys.stderr)
+
+    def _stage_final_image(self):
+        try:
+            fs_related.makedirs(self.__ensure_isodir() + "/LiveOS")
+
+            minimal_size = self._resparse()
+
+            if not self.skip_minimize:
+                fs_related.create_image_minimizer(self.__isodir + "/LiveOS/osmin.img",
+                                       self._image, minimal_size)
+
+            if self.skip_compression:
+                shutil.move(self._image, self.__isodir + "/LiveOS/ext3fs.img")
+            else:
+                fs_related.makedirs(os.path.join(os.path.dirname(self._image), "LiveOS"))
+                shutil.move(self._image,
+                            os.path.join(os.path.dirname(self._image),
+                                         "LiveOS", "ext3fs.img"))
+                fs_related.mksquashfs(os.path.dirname(self._image),
+                           self.__isodir + "/LiveOS/squashfs.img")
+
+            self.__create_iso(self.__isodir)
+        finally:
+            shutil.rmtree(self.__isodir, ignore_errors = True)
+            self.__isodir = None
+
+class x86LiveImageCreator(LiveImageCreatorBase):
     """ImageCreator for x86 machines"""
- 
     def _get_mkisofs_options(self, isodir):
         return [ "-b", "isolinux/isolinux.bin",
                  "-c", "isolinux/boot.cat",
@@ -40,7 +359,7 @@ class LivecdImageCreator(LiveImageCreatorBase):
                  "-boot-load-size", "4" ]
 
     def _get_required_packages(self):
-        return ["syslinux", "syslinux-extlinux", "moblin-live"] + LiveImageCreatorBase._get_required_packages(self)
+        return ["syslinux", "syslinux-extlinux"] + LiveImageCreatorBase._get_required_packages(self)
 
     def _get_isolinux_stanzas(self, isodir):
         return ""
@@ -168,35 +487,45 @@ menu color cmdline 0 #ffffffff #00000000
             raise CreatorError("Unable to find valid kernels, please check the repo")
 
         kernel_options = self._get_kernel_options()
-        menu_options = self._get_menu_options()
 
+        """ menu can be customized highly, the format is
+
+              short_name1:long_name1:extra_options1;short_name2:long_name2:extra_options2
+
+            for example: autoinst:Installation only:systemd.unit=installer-graphical.service
+            but in order to keep compatible with old format, these are still ok:
+
+              liveinst autoinst
+              liveinst;autoinst
+              liveinst::;autoinst::
+        """
+        oldmenus = {"basic":{"short":"basic", "long":"Installation Only (Text based)", "extra":"basic nosplash 4"},
+                    "liveinst":{"short":"liveinst", "long":"Installation Only", "extra":"liveinst nosplash 4"},
+                    "autoinst":{"short":"autoinst", "long":"Autoinstall (Deletes all existing content)", "extra":"autoinst nosplash 4"},
+                    "netinst":{"short":"netinst", "long":"Network Installation", "extra":"netinst 4"},
+                    "verify":{"short":"check", "long":"Verify and", "extra":"check"}
+                   }
+        menu_options = self._get_menu_options()
+        menus = menu_options.split(";")
+        for i in range(len(menus)):
+            menus[i] = menus[i].split(":")
+        if len(menus) == 1 and len(menus[0]) == 1:
+            """ Keep compatible with the old usage way """
+            menus = menu_options.split()
+            for i in range(len(menus)):
+                menus[i] = [menus[i]]
 
         cfg = ""
 
         default_version = None
         default_index = None
         index = "0"
+        netinst = None
         for version in versions:
             is_xen = self.__copy_kernel_and_initramfs(isodir, version, index)
 
             default = self.__is_default_kernel(kernel, kernels)
-            liveinst = False
-            autoliveinst = False
-            netinst = False
-            checkisomd5 = False
-            basicinst = False
             
-            if menu_options.find("bootinstall") >= 0:
-                liveinst = True
-            
-            if menu_options.find("autoinst") >= 0:
-                autoliveinst = True
-                
-            if menu_options.find("verify") >= 0 and self._has_checkisomd5():
-                checkisomd5 = True 
-                               
-            if menu_options.find("netinst") >= 0:
-                netinst = True 
                 
             if default:
                 long = "Boot %s" % self.distro_name
@@ -204,6 +533,7 @@ menu color cmdline 0 #ffffffff #00000000
                 long = "Boot %s(%s)" % (self.name, kernel[7:])
             else:
                 long = "Boot %s(%s)" % (self.name, kernel)
+            oldmenus["verify"]["long"] = "%s %s" % (oldmenus["verify"]["long"], long)
 
             cfg += self.__get_image_stanza(is_xen,
                                            fslabel = self.fslabel,
@@ -217,39 +547,36 @@ menu color cmdline 0 #ffffffff #00000000
                 cfg += "menu default\n"
                 default_version = version
                 default_index = index
-            if basicinst:
-                cfg += self.__get_image_stanza(is_xen,
-                                               fslabel = self.fslabel,
-                                               liveargs = kernel_options,
-                                               long = "Installation Only (Text based)",
-                                               short = "basic" + index,
-                                               extra = "basic nosplash 4",
-                                               index = index)
-                
-            if liveinst:
-                cfg += self.__get_image_stanza(is_xen,
-                                               fslabel = self.fslabel,
-                                               liveargs = kernel_options,
-                                               long = "Installation Only",
-                                               short = "liveinst" + index,
-                                               extra = "liveinst nosplash 4",
-                                               index = index)
-            if autoliveinst:
-                cfg += self.__get_image_stanza(is_xen,
-                                               fslabel = self.fslabel,
-                                               liveargs = kernel_options,
-                                               long = "Autoinstall (Deletes all existing content)",
-                                               short = "autoinst" + index,
-                                               extra = "autoinst nosplash 4",
-                                               index = index)
 
-            if checkisomd5:
+            for menu in menus:
+                if not menu[0]:
+                    continue
+                short = menu[0] + index
+
+                if len(menu) >= 2:
+                    long = menu[1]
+                else:
+                    if menu[0] in oldmenus.keys():
+                        if menu[0] == "verify" and not self._has_checkisomd5():
+                            continue
+                        if menu[0] == "netinst":
+                            netinst = oldmenus[menu[0]]
+                            continue
+                        long = oldmenus[menu[0]]["long"]
+                        extra = oldmenus[menu[0]]["extra"]
+                    else:
+                        long = short.upper() + " X" + index
+                        extra = ""
+
+                if len(menu) >= 3:
+                    extra = menu[2]
+
                 cfg += self.__get_image_stanza(is_xen,
                                                fslabel = self.fslabel,
                                                liveargs = kernel_options,
-                                               long = "Verify and " + long,
-                                               short = "check" + index,
-                                               extra = "check",
+                                               long = long,
+                                               short = short,
+                                               extra = extra,
                                                index = index)
 
             index = str(int(index) + 1)
@@ -259,14 +586,13 @@ menu color cmdline 0 #ffffffff #00000000
         if not default_index:
             default_index = "0"
 
-        
         if netinst:
             cfg += self.__get_image_stanza(is_xen,
                                            fslabel = self.fslabel,
                                            liveargs = kernel_options,
-                                           long = "Network Installation",
-                                           short = "netinst",
-                                           extra = "netinst 4",
+                                           long = netinst["long"],
+                                           short = netinst["short"],
+                                           extra = netinst["extra"],
                                            index = default_index)
 
         return cfg
@@ -291,7 +617,7 @@ menu color cmdline 0 #ffffffff #00000000
 
     def _configure_syslinux_bootloader(self, isodir):
         """configure the boot loader"""
-        makedirs(isodir + "/isolinux")
+        fs_related.makedirs(isodir + "/isolinux")
 
         menu = self.__find_syslinux_menu()
 
@@ -370,7 +696,7 @@ hiddenmenu
 
     def _configure_efi_bootloader(self, isodir):
         """Set up the configuration for an EFI bootloader"""
-        makedirs(isodir + "/EFI/boot")
+        fs_related.makedirs(isodir + "/EFI/boot")
 
         if not self.__copy_efi_files(isodir):
             shutil.rmtree(isodir + "/EFI")
@@ -390,13 +716,13 @@ hiddenmenu
         cfgf.close()
 
         # first gen mactel machines get the bootloader name wrong apparently
-        if getBaseArch() == "i386":
+        if rpmmisc.getBaseArch() == "i386":
             os.link(isodir + "/EFI/boot/grub.efi", isodir + "/EFI/boot/boot.efi")
             os.link(isodir + "/EFI/boot/grub.conf", isodir + "/EFI/boot/boot.conf")
 
         # for most things, we want them named boot$efiarch
         efiarch = {"i386": "ia32", "x86_64": "x64"}
-        efiname = efiarch[getBaseArch()]
+        efiname = efiarch[rpmmisc.getBaseArch()]
         os.rename(isodir + "/EFI/boot/grub.efi", isodir + "/EFI/boot/boot%s.efi" %(efiname,))
         os.link(isodir + "/EFI/boot/grub.conf", isodir + "/EFI/boot/boot%s.conf" %(efiname,))
 
@@ -405,3 +731,194 @@ hiddenmenu
         self._configure_syslinux_bootloader(isodir)
         self._configure_efi_bootloader(isodir)
 
+class ppcLiveImageCreator(LiveImageCreatorBase):
+    def _get_mkisofs_options(self, isodir):
+        return [ "-hfs", "-nodesktop", "-part"
+                 "-map", isodir + "/ppc/mapping",
+                 "-hfs-bless", isodir + "/ppc/mac",
+                 "-hfs-volid", self.fslabel ]
+
+    def _get_required_packages(self):
+        return ["yaboot"] + \
+               LiveImageCreatorBase._get_required_packages(self)
+
+    def _get_excluded_packages(self):
+        # kind of hacky, but exclude memtest86+ on ppc so it can stay in cfg
+        return ["memtest86+"] + \
+               LiveImageCreatorBase._get_excluded_packages(self)
+
+    def __copy_boot_file(self, destdir, file):
+        for dir in ["/usr/share/ppc64-utils",
+                    "/usr/lib/moblin-installer-runtime/boot"]:
+            path = self._instroot + dir + "/" + file
+            if not os.path.exists(path):
+                continue
+
+            fs_related.makedirs(destdir)
+            shutil.copy(path, destdir)
+            return
+
+        raise CreatorError("Unable to find boot file " + file)
+
+    def __kernel_bits(self, kernel):
+        testpath = (self._instroot + "/lib/modules/" +
+                    kernel + "/kernel/arch/powerpc/platforms")
+
+        if not os.path.exists(testpath):
+            return { "32" : True, "64" : False }
+        else:
+            return { "32" : False, "64" : True }
+
+    def __copy_kernel_and_initramfs(self, destdir, version):
+        bootdir = self._instroot + "/boot"
+
+        fs_related.makedirs(destdir)
+
+        shutil.copyfile(bootdir + "/vmlinuz-" + version,
+                        destdir + "/vmlinuz")
+
+        shutil.copyfile(bootdir + "/initrd-" + version + ".img",
+                        destdir + "/initrd.img")
+
+    def __get_basic_yaboot_config(self, **args):
+        return """
+init-message = "Welcome to %(distroname)s!"
+timeout=%(timeout)d
+""" % args
+
+    def __get_image_stanza(self, **args):
+        return """
+
+image=/ppc/ppc%(bit)s/vmlinuz
+  label=%(short)s
+  initrd=/ppc/ppc%(bit)s/initrd.img
+  read-only
+  append="root=CDLABEL=%(fslabel)s rootfstype=iso9660 %(liveargs)s %(extra)s"
+""" % args
+
+
+    def __write_yaboot_config(isodir, bit):
+        cfg = self.__get_basic_yaboot_config(name = self.name,
+                                             timeout = self._timeout * 100,
+                                             distroname = self.distro_name)
+
+        kernel_options = self._get_kernel_options()
+
+        cfg += self.__get_image_stanza(fslabel = self.fslabel,
+                                       short = "linux",
+                                       long = "Run from image",
+                                       extra = "",
+                                       bit = bit,
+                                       liveargs = kernel_options)
+
+        if self._has_checkisomd5():
+            cfg += self.__get_image_stanza(fslabel = self.fslabel,
+                                           short = "check",
+                                           long = "Verify and run from image",
+                                           extra = "check",
+                                           bit = bit,
+                                           liveargs = kernel_options)
+
+        f = open(isodir + "/ppc/ppc" + bit + "/yaboot.conf", "w")
+        f.write(cfg)
+        f.close()
+
+    def __write_not_supported(isodir, bit):
+        fs_related.makedirs(isodir + "/ppc/ppc" + bit)
+
+        message = "Sorry, this LiveCD does not support your hardware"
+
+        f = open(isodir + "/ppc/ppc" + bit + "/yaboot.conf", "w")
+        f.write('init-message = "' + message + '"')
+        f.close()
+
+
+    def __write_dualbits_yaboot_config(isodir, **args):
+        cfg = """
+init-message = "\nWelcome to %(name)s!\nUse 'linux32' for 32-bit kernel.\n\n"
+timeout=%(timeout)d
+default=linux
+
+image=/ppc/ppc64/vmlinuz
+	label=linux64
+	alias=linux
+	initrd=/ppc/ppc64/initrd.img
+	read-only
+
+image=/ppc/ppc32/vmlinuz
+	label=linux32
+	initrd=/ppc/ppc32/initrd.img
+	read-only
+""" % args
+
+        f = open(isodir + "/etc/yaboot.conf", "w")
+        f.write(cfg)
+        f.close()
+
+    def _configure_bootloader(self, isodir):
+        """configure the boot loader"""
+        havekernel = { 32: False, 64: False }
+
+        self.__copy_boot_file("mapping", isodir + "/ppc")
+        self.__copy_boot_file("bootinfo.txt", isodir + "/ppc")
+        self.__copy_boot_file("ofboot.b", isodir + "/ppc/mac")
+
+        shutil.copyfile(self._instroot + "/usr/lib/yaboot/yaboot",
+                        isodir + "/ppc/mac/yaboot")
+
+        fs_related.makedirs(isodir + "/ppc/chrp")
+        shutil.copyfile(self._instroot + "/usr/lib/yaboot/yaboot",
+                        isodir + "/ppc/chrp/yaboot")
+
+        subprocess.call(["/usr/sbin/addnote", isodir + "/ppc/chrp/yaboot"])
+
+        #
+        # FIXME: ppc should support multiple kernels too...
+        #
+        kernel = self._get_kernel_versions().values()[0][0]
+
+        kernel_bits = self.__kernel_bits(kernel)
+
+        for (bit, present) in kernel_bits.items():
+            if not present:
+                self.__write_not_supported(isodir, bit)
+                continue
+
+            self.__copy_kernel_and_initramfs(isodir + "/ppc/ppc" + bit, kernel)
+            self.__write_yaboot_config(isodir, bit)
+
+        fs_related.makedirs(isodir + "/etc")
+        if kernel_bits["32"] and not kernel_bits["64"]:
+            shutil.copyfile(isodir + "/ppc/ppc32/yaboot.conf",
+                            isodir + "/etc/yaboot.conf")
+        elif kernel_bits["64"] and not kernel_bits["32"]:
+            shutil.copyfile(isodir + "/ppc/ppc64/yaboot.conf",
+                            isodir + "/etc/yaboot.conf")
+        else:
+            self.__write_dualbits_yaboot_config(isodir,
+                                                name = self.name,
+                                                timeout = self._timeout * 100)
+
+        #
+        # FIXME: build 'netboot' images with kernel+initrd, like mk-images.ppc
+        #
+
+class ppc64LiveImageCreator(ppcLiveImageCreator):
+    def _get_excluded_packages(self):
+        # FIXME:
+        #   while kernel.ppc and kernel.ppc64 co-exist,
+        #   we can't have both
+        return ["kernel.ppc"] + \
+               ppcLiveImageCreator._get_excluded_packages(self)
+
+arch = rpmmisc.getBaseArch()
+if arch in ("i386", "x86_64"):
+    LiveCDImageCreator = x86LiveImageCreator
+elif arch in ("ppc",):
+    LiveCDImageCreator = ppcLiveImageCreator
+elif arch in ("ppc64",):
+    LiveCDImageCreator = ppc64LiveImageCreator
+elif arch.startswith("arm"):
+    LiveCDImageCreator = LiveImageCreatorBase
+else:
+    raise CreatorError("Architecture not supported!")

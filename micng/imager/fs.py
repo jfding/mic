@@ -33,36 +33,31 @@ import rpm
 from micng.utils.errors import *
 from micng.utils.fs_related import *
 from micng.utils import kickstart
-from micng.utils import pkgmanagers
 from micng.utils.rpmmisc import *
 from micng.utils.misc import *
-from BaseImageCreator import ImageCreator
+from baseimager import BaseImageCreator
 
 
-class FsImageCreator(ImageCreator):
-    def __init__(self, ks, name):
-        """Initialize a LoopImageCreator instance.
-
-        This method takes the same arguments as ImageCreator.__init__()
-        """
-        ImageCreator.__init__(self, ks, name)
-
+class FsImageCreator(BaseImageCreator):
+    def __init__(self, cfgmgr = None, pkgmgr = None):
+        BaseImageCreator.__init__(self, cfgmgr, pkgmgr)
         self._fstype = None
         self._fsopts = None
 
     def _stage_final_image(self):
-        """ nothing to do """
+        """ nothing to do"""
         pass
 
     def package(self, destdir = "."):
         self._stage_final_image()
 
+        if not os.path.exists(destdir):
+            mkdirs(destdir)
         destdir = os.path.abspath(os.path.expanduser(destdir))
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
 
-        print "Copying %s to %s, please be patient to wait (it is slow if they are on different file systems/partitons/disks)" \
-               % (self._instroot, destdir + "/" + self.name)
+        logging.info("Copying %s to %s, please be patient to wait" % (self._instroot, destdir + "/" + self.name))
 
         copycmd = find_binary_path("cp")
         args = [ copycmd, "-af", self._instroot, destdir + "/" + self.name ]
