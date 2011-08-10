@@ -46,8 +46,6 @@ class LoopImageCreator(BaseImageCreator):
         """
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
 
-        import pdb
-        pdb.set_trace()
         self.__fslabel = None
         self.fslabel = self.name
 
