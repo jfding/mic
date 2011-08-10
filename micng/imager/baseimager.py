@@ -61,7 +61,6 @@ class BaseImageCreator(object):
                 filesystem labels
 
         """
-        print "@@@@@",pkgmgr
         self.pkgmgr = pkgmgr 
 
         if createopts:
@@ -70,7 +69,7 @@ class BaseImageCreator(object):
             self.repometadata = createopts['repomd']
 
             # A name for the image."""
-            self.name = createopts['name']
+            self.name = 'output'
 
             # The directory in which all temporary files will be created."""
             self.tmpdir = createopts['tmpdir']

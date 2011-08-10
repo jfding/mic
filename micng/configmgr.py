@@ -9,7 +9,6 @@ DEFAULT_OUTDIR='.'
 DEFAULT_TMPDIR='/var/tmp'
 DEFAULT_CACHEDIR='/var/cache'
 DEFAULT_GSITECONF='/etc/micng/micng.conf'
-#DEFAULT_USITECONF='~/.micng.conf'
 
 class ConfigMgr(object):
     def __init__(self, siteconf=None, ksconf=None):
@@ -81,13 +80,15 @@ class ConfigMgr(object):
     def setProperty(self, name, value):
         if not hasattr(self, name):
             return None
-        #print ">>", name, value
+
         if name == 'ksconf':
             self.init_kickstart(value)
             return True
+
         if name == 'siteconf':
             self.init_siteconf(value)
             return True
+
         return setattr(self, name, value)
 
     def getProperty(self, name):
@@ -137,5 +138,4 @@ def getConfigMgr():
     return configmgr
 
 configmgr = ConfigMgr()
-#configmgr.dumpAllConfig()
 

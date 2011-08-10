@@ -3,10 +3,10 @@ import os
 import sys
 import logging
 
-DEFAULT_PLUGIN_LOCATION="/usr/lib/micng/plugins"
-DEFINED_PLGUIN_TYPES=["imager", "backend", "hook"]
-STRING_PLUGIN_MARK="mic_plugin"
-STRING_PTYPE_MARK="plugin_type"
+DEFAULT_PLUGIN_LOCATION = "/usr/lib/micng/plugins"
+DEFINED_PLGUIN_TYPES = ["imager", "backend", "hook"]
+STRING_PLUGIN_MARK = "mic_plugin"
+STRING_PTYPE_MARK = "plugin_type"
 
 class PluginMgr(object):
     def __init__(self, plugin_dirs=[]):
@@ -105,6 +105,7 @@ class PluginMgr(object):
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
+
     pluginmgr = PluginMgr()
     pluginmgr.loadPlugins()
     pluginmgr.listAllPlugins()

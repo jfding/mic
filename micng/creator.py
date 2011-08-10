@@ -82,15 +82,7 @@ class Creator(cmdln.Cmdln):
             if os.geteuid() != 0:
                 print >> sys.stderr, "You must run %s as root" % sys.argv[0]
                 return 1
-            try:
-                return self.cmd(args)
-            except Exception, e:
-                print e
+
+            return self.cmd(args)
         else:
             return self.emptyline()
-
-#if __name__ == "__main__":
-#    logging.getLogger().setLevel(logging.ERROR)
-#    create = Creator()
-#    ret = create.main(sys.argv)
-#    sys.exit(ret)
