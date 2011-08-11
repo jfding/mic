@@ -191,7 +191,8 @@ class LoopImageCreator(BaseImageCreator):
     # Actual implementation
     #
     def _mount_instroot(self, base_on = None):
-        self.__imgdir = self._mkdtemp()
+        if self.__imgdir is None:
+            self.__imgdir = self._mkdtemp()
 
         if not base_on is None:
             self._base_on(base_on)

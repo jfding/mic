@@ -80,10 +80,10 @@ class BaseImageCreator(object):
         else:
             self.ks = None
             self.repometadata = None
-            self.name = None
-            self.tmpdir = None
-            self.cachedir = None
-            self.destdir = None
+            self.name = "MeeGo"
+            self.tmpdir = "/var/tmp"
+            self.cachedir = "/var/cache"
+            self.destdir = "."
  
         self.__builddir = None
         self.__bindmounts = []

@@ -420,23 +420,3 @@ class RawImageCreator(BaseImageCreator):
         cfg.write(xml)
         cfg.close()
         #print "Wrote: %s.xml" % self.name
-
-    @classmethod
-    def _mount_srcimg(self, srcimg):
-        srcimgsize = (misc.get_file_size(srcimg)) * 1024L * 1024L
-        srcmnt = misc.mkdtemp("srcmnt")        
-        disk = fs_related.SparseLoopbackDisk(srcimg, srcimgsize)
-        srcloop = PartitionedMount({'/dev/sdb':disk}, srcmnt, skipformat = True)
-
-        srcloop.add_partition(srcimgsize/1024/1024, "/dev/sdb", "/", "ext3", boot=False)
-        try:
-            srcloop.mount()
-            return srcloop
-        except MountError, e:
-            srcloop.cleanup()
-            raise CreatorError("Failed to loopback mount '%s' : %s" %
-                               (srcimg, e))
-    @classmethod
-    def _unmount_srcimg(self, srcloop):
-        if srcloop:
-            srcloop.cleanup()

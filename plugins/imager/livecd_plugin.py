@@ -4,6 +4,7 @@ import sys
 import subprocess
 import logging
 import shutil
+import tempfile
 
 from micng.pluginbase.imager_plugin import ImagerPlugin
 import micng.chroot as chroot
@@ -130,7 +131,8 @@ class LiveCDPlugin(ImagerPlugin):
             chroot.cleanup_after_chroot("img",extloop,None,None)
             return 1
         
-    def do_pack(self):              
+    @classmethod
+    def do_pack(cls, base_on):
         def __mkinitrd(instance):
             kernelver = instance._get_kernel_versions().values()[0][0]
             args = [ "/usr/libexec/mkliveinitrd", "/boot/initrd-%s.img" % kernelver, "%s" % kernelver ]
@@ -138,7 +140,7 @@ class LiveCDPlugin(ImagerPlugin):
                 subprocess.call(args, preexec_fn = instance._chroot)
             except OSError, (err, msg):
                raise CreatorError("Failed to execute /usr/libexec/mkliveinitrd: %s" % msg)
-                   
+
         def __run_post_cleanups(instance):
             kernelver = instance._get_kernel_versions().values()[0][0]
             args = ["rm", "-f", "/boot/initrd-%s.img" % kernelver]
@@ -146,23 +148,31 @@ class LiveCDPlugin(ImagerPlugin):
                 subprocess.call(args, preexec_fn = instance._chroot)
             except OSError, (err, msg):
                raise CreatorError("Failed to run post cleanups: %s" % msg)
-               
+        convertor = livecd.LiveCDImageCreator()
+        srcimgsize = (misc.get_file_size(base_on)) * 1024L * 1024L
+        base_on_dir = os.path.dirname(base_on)
+        convertor._LoopImageCreator__imgdir = base_on_dir
+        convertor._set_fstype("ext3")
+        convertor._set_image_size(srcimgsize)
+        convertor.mount()
         __mkinitrd(convertor)
         convertor._create_bootconfig()
         __run_post_cleanups(convertor)
         convertor.unmount()
         convertor.package()
         convertor.print_outimage_info()
-            
-    def do_unpack(self):
-        convertoropts = configmgr.getConfigMgr().convert
-        convertor = convertoropts["convertor"](convertoropts)        #consistent with destfmt
-        srcimgsize = (misc.get_file_size(convertoropts["srcimg"])) * 1024L * 1024L
+        shutil.rmtree(base_on_dir, ignore_errors = True)
+
+    @classmethod
+    def do_unpack(cls, srcimg):
+        convertor = livecd.LiveCDImageCreator()
+        srcimgsize = (misc.get_file_size(srcimg)) * 1024L * 1024L
+        convertor._srcfmt = 'livecd'
         convertor._set_fstype("ext3")
         convertor._set_image_size(srcimgsize)
-        base_on = convertoropts["srcimg"]
-        convertor.check_depend_tools()
-        convertor.mount(base_on, None)
-        return convertor
+        convertor.mount(srcimg, None)
+        image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
+        shutil.copyfile(convertor._image, image)
+        return image
 
 mic_plugin = ["livecd", LiveCDPlugin]

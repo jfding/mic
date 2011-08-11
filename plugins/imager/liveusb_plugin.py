@@ -4,6 +4,7 @@ import sys
 import subprocess
 import logging
 import shutil
+import tempfile
 
 from micng.pluginbase.imager_plugin import ImagerPlugin
 import micng.imager.liveusb as liveusb
@@ -132,7 +133,7 @@ class LiveUSBPlugin(ImagerPlugin):
             return 1
     
     @classmethod
-    def do_pack(cls, base_on):              
+    def do_pack(cls, base_on):
         def __mkinitrd(instance):
             kernelver = instance._get_kernel_versions().values()[0][0]
             args = [ "/usr/libexec/mkliveinitrd", "/boot/initrd-%s.img" % kernelver, "%s" % kernelver ]
@@ -140,7 +141,7 @@ class LiveUSBPlugin(ImagerPlugin):
                 subprocess.call(args, preexec_fn = instance._chroot)
             except OSError, (err, msg):
                raise CreatorError("Failed to execute /usr/libexec/mkliveinitrd: %s" % msg)
-                   
+
         def __run_post_cleanups(instance):
             kernelver = instance._get_kernel_versions().values()[0][0]
             args = ["rm", "-f", "/boot/initrd-%s.img" % kernelver]
@@ -148,35 +149,34 @@ class LiveUSBPlugin(ImagerPlugin):
                 subprocess.call(args, preexec_fn = instance._chroot)
             except OSError, (err, msg):
                raise CreatorError("Failed to run post cleanups: %s" % msg)
-        
-        convertoropts = configmgr.getConfigMgr().convert
-        convertoropts["ks"] = None
-        convertor = liveusb.LiveUSBImageCreator(convertoropts)        #consistent with destfmt
+
+        convertor = liveusb.LiveUSBImageCreator()
         srcimgsize = (misc.get_file_size(base_on)) * 1024L * 1024L
         convertor._set_fstype("ext3")
         convertor._set_image_size(srcimgsize)
-        convertor._image = base_on
-        #convertor.check_depend_tools()
+        base_on_dir = os.path.dirname(base_on)
+        convertor._LoopImageCreator__imgdir = base_on_dir
+        convertor.mount()
         __mkinitrd(convertor)
         convertor._create_bootconfig()
         __run_post_cleanups(convertor)
         convertor.unmount()
         convertor.package()
-        #convertor.print_outimage_info()
-    
-    @classmethod        
+        convertor.print_outimage_info()
+        shutil.rmtree(base_on_dir, ignore_errors = True)
+
+    @classmethod
     def do_unpack(cls, srcimg):
-        convertoropts = configmgr.getConfigMgr().convert
-        convertoropts["ks"] = None
-        convertor = liveusb.LiveUSBImageCreator(convertoropts)        #consistent with destfmt
+        convertor = liveusb.LiveUSBImageCreator()
         srcimgsize = (misc.get_file_size(srcimg)) * 1024L * 1024L
         convertor._srcfmt = 'livecd'
         convertor._set_fstype("ext3")
         convertor._set_image_size(srcimgsize)
-        #convertor.check_depend_tools()
         convertor.mount(srcimg, None)
 
-        return convertor._image, convertor._instroot
+        image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
+        shutil.copyfile(convertor._image, image)
+        return image
 
 mic_plugin = ["liveusb", LiveUSBPlugin]
 

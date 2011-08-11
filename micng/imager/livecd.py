@@ -61,10 +61,7 @@ class LiveImageCreatorBase(LoopImageCreator):
         self.skip_minimize = False 
 
         #A flag which indicates i act as a convertor default false
-        if creatoropts.has_key('actasconvertor') and not creatoropts['actasconvertor']:
-            self.actasconvertor = creatoropts['actasconvertor']
-        else:
-            self.actasconvertor = False
+        self.actasconvertor = False
         
         #The bootloader timeout from kickstart.
         if self.ks:
@@ -103,7 +100,7 @@ class LiveImageCreatorBase(LoopImageCreator):
     def _get_menu_options(self):
         """Return a menu options string for syslinux configuration.
         """
-        if self.actasconvertor:
+        if self.ks is None:
             return "bootinstall autoinst"
         r = kickstart.get_menu_args(self.ks)
         return r
@@ -116,7 +113,7 @@ class LiveImageCreatorBase(LoopImageCreator):
     
             A sensible default implementation is provided.
         """
-        if self.actasconvertor:
+        if self.ks is None:
             r = "ro liveimg quiet"
             if os.path.exists(instroot + "/usr/bin/rhgb"):
                 r += " rhgb"

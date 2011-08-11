@@ -1,8 +1,10 @@
 #!/usr/bin/python
+import os
 import sys
 import subprocess
 import logging
 import shutil
+import tempfile
 
 from micng.pluginbase.imager_plugin import ImagerPlugin
 import micng.utils.misc as misc
@@ -83,6 +85,13 @@ class LoopPlugin(ImagerPlugin):
             chroot.cleanup_after_chroot("img", extloop, None, None)
             print >> sys.stderr, "Failed to chroot to %s." % extloop
             return 1
+
+    @classmethod
+    def do_unpack(cls, srcimg):
+        image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
+        shutil.copyfile(srcimg, image)
+        return image
+
         
 mic_plugin = ["loop", LoopPlugin]
 

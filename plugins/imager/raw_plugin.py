@@ -5,6 +5,7 @@ import subprocess
 import logging
 import shutil
 import re
+import tempfile
 
 from micng.pluginbase.imager_plugin import ImagerPlugin
 import micng.utils.misc as misc
@@ -166,6 +167,30 @@ class RawPlugin(ImagerPlugin):
         convertor.check_depend_tools()
         convertor.mount(base_on, None)
         return convertor
+
+    @classmethod
+    def do_unpack(cls, srcimg):
+        srcimgsize = (misc.get_file_size(srcimg)) * 1024L * 1024L
+        srcmnt = misc.mkdtemp("srcmnt")
+        disk = fs_related.SparseLoopbackDisk(srcimg, srcimgsize)
+        srcloop = PartitionedMount({'/dev/sdb':disk}, srcmnt, skipformat = True)
+
+        srcloop.add_partition(srcimgsize/1024/1024, "/dev/sdb", "/", "ext3", boot=False)
+        try:
+            srcloop.mount()
+        except MountError, e:
+            srcloop.cleanup()
+            raise CreatorError("Failed to loopback mount '%s' : %s" %
+                               (srcimg, e))
+
+        image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
+        ddcmd = misc.find_binary_path("dd")
+        args = [ ddcmd, "if=%s" % srcloop.partitions[0]['device'], "of=%s" % image ]
+        rc = subprocess.call(args)
+        if rc != 0:
+            raise CreatorError("Failed to dd")
+        srcloop.cleanup()
+        return image
 
 mic_plugin = ["raw", RawPlugin]
 

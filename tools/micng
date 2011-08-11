@@ -35,11 +35,49 @@ class Micng(cmdln.Cmdln):
         ret = cr.main(argv[1:])
         return ret
 
-#    @cmdln.alias("cv")
-#    def do_convert(self, argv):
-#        """${cmd_name}: convert an image format to another one
-#        """
-#        pass
+    @cmdln.alias("cv")
+    def do_convert(self, subcmd, opts, *args):
+        """${cmd_name}: convert an image format to another one
+        
+        usage:
+            micng convert <imagefile> <destformat>  
+        """
+        if len(args) == 0:
+            self.emptyline()
+            # print help
+            return
+        if len(args) == 1:
+            raise errors.Usage("It takes 2 arguments (1 given)")
+        elif len(args) == 2:
+            srcimg = args[0]
+            destformat = args[1]
+        else:
+            raise errors.Usage("Extra argument given")
+
+        if os.geteuid() != 0:
+            raise errors.Usage("You must run as root")
+
+        srcformat = misc.get_image_type(srcimg)
+        if srcformat == "ext3fsimg":
+            srcformat = "loop"
+
+        pkgmgr = pluginmgr.PluginMgr()
+        pkgmgr.loadPlugins()
+        imagers = pmgr.getImagerPlugins()
+
+        srcimager = None
+        destimager = None
+        for iname, icls in imagers:
+           if iname == srcformat and hasattr(icls, "do_unpack"):
+               srcimager = icls
+           if iname == destformat and hasattr(icls, "do_pack"):
+               destimager = icls
+
+        if (srcimager and destimager) is None:
+           raise CreatorError("Can't convert from %s to %s" %(srcformat, desformat))
+        else:
+            base_on = srcimager.do_unpack(srcimg)
+            destimager.do_pack(base_on)
 
     @cmdln.option("-d", "--debug", action="store_true", help="debug message")
     @cmdln.option("-v", "--verbose", action="store_true", help="verbose infomation")
