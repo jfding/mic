@@ -642,12 +642,12 @@ def get_kernel_args(ks, default = "ro liveimg"):
         return default
     return "%s %s" %(default, ks.handler.bootloader.appendLine)
 
-def get_menu_args(ks, default = "bootinstall"):
+def get_menu_args(ks, default = "liveinst"):
     if not hasattr(ks.handler.bootloader, "menus"):
         return default
-    if ks.handler.bootloader.menus is None:
+    if ks.handler.bootloader.menus in (None, ""):
         return default
-    return "%s %s" %(default, ks.handler.bootloader.menus)
+    return "%s" % ks.handler.bootloader.menus
 
 def get_default_kernel(ks, default = None):
     if not hasattr(ks.handler.bootloader, "default"):
