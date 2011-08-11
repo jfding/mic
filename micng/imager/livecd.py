@@ -172,7 +172,7 @@ class LiveImageCreatorBase(LoopImageCreator):
                 rc = subprocess.call(args)
                 if rc != 0:
                     raise CreatorError("Failed to dd from %s to %s" % (base_on, self._image))
-                self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
+                self._set_image_size(misc.get_file_size(self._image) * 1024L * 1024L)
             if os.path.isfile(base_on):
                 print "Copying file system..."
                 shutil.copyfile(base_on, self._image)

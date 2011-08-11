@@ -63,7 +63,7 @@ class Micng(cmdln.Cmdln):
 
         pkgmgr = pluginmgr.PluginMgr()
         pkgmgr.loadPlugins()
-        imagers = pmgr.getImagerPlugins()
+        imagers = pkgmgr.getImagerPlugins()
 
         srcimager = None
         destimager = None
@@ -74,7 +74,7 @@ class Micng(cmdln.Cmdln):
                destimager = icls
 
         if (srcimager and destimager) is None:
-           raise CreatorError("Can't convert from %s to %s" %(srcformat, desformat))
+           raise CreatorError("Can't convert from %s to %s" %(srcformat, destformat))
         else:
             base_on = srcimager.do_unpack(srcimg)
             destimager.do_pack(base_on)
