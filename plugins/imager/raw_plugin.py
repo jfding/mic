@@ -156,18 +156,6 @@ class RawPlugin(ImagerPlugin):
             print >> sys.stderr, "Failed to chroot to %s." % img
             return 1
             
-    def do_unpack(self):
-        convertoropts = configmgr.getConfigMgr().convert
-        convertor = convertoropts["convertor"](convertoropts)        #consistent with destfmt
-        srcimgsize = (misc.get_file_size(convertoropts["srcimg"])) * 1024L * 1024L
-        convertor._set_fstype("ext3")
-        convertor._set_image_size(srcimgsize)
-        srcloop = RawImageCreator._mount_srcimg(convertoropts["srcimg"])
-        base_on = srcloop.partitions[0]['device']
-        convertor.check_depend_tools()
-        convertor.mount(base_on, None)
-        return convertor
-
     @classmethod
     def do_unpack(cls, srcimg):
         srcimgsize = (misc.get_file_size(srcimg)) * 1024L * 1024L
