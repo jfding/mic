@@ -1,10 +1,23 @@
-#!/usr/bin/python -t
+#!/usr/bin/python -tt
+#
+# Copyright 2008, 2009, 2010 Intel, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  Any Red Hat
+# trademarks that are incorporated in the source code or documentation are not
+# subject to the GNU General Public License and may only be used or replicated
+# with the express permission of Red Hat, Inc.
+#
 
-from __future__ import with_statement
-import os
-import sys
-import string
-import optparse
+import os, sys
 import logging
 
 import mic.utils.cmdln as cmdln
@@ -17,19 +30,20 @@ class Creator(cmdln.Cmdln):
     ${help_list}
     ${option_list}
     """
+
     name = 'mic create(cr)'
-    conf = None
-    man_header = None
-    man_footer = None
 
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, *args, **kwargs)
+
         # load configmgr
         self.configmgr = configmgr.getConfigMgr()
+
         # load pluginmgr
         self.pluginmgr = pluginmgr.PluginMgr()
         self.pluginmgr.loadPlugins()
         self.plugincmds = self.pluginmgr.getImagerPlugins()
+
         # mix-in do_subcmd interface
         for subcmd, klass in self.plugincmds:
             if not hasattr(klass, 'do_create'):
@@ -53,6 +67,7 @@ class Creator(cmdln.Cmdln):
             logging.getLogger().setLevel(logging.INFO)
         if self.options.debug is True:
             logging.getLogger().setLevel(logging.DEBUG)
+
         #if self.options.outdir is not None:
         #    self.configmgr.create['outdir'] = self.options.outdir
 
@@ -63,7 +78,7 @@ class Creator(cmdln.Cmdln):
             argv = argv[:] # don't modify caller's list
 
         self.optparser = self.get_optparser()
-        if self.optparser: # i.e. optparser=None means don't process for opts
+        if self.optparser:
             try:
                 self.preoptparse(argv)
                 self.options, args = self.optparser.parse_args(argv)
@@ -76,7 +91,9 @@ class Creator(cmdln.Cmdln):
             except cmdln.StopOptionProcessing, ex:
                 return 0
         else:
+            # optparser=None means no process for opts
             self.options, args = None, argv[1:]
+
         self.postoptparse()
 
         if args:
@@ -85,5 +102,6 @@ class Creator(cmdln.Cmdln):
                 return 1
 
             return self.cmd(args)
+
         else:
             return self.emptyline()

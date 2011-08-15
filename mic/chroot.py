@@ -17,6 +17,7 @@
 # with the express permission of Red Hat, Inc.
 #
 
+from __future__ import with_statement
 import os, sys
 import shutil
 import subprocess
