@@ -1,14 +1,31 @@
-#!/usr/bin/python -t
+#!/usr/bin/python -tt
+#
+# Copyright 2008, 2009, 2010 Intel, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  Any Red Hat
+# trademarks that are incorporated in the source code or documentation are not
+# subject to the GNU General Public License and may only be used or replicated
+# with the express permission of Red Hat, Inc.
+#
 
-import os
-import sys
+import os, sys
 import logging
 import mic.utils as utils
+
+DEFAULT_GSITECONF='/etc/mic/mic.conf'
 
 DEFAULT_OUTDIR='.'
 DEFAULT_TMPDIR='/var/tmp'
 DEFAULT_CACHEDIR='/var/cache'
-DEFAULT_GSITECONF='/etc/mic/mic.conf'
 
 class ConfigMgr(object):
     def __init__(self, siteconf=None, ksconf=None):
@@ -33,7 +50,7 @@ class ConfigMgr(object):
         siteconf_files = [DEFAULT_GSITECONF]
 
         if not os.path.exists(DEFAULT_GSITECONF):
-            logging.debug("Not exists file: %s" % DEFAULT_GSITECONF)
+            logging.debug("No default config file: %s" % DEFAULT_GSITECONF)
             return
 
         if siteconf:
@@ -57,12 +74,12 @@ class ConfigMgr(object):
             value = siteconf_parser.get('chroot', option)
             self.chroot[option] = value
 
-
     def init_kickstart(self, ksconf=None):
         if not ksconf:
             self.create['ks'] = None
             self.create['repomd'] = None
             return
+
         self.ksconf = ksconf
         try:
             self.kickstart = utils.kickstart.read_kickstart(self.ksconf)
@@ -77,52 +94,52 @@ class ConfigMgr(object):
         except Exception, e:
             raise Exception("unable to load kickstart file '%s': %s" % (self.ksconf, e))
 
-
-    def setProperty(self, name, value):
-        if not hasattr(self, name):
+    def setProperty(self, key, value):
+        if not hasattr(self, key):
             return None
 
-        if name == 'ksconf':
+        if key == 'ksconf':
             self.init_kickstart(value)
             return True
 
-        if name == 'siteconf':
+        if key == 'siteconf':
             self.init_siteconf(value)
             return True
 
-        return setattr(self, name, value)
+        return setattr(self, key, value)
 
-    def getProperty(self, name):
-        if not hasattr(self, name):
+    def getProperty(self, key):
+        if not hasattr(self, key):
             return None
-        return getattr(self, name)
 
-    def setCategoryProperty(self, category, name, value):
+        return getattr(self, key)
+
+    def setCategoryProperty(self, category, key, value):
         if not hasattr(self, category):
             raise Exception("Error to parse %s", category)
         categ = getattr(self, category)
-        categ[name] = value
+        categ[key] = value
 
-    def getCategoryProperty(self, category, name):
+    def getCategoryProperty(self, category, key):
         if not hasattr(self, category):
             raise Exception("Error to parse %s", category)
         categ = getattr(self, category)
-        return categ[name]
+        return categ[key]
 
-    def getCreateOption(self, name):
-        if not self.create.has_key(name):
-            raise Exception("Attribute Error: not such attribe %s" % name)
-        return self.create[name]
+    def getCreateOption(self, key):
+        if not self.create.has_key(key):
+            raise Exception("Attribute Error: not such attribe %s" % key)
+        return self.create[key]
 
-    def getConvertOption(self, name):
-        if not self.convert.has_key(name):
-            raise Exception("Attribute Error: not such attribe %s" % name)
-        return self.convert[name]
+    def getConvertOption(self, key):
+        if not self.convert.has_key(key):
+            raise Exception("Attribute Error: not such attribe %s" % key)
+        return self.convert[key]
 
-    def getChrootOption(self, name):
-        if not self.chroot.has_key(name):
-            raise Exception("Attribute Error: not such attribe %s" % name)
-        return self.chroot[name]
+    def getChrootOption(self, key):
+        if not self.chroot.has_key(key):
+            raise Exception("Attribute Error: not such attribe %s" % key)
+        return self.chroot[key]
 
     def dumpAllConfig(self):
         sys.stdout.write("create options:\n")
@@ -139,4 +156,3 @@ def getConfigMgr():
     return configmgr
 
 configmgr = ConfigMgr()
-

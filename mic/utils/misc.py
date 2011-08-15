@@ -25,17 +25,13 @@ import tempfile
 import re
 import shutil
 import glob
-import xml.dom.minidom
 import hashlib
 import urlparse
-import locale
-import codecs
 
 try:
     import sqlite3 as sqlite
 except ImportError:
     import sqlite
-import _sqlitecache
 
 try:
     from xml.etree import cElementTree
@@ -50,6 +46,9 @@ chroot_lockfd = -1
 chroot_lock = ""
 
 def setlocale():
+    import locale
+    import codecs
+
     try:
         locale.setlocale(locale.LC_ALL,'')
     except locale.Error:

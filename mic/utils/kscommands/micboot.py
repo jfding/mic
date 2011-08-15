@@ -18,10 +18,12 @@
 # subject to the GNU General Public License and may only be used or replicated
 # with the express permission of Red Hat, Inc.
 #
+
 from pykickstart.base import *
 from pykickstart.errors import *
 from pykickstart.options import *
 from pykickstart.commands.bootloader import *
+
 class Moblin_Bootloader(F8_Bootloader):
     def __init__(self, writePriority=10, appendLine="", driveorder=None,
                  forceLBA=False, location="", md5pass="", password="",

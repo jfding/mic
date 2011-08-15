@@ -1,11 +1,29 @@
-import rpm, os, sys, re
-import locale
+#!/usr/bin/python -tt
+#
+# Copyright 2008, 2009, 2010 Intel, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  Any Red Hat
+# trademarks that are incorporated in the source code or documentation are not
+# subject to the GNU General Public License and may only be used or replicated
+# with the express permission of Red Hat, Inc.
+#
+
+import os, sys, re
+import rpm
 import subprocess
 import logging
 
 class RPMInstallCallback:
-    """
-    command line callback class for callbacks from the RPM library.
+    """ Command line callback class for callbacks from the RPM library.
     """
 
     def __init__(self, ts, output=1):
@@ -138,18 +156,18 @@ class RPMInstallCallback:
 
 def readRpmHeader(ts, filename):
     """ Read an rpm header. """
+
     fd = os.open(filename, os.O_RDONLY)
     h = ts.hdrFromFdno(fd)
     os.close(fd)
     return h
 
 def splitFilename(filename):
-    """
-    Pass in a standard style rpm fullname
+    """ Pass in a standard style rpm fullname
 
-    Return a name, version, release, epoch, arch, e.g.::
-        foo-1.0-1.i386.rpm returns foo, 1.0, 1, i386
-        1:bar-9-123a.ia64.rpm returns bar, 9, 123a, 1, ia64
+        Return a name, version, release, epoch, arch, e.g.::
+            foo-1.0-1.i386.rpm returns foo, 1.0, 1, i386
+            1:bar-9-123a.ia64.rpm returns bar, 9, 123a, 1, ia64
     """
 
     if filename[-4:] == '.rpm':
@@ -233,12 +251,13 @@ def getCanonArch():
     return arch
 
 # dict mapping arch -> ( multicompat, best personality, biarch personality )
-multilibArches = { "x86_64":  ( "athlon", "x86_64", "athlon" ),
+multilibArches = { 
+                   "x86_64":  ( "athlon", "x86_64", "athlon" ),
                    "sparc64v": ( "sparc", "sparcv9v", "sparc64v" ),
                    "sparc64": ( "sparc", "sparcv9", "sparc64" ),
                    "ppc64":   ( "ppc", "ppc", "ppc64" ),
                    "s390x":   ( "s390", "s390x", "s390" ),
-                   }
+                 }
 
 arches = {
     # ia32
@@ -345,21 +364,24 @@ def checkRpmIntegrity(bin_rpm, package):
         ret = subprocess.call(argv, stdout = dev_null, stderr = dev_null)
     finally:
         os.close(dev_null)
+
     return ret 
 
 def checkSig(ts, package):
-    """Takes a transaction set and a package, check it's sigs,
-    return 0 if they are all fine
-    return 1 if the gpg key can't be found
-    return 2 if the header is in someway damaged
-    return 3 if the key is not trusted
-    return 4 if the pkg is not gpg or pgp signed"""
+    """ Takes a transaction set and a package, check it's sigs,
+        return 0 if they are all fine
+        return 1 if the gpg key can't be found
+        return 2 if the header is in someway damaged
+        return 3 if the key is not trusted
+        return 4 if the pkg is not gpg or pgp signed
+    """
 
     value = 0
     currentflags = ts.setVSFlags(0)
     fdno = os.open(package, os.O_RDONLY)
     try:
         hdr = ts.hdrFromFdno(fdno)
+
     except rpm.error, e:
         if str(e) == "public key not availaiable":
             value = 1
@@ -380,17 +402,20 @@ def checkSig(ts, package):
 
     try:
         os.close(fdno)
-    except OSError, e: # if we're not opened, don't scream about it
+    except OSError:
         pass
 
     ts.setVSFlags(currentflags) # put things back like they were before
     return value
 
 def getSigInfo(hdr):
-    """checks signature from an hdr hand back signature information and/or
-       an error code"""
+    """ checks signature from an hdr hand back signature information and/or
+        an error code
+    """
 
+    import locale
     locale.setlocale(locale.LC_ALL, 'C')
+
     string = '%|DSAHEADER?{%{DSAHEADER:pgpsig}}:{%|RSAHEADER?{%{RSAHEADER:pgpsig}}:{%|SIGGPG?{%{SIGGPG:pgpsig}}:{%|SIGPGP?{%{SIGPGP:pgpsig}}:{(none)}|}|}|}|'
     siginfo = hdr.sprintf(string)
     if siginfo != '(none)':
