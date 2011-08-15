@@ -126,10 +126,11 @@ class LiveCDPlugin(ImagerPlugin):
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            print >> sys.stderr, "Failed to chroot to %s." % img
+            raise CreatorError("Failed to chroot to %s." %img)
         finally:
-            chroot.cleanup_after_chroot("img",extloop,None,None)
-            return 1
+            imgloop.cleanup()
+            shutil.rmtree(imgmnt, ignore_errors = True) 
+            chroot.cleanup_after_chroot("img",extloop,tmpoutdir,extmnt)
         
     @classmethod
     def do_pack(cls, base_on):

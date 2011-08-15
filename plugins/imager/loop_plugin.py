@@ -82,9 +82,9 @@ class LoopPlugin(ImagerPlugin):
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            chroot.cleanup_after_chroot("img", extloop, None, None)
-            print >> sys.stderr, "Failed to chroot to %s." % extloop
-            return 1
+            raise CreatorError("Failed to chroot to %s." %img)  
+        finally:
+            chroot.cleanup_after_chroot("img", extloop, None, extmnt)
 
     @classmethod
     def do_unpack(cls, srcimg):

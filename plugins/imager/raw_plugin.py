@@ -71,11 +71,9 @@ class RawPlugin(ImagerPlugin):
         imgsize = misc.get_file_size(img) * 1024L * 1024L
         partedcmd = fs_related.find_binary_path("parted")
         disk = fs_related.SparseLoopbackDisk(img, imgsize)
-        extmnt = misc.mkdtemp()
-        tmpoutdir = misc.mkdtemp()
-        imgloop = PartitionedMount({'/dev/sdb':disk}, extmnt, skipformat = True)
+        imgmnt = misc.mkdtemp()
+        imgloop = PartitionedMount({'/dev/sdb':disk}, imgmnt, skipformat = True)
         img_fstype = "ext3"
-        extloop = None
         
         # Check the partitions from raw disk.
         p1 = subprocess.Popen([partedcmd,"-s",img,"unit","B","print"],
@@ -143,18 +141,17 @@ class RawPlugin(ImagerPlugin):
         
         try:
             imgloop.mount()
-            os_image = img
         except MountError, e:
             imgloop.cleanup()
             raise CreatorError("Failed to loopback mount '%s' : %s" %
                                (img, e))
 
         try:
-            chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
+            chroot.chroot(imgmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            chroot.cleanup_after_chroot("img", imgloop, None, None)
-            print >> sys.stderr, "Failed to chroot to %s." % img
-            return 1
+            raise CreatorError("Failed to chroot to %s." %img)  
+        finally:
+            chroot.cleanup_after_chroot("img", imgloop, None, imgmnt)
             
     @classmethod
     def do_unpack(cls, srcimg):

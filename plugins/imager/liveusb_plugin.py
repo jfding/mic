@@ -128,9 +128,11 @@ class LiveUSBPlugin(ImagerPlugin):
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            chroot.cleanup_after_chroot("img", extloop, None, None)
-            print >> sys.stderr, "Failed to chroot to %s." % img
-            return 1
+            raise CreatorError("Failed to chroot to %s." %img)
+        finally:
+            imgloop.cleanup()
+            shutil.rmtree(imgmnt, ignore_errors = True) 
+            chroot.cleanup_after_chroot("img", extloop, tmpoutdir, extmnt)
     
     @classmethod
     def do_pack(cls, base_on):
