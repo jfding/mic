@@ -6,16 +6,16 @@ import logging
 import shutil
 import tempfile
 
-from micng.pluginbase.imager_plugin import ImagerPlugin
-import micng.imager.liveusb as liveusb
-import micng.utils.misc as misc
-import micng.utils.fs_related as fs_related
-import micng.utils.cmdln as cmdln
-import micng.configmgr as configmgr
-import micng.pluginmgr as pluginmgr
-from micng.utils.partitionedfs import PartitionedMount
-from micng.utils.errors import *
-import micng.chroot as chroot
+from mic.pluginbase.imager_plugin import ImagerPlugin
+import mic.imager.liveusb as liveusb
+import mic.utils.misc as misc
+import mic.utils.fs_related as fs_related
+import mic.utils.cmdln as cmdln
+import mic.configmgr as configmgr
+import mic.pluginmgr as pluginmgr
+from mic.utils.partitionedfs import PartitionedMount
+from mic.utils.errors import *
+import mic.chroot as chroot
 
 class LiveUSBPlugin(ImagerPlugin):
     #@cmdln.option

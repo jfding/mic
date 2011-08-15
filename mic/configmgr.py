@@ -3,12 +3,12 @@
 import os
 import sys
 import logging
-import micng.utils as utils
+import mic.utils as utils
 
 DEFAULT_OUTDIR='.'
 DEFAULT_TMPDIR='/var/tmp'
 DEFAULT_CACHEDIR='/var/cache'
-DEFAULT_GSITECONF='/etc/micng/micng.conf'
+DEFAULT_GSITECONF='/etc/mic/mic.conf'
 
 class ConfigMgr(object):
     def __init__(self, siteconf=None, ksconf=None):

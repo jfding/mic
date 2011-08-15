@@ -26,12 +26,12 @@ import tarfile
 import subprocess
 import logging
 
-import micng.utils.kickstart as kickstart 
-import micng.utils.fs_related as fs_related
+import mic.utils.kickstart as kickstart 
+import mic.utils.fs_related as fs_related
 import urlgrabber.progress as progress
 from baseimager import BaseImageCreator
-from micng.utils.partitionedfs import PartitionedMount
-from micng.utils.errors import *
+from mic.utils.partitionedfs import PartitionedMount
+from mic.utils.errors import *
 
 
 class RawImageCreator(BaseImageCreator):

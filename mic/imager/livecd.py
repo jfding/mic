@@ -25,11 +25,11 @@ import logging
 import re
 import time
 
-import micng.utils.kickstart as kickstart 
-import micng.utils.fs_related as fs_related
-import micng.utils.rpmmisc as rpmmisc
-import micng.utils.misc as misc
-from micng.utils.errors import *
+import mic.utils.kickstart as kickstart 
+import mic.utils.fs_related as fs_related
+import mic.utils.rpmmisc as rpmmisc
+import mic.utils.misc as misc
+from mic.utils.errors import *
 from loop import LoopImageCreator
 
 class LiveImageCreatorBase(LoopImageCreator):

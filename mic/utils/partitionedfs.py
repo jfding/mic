@@ -26,8 +26,8 @@ import subprocess
 import logging
 import time
 
-from micng.utils.errors import *
-from micng.utils.fs_related import *
+from mic.utils.errors import *
+from mic.utils.fs_related import *
 
 class PartitionedMount(Mount):
     def __init__(self, disks, mountdir, skipformat = False):

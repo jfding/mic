@@ -7,16 +7,16 @@ import shutil
 import re
 import tempfile
 
-from micng.pluginbase.imager_plugin import ImagerPlugin
-import micng.utils.misc as misc
-import micng.utils.fs_related as fs_related
-import micng.utils.cmdln as cmdln
-from micng.utils.errors import *
-from micng.utils.partitionedfs import PartitionedMount
-import micng.configmgr as configmgr
-import micng.pluginmgr as pluginmgr
-import micng.imager.raw as raw
-import micng.chroot as chroot
+from mic.pluginbase.imager_plugin import ImagerPlugin
+import mic.utils.misc as misc
+import mic.utils.fs_related as fs_related
+import mic.utils.cmdln as cmdln
+from mic.utils.errors import *
+from mic.utils.partitionedfs import PartitionedMount
+import mic.configmgr as configmgr
+import mic.pluginmgr as pluginmgr
+import mic.imager.raw as raw
+import mic.chroot as chroot
 
 class RawPlugin(ImagerPlugin):
 

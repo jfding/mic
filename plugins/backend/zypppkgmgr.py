@@ -11,12 +11,12 @@ import tempfile
 import urlparse
 import urllib2 as u2
 import pykickstart.parser
-from micng.utils.errors import *
-from micng.imager.baseimager import BaseImageCreator as ImageCreator
-from micng.utils.fs_related import *
-from micng.utils.misc import *
-from micng.utils.rpmmisc import *
-from micng.pluginbase.backend_plugin import BackendPlugin
+from mic.utils.errors import *
+from mic.imager.baseimager import BaseImageCreator as ImageCreator
+from mic.utils.fs_related import *
+from mic.utils.misc import *
+from mic.utils.rpmmisc import *
+from mic.pluginbase.backend_plugin import BackendPlugin
 
 class RepositoryStub:
     def __init__(self):

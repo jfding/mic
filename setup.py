@@ -9,7 +9,7 @@ from distutils.core import setup
 #except ImportError:
 #    pass
 
-MOD_NAME = 'micng'
+MOD_NAME = 'mic'
 
 version_path = 'VERSION'
 if not os.path.isfile(version_path):
@@ -43,16 +43,16 @@ setup(name=MOD_NAME,
       author_email='jian-feng.ding@intel.com',
       url='https://meego.gitorious.org/meego-developer-tools/image-creator',
       scripts=[
-          'tools/micng',
+          'tools/mic',
           ],
       packages = PACKAGES,
-      data_files = [("/usr/lib/micng/plugins/imager", ["plugins/imager/fs_plugin.py",
-                                                "plugins/imager/livecd_plugin.py",
-                                                "plugins/imager/liveusb_plugin.py",
-                                                "plugins/imager/loop_plugin.py",
-                                                "plugins/imager/raw_plugin.py"]),
-                    ("/usr/lib/micng/plugins/backend", ["plugins/backend/zypppkgmgr.py",
-                                                "plugins/backend/yumpkgmgr.py"]),
-                    ("/etc/micng", ["distfiles/micng.conf"])]
+      data_files = [("/usr/lib/mic/plugins/imager", ["plugins/imager/fs_plugin.py",
+                                                     "plugins/imager/livecd_plugin.py",
+                                                     "plugins/imager/liveusb_plugin.py",
+                                                     "plugins/imager/loop_plugin.py",
+                                                     "plugins/imager/raw_plugin.py"]),
+                    ("/usr/lib/mic/plugins/backend", ["plugins/backend/zypppkgmgr.py",
+                                                      "plugins/backend/yumpkgmgr.py"]),
+                    ("/etc/mic", ["distfiles/mic.conf"])]
 )
 

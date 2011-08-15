@@ -19,11 +19,11 @@
 import os
 import os.path
 import subprocess
-import micng.utils.kickstart as kickstart
+import mic.utils.kickstart as kickstart
 from baseimager import BaseImageCreator
-from micng.utils.errors import *
-from micng.utils.fs_related import *
-from micng.utils.misc import *
+from mic.utils.errors import *
+from mic.utils.fs_related import *
+from mic.utils.misc import *
 
 FSLABEL_MAXLEN = 32
 """The maximum string length supported for LoopImageCreator.fslabel."""

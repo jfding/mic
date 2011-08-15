@@ -3,7 +3,7 @@ import os
 import sys
 import logging
 
-DEFAULT_PLUGIN_LOCATION = "/usr/lib/micng/plugins"
+DEFAULT_PLUGIN_LOCATION = "/usr/lib/mic/plugins"
 DEFINED_PLGUIN_TYPES = ["imager", "backend", "hook"]
 STRING_PLUGIN_MARK = "mic_plugin"
 STRING_PTYPE_MARK = "plugin_type"

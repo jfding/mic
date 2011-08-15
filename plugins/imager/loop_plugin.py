@@ -6,15 +6,15 @@ import logging
 import shutil
 import tempfile
 
-from micng.pluginbase.imager_plugin import ImagerPlugin
-import micng.utils.misc as misc
-import micng.utils.cmdln as cmdln
-import micng.utils.fs_related as fs_related
-from micng.utils.errors import * 
-import micng.configmgr as configmgr
-import micng.pluginmgr as pluginmgr
-import micng.imager.loop as loop
-import micng.chroot as chroot
+from mic.pluginbase.imager_plugin import ImagerPlugin
+import mic.utils.misc as misc
+import mic.utils.cmdln as cmdln
+import mic.utils.fs_related as fs_related
+from mic.utils.errors import * 
+import mic.configmgr as configmgr
+import mic.pluginmgr as pluginmgr
+import mic.imager.loop as loop
+import mic.chroot as chroot
 
 class LoopPlugin(ImagerPlugin):
     @classmethod

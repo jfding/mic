@@ -31,10 +31,10 @@ import tempfile
 import shutil
 import subprocess
 
-from micng.utils.errors import *
-from micng.utils.fs_related import *
-from micng.pluginbase.backend_plugin import BackendPlugin
-from micng.imager.baseimager import BaseImageCreator as ImageCreator
+from mic.utils.errors import *
+from mic.utils.fs_related import *
+from mic.pluginbase.backend_plugin import BackendPlugin
+from mic.imager.baseimager import BaseImageCreator as ImageCreator
 
 class MyYumRepository(yum.yumRepo.YumRepository):
     def __init__(self, repoid):

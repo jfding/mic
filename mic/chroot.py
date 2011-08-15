@@ -5,9 +5,9 @@ import glob
 import shutil
 import shlex
 import subprocess
-import micng.utils.fs_related as fs_related
-import micng.utils.misc as misc
-import micng.utils.errors as errors
+import mic.utils.fs_related as fs_related
+import mic.utils.misc as misc
+import mic.utils.errors as errors
 
 def cleanup_after_chroot(targettype,imgmount,tmpdir,tmpmnt):
     if imgmount and targettype == "img":

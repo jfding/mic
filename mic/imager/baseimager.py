@@ -30,11 +30,11 @@ import glob
 
 import rpm
 
-from micng.utils.errors import *
-from micng.utils.fs_related import *
-from micng.utils.rpmmisc import *
-from micng.utils.misc import *
-from micng.utils import kickstart
+from mic.utils.errors import *
+from mic.utils.fs_related import *
+from mic.utils.rpmmisc import *
+from mic.utils.misc import *
+from mic.utils import kickstart
 
 class BaseImageCreator(object):
     """Installs a system to a chroot directory.
@@ -44,7 +44,7 @@ class BaseImageCreator(object):
 
     e.g.
 
-      import micng.imgcreate as imgcreate
+      import mic.imgcreate as imgcreate
       ks = imgcreate.read_kickstart("foo.ks")
       imgcreate.ImageCreator(ks, "foo").create()
 

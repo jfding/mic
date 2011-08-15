@@ -24,11 +24,11 @@ import logging
 import re
 import time
 
-import micng.utils.fs_related as fs_related
-import micng.utils.misc as misc
+import mic.utils.fs_related as fs_related
+import mic.utils.misc as misc
 from livecd import LiveCDImageCreator
-from micng.utils.errors import *
-from micng.utils.partitionedfs import PartitionedMount
+from mic.utils.errors import *
+from mic.utils.partitionedfs import PartitionedMount
 
 class LiveUSBImageCreator(LiveCDImageCreator):
     def __init__(self, *args):

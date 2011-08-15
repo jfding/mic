@@ -30,11 +30,11 @@ import glob
 
 import rpm
 
-from micng.utils.errors import *
-from micng.utils.fs_related import *
-from micng.utils import kickstart
-from micng.utils.rpmmisc import *
-from micng.utils.misc import *
+from mic.utils.errors import *
+from mic.utils.fs_related import *
+from mic.utils import kickstart
+from mic.utils.rpmmisc import *
+from mic.utils.misc import *
 from baseimager import BaseImageCreator
 
 

@@ -2,9 +2,7 @@ PYTHON ?= python
 VERSION = $(shell cat VERSION)
 TAGVER = $(shell cat VERSION | sed -e "s/\([0-9\.]*\).*/\1/")
 
-PKGNAME = micng
-
-PLUGIN_DIR = /usr/lib/micng/plugins
+PKGNAME = mic
 
 ifeq ($(VERSION), $(TAGVER))
 	TAG = $(TAGVER)
@@ -27,13 +25,7 @@ dist-gz:
 	git archive --format=tar --prefix=$(PKGNAME)-$(TAGVER)/ $(TAG) | \
 		gzip  > $(PKGNAME)-$(TAGVER).tar.gz
 
-install-plugins:
-	install -d ${DESTDIR}/${PLUGIN_DIR}/imager
-	install -m 644 plugins/imager/* ${DESTDIR}/${PLUGIN_DIR}/imager
-	install -d ${DESTDIR}/${PLUGIN_DIR}/backend
-	install -m 644 plugins/backend/* ${DESTDIR}/${PLUGIN_DIR}/backend
-
-install: all install-plugins
+install: all
 	$(PYTHON) setup.py install  --prefix=$(DESTDIR)/$(PREFIX)
 
 develop: all

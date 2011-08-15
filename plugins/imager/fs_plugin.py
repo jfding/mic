@@ -3,13 +3,13 @@ import sys
 import subprocess
 import logging
 
-from micng.pluginbase.imager_plugin import ImagerPlugin
-import micng.utils.cmdln as cmdln
-import micng.utils.errors as errors
-import micng.configmgr as configmgr
-import micng.pluginmgr as pluginmgr
-import micng.imager.fs as fs
-import micng.chroot as chroot
+from mic.pluginbase.imager_plugin import ImagerPlugin
+import mic.utils.cmdln as cmdln
+import mic.utils.errors as errors
+import mic.configmgr as configmgr
+import mic.pluginmgr as pluginmgr
+import mic.imager.fs as fs
+import mic.chroot as chroot
 
 
 class FsPlugin(ImagerPlugin):

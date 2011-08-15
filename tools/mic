@@ -3,15 +3,15 @@
 import os
 import sys
 import logging
-import micng.utils.cmdln as cmdln
-import micng.utils.misc as misc
-import micng.utils.errors as errors
-import micng.configmgr as configmgr
-import micng.pluginmgr as pluginmgr
-import micng.creator as creator
+import mic.utils.cmdln as cmdln
+import mic.utils.misc as misc
+import mic.utils.errors as errors
+import mic.configmgr as configmgr
+import mic.pluginmgr as pluginmgr
+import mic.creator as creator
 
-class Micng(cmdln.Cmdln):
-    """Usage: micng SUBCOMMAND [OPTS] [ARGS...]
+class Mic(cmdln.Cmdln):
+    """Usage: mic SUBCOMMAND [OPTS] [ARGS...]
 
     MeeGo Image Creator Tool.
 
@@ -21,7 +21,7 @@ class Micng(cmdln.Cmdln):
     For additional information, see
     * http://www.meego.com/
     """
-    name = 'micng'
+    name = 'mic'
     version = None
 
     @cmdln.alias("cr")
@@ -40,7 +40,7 @@ class Micng(cmdln.Cmdln):
         """${cmd_name}: convert an image format to another one
         
         usage:
-            micng convert <imagefile> <destformat>  
+            mic convert <imagefile> <destformat>  
         """
         if len(args) == 0:
             self.emptyline()
@@ -86,7 +86,7 @@ class Micng(cmdln.Cmdln):
         """${cmd_name}: chroot an image
 
         usage:
-            micng chroot <imagefile>
+            mic chroot <imagefile>
 
         ${cmd_option_list}
         """
@@ -130,9 +130,9 @@ class Micng(cmdln.Cmdln):
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.ERROR)
-    micng = Micng()
+    mic = Mic()
     try:
-        ret = micng.main()
+        ret = mic.main()
     except errors.CreatorError, msg:
         ret = 2
         print >> sys.stderr, msg

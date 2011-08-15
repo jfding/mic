@@ -7,9 +7,9 @@ import string
 import optparse
 import logging
 
-import micng.utils.cmdln as cmdln
-import micng.configmgr as configmgr
-import micng.pluginmgr as pluginmgr
+import mic.utils.cmdln as cmdln
+import mic.configmgr as configmgr
+import mic.pluginmgr as pluginmgr
 
 class Creator(cmdln.Cmdln):
     """
@@ -17,7 +17,7 @@ class Creator(cmdln.Cmdln):
     ${help_list}
     ${option_list}
     """
-    name = 'micng create(cr)'
+    name = 'mic create(cr)'
     conf = None
     man_header = None
     man_footer = None
