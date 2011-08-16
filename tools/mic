@@ -74,7 +74,7 @@ class Mic(cmdln.Cmdln):
                destimager = icls
 
         if (srcimager and destimager) is None:
-           raise CreatorError("Can't convert from %s to %s" %(srcformat, destformat))
+           raise errors.CreatorError("Can't convert from %s to %s" %(srcformat, destformat))
         else:
             base_on = srcimager.do_unpack(srcimg)
             destimager.do_pack(base_on)
@@ -124,7 +124,7 @@ class Mic(cmdln.Cmdln):
                 break
 
         if not chrootclass:
-            raise CreatorError("Don't support image type: %s" % imagetype)
+            raise errors.CreatorError("Don't support image type: %s" % imagetype)
 
         chrootclass.do_chroot(targetimage)
 
