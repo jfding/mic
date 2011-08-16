@@ -49,26 +49,25 @@ def truncate_url(url, width):
     return url
 
 class TextProgress(object):
+    def __init__(self, totalnum):
+        self.total = totalnum
+        self.counter = 1
     def start(self, filename, url, *args, **kwargs):
         self.url = url
         self.termwidth = terminal_width()
-        sys.stdout.write("Retrieving %s " % truncate_url(self.url, self.termwidth - 17))
+        if sys.stdout.isatty():
+            sys.stdout.write("\r%-*s" % (self.termwidth, " "))
+            sys.stdout.write("\rRetrieving %s (%d|%d)" % (truncate_url(self.url, self.termwidth - 21), self.counter, self.total))
+        else:
+            sys.stdout.write("Retrieving %s (%d|%d)" % (truncate_url(self.url, self.termwidth - 21), self.counter, self.total)) 
         sys.stdout.flush()
-        self.indicators = ["-", "\\", "|", "/"]
-        self.counter = 0
     def update(self, *args):
-        if sys.stdout.isatty():
-            sys.stdout.write("\rRetrieving %s %s" % (truncate_url(self.url, self.termwidth - 17), self.indicators[self.counter%4]))
-            sys.stdout.flush()
-            self.counter += 1
-        else:
-            pass
+        pass
     def end(self, *args):
-        if sys.stdout.isatty():
-            sys.stdout.write("\rRetrieving %s ...OK\n" % (self.url,))
-        else:
-            sys.stdout.write("...OK\n")
-        sys.stdout.flush()
+        if self.counter == self.total or not sys.stdout.isatty():
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+        self.counter += 1
 
 def find_binary_path(binary):
     if os.environ.has_key("PATH"):
@@ -925,7 +924,7 @@ def load_module(module):
         os.waitpid(modprobe.pid, 0)
         os.close(dev_null)
 
-def myurlgrab(url, filename, proxies):
+def myurlgrab(url, filename, proxies, progress_obj = None):
     g = URLGrabber()
     if url.startswith("file:///"):
         file = url.replace("file://", "")
@@ -937,7 +936,7 @@ def myurlgrab(url, filename, proxies):
         try:
             filename = g.urlgrab(url = url, filename = filename,
                 ssl_verify_host = False, ssl_verify_peer = False,
-                proxies = proxies, http_headers = (('Pragma', 'no-cache'),))
+                proxies = proxies, http_headers = (('Pragma', 'no-cache'),), progress_obj = progress_obj)
         except URLGrabError, e:
             raise CreatorError("URLGrabber error: %s: %s" % (e, url))
         except:
