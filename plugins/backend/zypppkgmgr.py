@@ -520,10 +520,12 @@ class Zypp(BackendPlugin):
                         os.unlink(local)
                     else:
                         cached_count += 1
-        print "%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, total_count - cached_count)
+        download_count =  total_count - cached_count
+        print "%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, download_count)
         try:
-            print "downloading packages..."
-            self.downloadPkgs(dlpkgs)
+            if download_count > 0:
+                print "downloading packages..."
+            self.downloadPkgs(dlpkgs, download_count)
             self.installPkgs(dlpkgs)
     
         except RepoError, e:
@@ -640,8 +642,9 @@ class Zypp(BackendPlugin):
         h = readRpmHeader(self.ts, pkgpath)
         return h["name"]
 
-    def downloadPkgs(self, package_objects):
+    def downloadPkgs(self, package_objects, count):
         localpkgs = self.localpkgs.keys()
+        progress_obj = TextProgress(count)
         for po in package_objects:
             if po.name() in localpkgs:
                 continue
@@ -664,7 +667,7 @@ class Zypp(BackendPlugin):
                 location = location[2:]
             url = baseurl + "/%s" % location
             try:
-                filename = myurlgrab(url, filename, proxies)
+                filename = myurlgrab(url, filename, proxies, progress_obj)
             except CreatorError, e:
                 self.close()
                 raise CreatorError("%s" % e)
