@@ -663,6 +663,7 @@ def get_metadata_from_repos(repostrs, cachedir):
             print "Warning: can't get %s/%s" % (baseurl, "repodata/repomd.xml.key")
 
         my_repo_metadata.append({"name":reponame, "baseurl":baseurl, "repomd":repomd, "primary":primary, "cachedir":cachedir, "proxies":proxies, "patterns":patterns, "comps":comps, "repokey":repokey})
+
     return my_repo_metadata
 
 def get_arch(repometadata):

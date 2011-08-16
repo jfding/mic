@@ -50,20 +50,24 @@ class TextProgress(object):
     def __init__(self, totalnum = None):
         self.total = totalnum
         self.counter = 1
+
     def start(self, filename, url, *args, **kwargs):
         self.url = url
         self.termwidth = terminal_width()
         if sys.stdout.isatty():
             sys.stdout.write("\r%-*s" % (self.termwidth, " "))
             if self.total is None:
-                sys.stdout.write("\rRetrieving %s" % truncate_url(self.url, self.termwidth - 11))
+                sys.stdout.write("\rRetrieving %s ..." % truncate_url(self.url, self.termwidth - 15))
             else:
-                sys.stdout.write("\rRetrieving %s (%d|%d)" % (truncate_url(self.url, self.termwidth - 21), self.counter, self.total))
+                sys.stdout.write("\rRetrieving %s (%d|%d) ..." % (truncate_url(self.url, self.termwidth - 25), self.counter, self.total))
         else:
-            sys.stdout.write("Retrieving %s" % truncate_url(self.url, self.termwidth - 11))
+            sys.stdout.write("Retrieving %s ..." % truncate_url(self.url, self.termwidth - 15))
+
         sys.stdout.flush()
+
     def update(self, *args):
         pass
+
     def end(self, *args):
         if self.counter == self.total or not sys.stdout.isatty():
             sys.stdout.write("\n")

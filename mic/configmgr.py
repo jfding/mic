@@ -84,15 +84,17 @@ class ConfigMgr(object):
         try:
             self.kickstart = utils.kickstart.read_kickstart(self.ksconf)
             self.ksrepos = utils.misc.get_repostrs_from_ks(self.kickstart)
-            print "retrieving repo metadata..."
+            print "Retrieving repo metadata:"
             self.repometadata = utils.misc.get_metadata_from_repos(self.ksrepos, self.create['cachedir'])
+            print
             self.create['ks'] = self.kickstart
             self.create['repomd'] = self.repometadata
             self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
+
         except OSError, e:
-            raise Exception("failed to create image: %s" % e)
+            raise Exception("Failed to create image: %s" % e)
         except Exception, e:
-            raise Exception("unable to load kickstart file '%s': %s" % (self.ksconf, e))
+            raise Exception("Unable to load kickstart file '%s': %s" % (self.ksconf, e))
 
     def setProperty(self, key, value):
         if not hasattr(self, key):
