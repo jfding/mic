@@ -84,7 +84,7 @@ class BaseImageCreator(object):
             self.tmpdir = "/var/tmp"
             self.cachedir = "/var/cache"
             self.destdir = "."
- 
+
         self.__builddir = None
         self.__bindmounts = []
 
@@ -404,12 +404,27 @@ class BaseImageCreator(object):
         RPM's n-v-r in the case of e.g. xen)
 
         """
+        def get_kernel_versions(self, instroot):
+            ret = {}
+            versions = set()  
+            files = glob.glob(instroot + "/boot/vmlinuz-*")
+            for file in files:
+                version = os.path.basename(file)[8:]
+                if version is None:
+                    continue
+                versions.add(version)
+            ret["kernel"] = list(versions)
+            return ret
+
         def get_version(header):
             version = None
             for f in header['filenames']:
                 if f.startswith('/boot/vmlinuz-'):
                     version = f[14:]
             return version
+
+        if self.ks is None:
+            return get_kernel_versions(self._instroot)
 
         ts = rpm.TransactionSet(self._instroot)
 

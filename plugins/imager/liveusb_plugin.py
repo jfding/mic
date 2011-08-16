@@ -43,7 +43,7 @@ class LiveUSBPlugin(ImagerPlugin):
         for (key, pcls) in plgmgr.getBackendPlugins():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
-    
+
         creator = liveusb.LiveUSBImageCreator(creatoropts, pkgmgr)
         try:
             creator.check_depend_tools()
@@ -63,44 +63,10 @@ class LiveUSBPlugin(ImagerPlugin):
             print "Finished."
         return 0
 
-    @classmethod    
+    @classmethod
     def do_chroot(cls, target):
-        img = target
-        imgsize = misc.get_file_size(img) * 1024L * 1024L
-        imgmnt = misc.mkdtemp()
-        disk = fs_related.SparseLoopbackDisk(img, imgsize)
-        imgloop = PartitionedMount({'/dev/sdb':disk}, imgmnt, skipformat = True)
-        imgloop.add_partition(imgsize/1024/1024, "/dev/sdb", "/", "vfat", boot=False)
-        try:
-            imgloop.mount()
-        except MountError, e:
-            imgloop.cleanup()
-            raise CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
-
-        # legacy LiveOS filesystem layout support, remove for F9 or F10
-        if os.path.exists(imgmnt + "/squashfs.img"):
-            squashimg = imgmnt + "/squashfs.img"
-        else:
-            squashimg = imgmnt + "/LiveOS/squashfs.img"
-
-        tmpoutdir = misc.mkdtemp()
-        # unsquashfs requires outdir mustn't exist
-        shutil.rmtree(tmpoutdir, ignore_errors = True)
-        misc.uncompress_squashfs(squashimg, tmpoutdir)
-
-        # legacy LiveOS filesystem layout support, remove for F9 or F10
-        if os.path.exists(tmpoutdir + "/os.img"):
-            os_image = tmpoutdir + "/os.img"
-        else:
-            os_image = tmpoutdir + "/LiveOS/ext3fs.img"
-
-        if not os.path.exists(os_image):
-            imgloop.cleanup()
-            shutil.rmtree(tmpoutdir, ignore_errors = True)
-            shutil.rmtree(imgmnt, ignore_errors = True)
-            raise CreatorError("'%s' is not a valid live CD ISO : neither "
-                               "LiveOS/ext3fs.img nor os.img exist" %img)
-
+        os_image = cls.do_unpack(target)
+        os_image_dir = os.path.dirname(os_image)
         #unpack image to target dir
         imgsize = misc.get_file_size(os_image) * 1024L * 1024L
         extmnt = misc.mkdtemp()
@@ -114,26 +80,21 @@ class LiveUSBPlugin(ImagerPlugin):
         extloop = MyDiskMount(fs_related.SparseLoopbackDisk(os_image, imgsize),
                                               extmnt,
                                               tfstype,
-                                              4096,
+                                                                                                                           4096,
                                               tlabel)
         try:
             extloop.mount()
         except MountError, e:
             extloop.cleanup()
             shutil.rmtree(extmnt, ignore_errors = True)
-            imgloop.cleanup()
-            shutil.rmtree(tmpoutdir, ignore_errors = True)
-            shutil.rmtree(imgmnt, ignore_errors = True)
             raise CreatorError("Failed to loopback mount '%s' : %s" %(os_image, e))
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
             raise CreatorError("Failed to chroot to %s." %img)
         finally:
-            imgloop.cleanup()
-            shutil.rmtree(imgmnt, ignore_errors = True) 
-            chroot.cleanup_after_chroot("img", extloop, tmpoutdir, extmnt)
-    
+            chroot.cleanup_after_chroot("img", extloop, os_image_dir, extmnt)
+
     @classmethod
     def do_pack(cls, base_on):
         def __mkinitrd(instance):
@@ -169,16 +130,46 @@ class LiveUSBPlugin(ImagerPlugin):
 
     @classmethod
     def do_unpack(cls, srcimg):
-        convertor = liveusb.LiveUSBImageCreator()
-        srcimgsize = (misc.get_file_size(srcimg)) * 1024L * 1024L
-        convertor._srcfmt = 'livecd'
-        convertor._set_fstype("ext3")
-        convertor._set_image_size(srcimgsize)
-        convertor.mount(srcimg, None)
+        img = srcimg
+        imgsize = misc.get_file_size(img) * 1024L * 1024L
+        imgmnt = misc.mkdtemp()
+        disk = fs_related.SparseLoopbackDisk(img, imgsize)
+        imgloop = PartitionedMount({'/dev/sdb':disk}, imgmnt, skipformat = True)
+        imgloop.add_partition(imgsize/1024/1024, "/dev/sdb", "/", "vfat", boot=False)
+        try:
+            imgloop.mount()
+        except MountError, e:
+            imgloop.cleanup()
+            raise CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
 
-        image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
-        shutil.copyfile(convertor._image, image)
-        return image
+        # legacy LiveOS filesystem layout support, remove for F9 or F10
+        if os.path.exists(imgmnt + "/squashfs.img"):
+            squashimg = imgmnt + "/squashfs.img"
+        else:
+            squashimg = imgmnt + "/LiveOS/squashfs.img"
+
+        tmpoutdir = misc.mkdtemp()
+        # unsquashfs requires outdir mustn't exist
+        shutil.rmtree(tmpoutdir, ignore_errors = True)
+        misc.uncompress_squashfs(squashimg, tmpoutdir)
+
+        try:
+            # legacy LiveOS filesystem layout support, remove for F9 or F10
+            if os.path.exists(tmpoutdir + "/os.img"):
+                os_image = tmpoutdir + "/os.img"
+            else:
+                os_image = tmpoutdir + "/LiveOS/ext3fs.img"
+
+            if not os.path.exists(os_image):
+                raise CreatorError("'%s' is not a valid live CD ISO : neither "
+                                   "LiveOS/ext3fs.img nor os.img exist" %img)
+            rtimage = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
+            shutil.copyfile(os_image, rtimage)
+        finally:
+            imgloop.cleanup()
+            shutil.rmtree(tmpoutdir, ignore_errors = True)
+            shutil.rmtree(imgmnt, ignore_errors = True)
+
+        return rtimage
 
 mic_plugin = ["liveusb", LiveUSBPlugin]
-

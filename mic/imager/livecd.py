@@ -115,9 +115,9 @@ class LiveImageCreatorBase(LoopImageCreator):
         """
         if self.ks is None:
             r = "ro liveimg quiet"
-            if os.path.exists(instroot + "/usr/bin/rhgb"):
+            if os.path.exists(self._instroot + "/usr/bin/rhgb"):
                 r += " rhgb"
-            if os.path.exists(instroot + "/usr/bin/plymouth"):
+            if os.path.exists(self._instroot + "/usr/bin/plymouth"):
                 r += " rhgb"
             return r
         r = kickstart.get_kernel_args(self.ks)
@@ -151,72 +151,6 @@ class LiveImageCreatorBase(LoopImageCreator):
                 return True
 
         return False
-
-    def _uncompress_squashfs(self, squashfsimg, outdir):
-        """Uncompress file system from squshfs image"""
-        unsquashfs = fs_related.find_binary_path("unsquashfs")
-        args = [unsquashfs, "-d", outdir, squashfsimg ]
-        rc = subprocess.call(args)
-        if (rc != 0):
-            raise CreatorError("Failed to uncompress %s." % squashfsimg)
-    #
-    # Actual implementation
-    #
-    def _base_on(self, base_on):
-        """Support Image Convertor"""
-        if self.actasconvertor:
-            if os.path.exists(base_on) and not os.path.isfile(base_on):
-                ddcmd = fs_related.find_binary_path("dd")
-                args = [ ddcmd, "if=%s" % base_on, "of=%s" % self._image ]
-                print "dd %s -> %s" % (base_on, self._image)
-                rc = subprocess.call(args)
-                if rc != 0:
-                    raise CreatorError("Failed to dd from %s to %s" % (base_on, self._image))
-                self._set_image_size(misc.get_file_size(self._image) * 1024L * 1024L)
-            if os.path.isfile(base_on):
-                print "Copying file system..."
-                shutil.copyfile(base_on, self._image)
-                self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
-            return
-
-        #helper function to extract ext3 file system from a live CD ISO
-        isoloop = fs_related.DiskMount(fs_related.LoopbackDisk(base_on, 0), self._mkdtemp())
-
-        try:
-            isoloop.mount()
-        except MountError, e:
-            raise CreatorError("Failed to loopback mount '%s' : %s" %
-                               (base_on, e))
-
-        # legacy LiveOS filesystem layout support, remove for F9 or F10
-        if os.path.exists(isoloop.mountdir + "/squashfs.img"):
-            squashimg = isoloop.mountdir + "/squashfs.img"
-        else:
-            squashimg = isoloop.mountdir + "/LiveOS/squashfs.img"
-
-        tmpoutdir = self._mkdtemp()
-        # unsquashfs requires outdir mustn't exist
-        shutil.rmtree(tmpoutdir, ignore_errors = True)
-        self._uncompress_squashfs(squashimg, tmpoutdir)
-
-        try:
-            # legacy LiveOS filesystem layout support, remove for F9 or F10
-            if os.path.exists(tmpoutdir + "/os.img"):
-                os_image = tmpoutdir + "/os.img"
-            else:
-                os_image = tmpoutdir + "/LiveOS/ext3fs.img"
-
-            if not os.path.exists(os_image):
-                raise CreatorError("'%s' is not a valid live CD ISO : neither "
-                                   "LiveOS/ext3fs.img nor os.img exist" %
-                                   base_on)
-
-            print "Copying file system..."
-            shutil.copyfile(os_image, self._image)
-            self._set_image_size(get_file_size(self._image) * 1024L * 1024L)
-        finally:
-            shutil.rmtree(tmpoutdir, ignore_errors = True)
-            isoloop.cleanup()
 
     def _mount_instroot(self, base_on = None):
         LoopImageCreator._mount_instroot(self, base_on)
