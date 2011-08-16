@@ -89,6 +89,7 @@ class LoopPlugin(ImagerPlugin):
     @classmethod
     def do_unpack(cls, srcimg):
         image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
+        print "Copying file system..." 
         shutil.copyfile(srcimg, image)
         return image
 

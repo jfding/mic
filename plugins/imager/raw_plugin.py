@@ -171,6 +171,7 @@ class RawPlugin(ImagerPlugin):
         image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
         ddcmd = misc.find_binary_path("dd")
         args = [ ddcmd, "if=%s" % srcloop.partitions[0]['device'], "of=%s" % image ]
+        print "dd image..."
         rc = subprocess.call(args)
         if rc != 0:
             raise CreatorError("Failed to dd")
