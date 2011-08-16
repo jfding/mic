@@ -44,12 +44,10 @@ def terminal_width(fd=1):
         return 80
 
 def truncate_url(url, width):
-    if len(url) > width:
-        return os.path.basename(url)[0:width]
-    return url
+    return os.path.basename(url)[0:width]
 
 class TextProgress(object):
-    def __init__(self, totalnum):
+    def __init__(self, totalnum = None):
         self.total = totalnum
         self.counter = 1
     def start(self, filename, url, *args, **kwargs):
@@ -57,9 +55,12 @@ class TextProgress(object):
         self.termwidth = terminal_width()
         if sys.stdout.isatty():
             sys.stdout.write("\r%-*s" % (self.termwidth, " "))
-            sys.stdout.write("\rRetrieving %s (%d|%d)" % (truncate_url(self.url, self.termwidth - 21), self.counter, self.total))
+            if self.total is None:
+                sys.stdout.write("\rRetrieving %s" % truncate_url(self.url, self.termwidth - 11))
+            else:
+                sys.stdout.write("\rRetrieving %s (%d|%d)" % (truncate_url(self.url, self.termwidth - 21), self.counter, self.total))
         else:
-            sys.stdout.write("Retrieving %s (%d|%d)" % (truncate_url(self.url, self.termwidth - 21), self.counter, self.total)) 
+            sys.stdout.write("Retrieving %s" % truncate_url(self.url, self.termwidth - 11))
         sys.stdout.flush()
     def update(self, *args):
         pass
@@ -926,6 +927,8 @@ def load_module(module):
 
 def myurlgrab(url, filename, proxies, progress_obj = None):
     g = URLGrabber()
+    if progress_obj is None:
+        progress_obj = TextProgress()
     if url.startswith("file:///"):
         file = url.replace("file://", "")
         if not os.path.exists(file):
