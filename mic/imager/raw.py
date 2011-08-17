@@ -26,7 +26,7 @@ import tarfile
 import subprocess
 import logging
 
-import mic.utils.kickstart as kickstart 
+import mic.utils.kickstart as kickstart
 import mic.utils.fs_related as fs_related
 import urlgrabber.progress as progress
 from baseimager import BaseImageCreator
@@ -73,7 +73,7 @@ class RawImageCreator(BaseImageCreator):
         if os.path.exists(self._instroot + "/usr/bin/Xorg"):
             subprocess.call(["/bin/chmod", "u+s", "/usr/bin/Xorg"], preexec_fn = chroot)
         BaseImageCreator.configure(self, repodata)
-        
+
     def _get_fstab(self):
         s = ""
         for mp in self.__instloop.mountOrder:
@@ -150,14 +150,14 @@ class RawImageCreator(BaseImageCreator):
                  raise CreatorError("Failed to create disks, no --fstype specified in partition line of ks file")
 
             size =   parts[i].size * 1024L * 1024L
-            
+
             found = False
             for j in range(len(disks)):
                 if disks[j]['name'] == disk:
                     disks[j]['size'] = disks[j]['size'] + size
                     found = True
                     break
-                else: 
+                else:
                     found = False
             if not found:
                 disks.append({ 'name': disk, 'size': size })
@@ -331,7 +331,7 @@ class RawImageCreator(BaseImageCreator):
             self._img_name = "%s-%s.%s" % (self.name, name, self.__disk_format)
             dst = "%s/%s" % (self._outdir, self._img_name)
             logging.debug("moving %s to %s" % (src,dst))
-            shutil.move(src,dst) 
+            shutil.move(src,dst)
         self._write_image_xml()
 
     def _write_image_xml(self):

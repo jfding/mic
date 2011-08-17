@@ -10,7 +10,7 @@ from mic.pluginbase.imager_plugin import ImagerPlugin
 import mic.utils.misc as misc
 import mic.utils.cmdln as cmdln
 import mic.utils.fs_related as fs_related
-from mic.utils.errors import * 
+from mic.utils.errors import *
 import mic.configmgr as configmgr
 import mic.pluginmgr as pluginmgr
 import mic.imager.loop as loop
@@ -37,7 +37,7 @@ class LoopPlugin(ImagerPlugin):
 
         plgmgr = pluginmgr.PluginMgr()
         plgmgr.loadPlugins()
-        
+
         for (key, pcls) in plgmgr.getBackendPlugins():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
@@ -48,7 +48,7 @@ class LoopPlugin(ImagerPlugin):
         creator = loop.LoopImageCreator(creatoropts, pkgmgr)
         try:
             creator.check_depend_tools()
-            creator.mount(None, creatoropts["cachedir"])  
+            creator.mount(None, creatoropts["cachedir"])
             creator.install()
             creator.configure(creatoropts["repomd"])
             creator.unmount()
@@ -58,8 +58,8 @@ class LoopPlugin(ImagerPlugin):
         finally:
             creator.cleanup()
         print "Finished."
-        return 0    
-           
+        return 0
+
     @classmethod
     def do_chroot(cls, target):#chroot.py parse opts&args
         #import pdb
@@ -82,17 +82,16 @@ class LoopPlugin(ImagerPlugin):
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            raise CreatorError("Failed to chroot to %s." %img)  
+            raise CreatorError("Failed to chroot to %s." %img)
         finally:
             chroot.cleanup_after_chroot("img", extloop, None, extmnt)
 
     @classmethod
     def do_unpack(cls, srcimg):
         image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
-        print "Copying file system..." 
+        print "Copying file system..."
         shutil.copyfile(srcimg, image)
         return image
 
-        
 mic_plugin = ["loop", LoopPlugin]
 

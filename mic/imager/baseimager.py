@@ -61,7 +61,7 @@ class BaseImageCreator(object):
                 filesystem labels
 
         """
-        self.pkgmgr = pkgmgr 
+        self.pkgmgr = pkgmgr
 
         if createopts:
             # A pykickstart.KickstartParser instance."""
@@ -133,7 +133,7 @@ class BaseImageCreator(object):
 
             if not os.path.exists("/usr/bin/qemu-arm") or not is_statically_linked("/usr/bin/qemu-arm"):
                 self._dep_checks.append("qemu-arm-static")
-                
+
             if os.path.exists("/proc/sys/vm/vdso_enabled"):
                 vdso_fh = open("/proc/sys/vm/vdso_enabled","r")
                 vdso_value = vdso_fh.read().strip()
@@ -406,7 +406,7 @@ class BaseImageCreator(object):
         """
         def get_kernel_versions(self, instroot):
             ret = {}
-            versions = set()  
+            versions = set()
             files = glob.glob(instroot + "/boot/vmlinuz-*")
             for file in files:
                 version = os.path.basename(file)[8:]
@@ -807,7 +807,7 @@ class BaseImageCreator(object):
             (name, baseurl, mirrorlist, inc, exc, proxy, proxy_username, proxy_password, debuginfo, source, gpgkey, disable) = repo
 
             yr = pkg_manager.addRepository(name, baseurl, mirrorlist, proxy, proxy_username, proxy_password, inc, exc)
-        
+
         if kickstart.exclude_docs(self.ks):
             rpm.addMacro("_excludedocs", "1")
         rpm.addMacro("__file_context_path", "%{nil}")

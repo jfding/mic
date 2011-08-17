@@ -138,7 +138,7 @@ def setup_chrootenv(chrootdir, bindmounts = None):
                     continue
 
             chrootmounts.append(fs_related.BindChrootMount(srcdst[0], chrootdir, srcdst[1]))
-    
+
         """Default bind mounts"""
         for pt in BIND_MOUNTS:
             chrootmounts.append(fs_related.BindChrootMount(pt, chrootdir, None))
@@ -147,7 +147,7 @@ def setup_chrootenv(chrootdir, bindmounts = None):
 
         for kernel in os.listdir("/lib/modules"):
             chrootmounts.append(fs_related.BindChrootMount("/lib/modules/" + kernel, chrootdir, None, "ro"))
-    
+
         return chrootmounts
 
     def bind_mount(chrootmounts):
@@ -171,7 +171,7 @@ def setup_chrootenv(chrootdir, bindmounts = None):
     chroot_lock = os.path.join(chrootdir, ".chroot.lock")
     chroot_lockfd = open(chroot_lock, "w")
 
-    return globalmounts    
+    return globalmounts
 
 def cleanup_chrootenv(chrootdir, bindmounts = None, globalmounts = []):
     global chroot_lockfd, chroot_lock
@@ -220,7 +220,7 @@ def cleanup_chrootenv(chrootdir, bindmounts = None, globalmounts = []):
                     shutil.rmtree(tmpdir, ignore_errors = True)
                 else:
                     print "Warning: dir %s isn't empty." % tmpdir
-    
+
     chroot_lockfd.close()
     bind_unmount(globalmounts)
 
@@ -245,7 +245,7 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
 
     dev_null = os.open("/dev/null", os.O_WRONLY)
     files_to_check = ["/bin/bash", "/sbin/init"]
-    
+
     architecture_found = False
 
     """ Register statically-linked qemu-arm if it is an ARM fs """
@@ -253,14 +253,14 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
 
     for ftc in files_to_check:
         ftc = "%s/%s" % (chrootdir,ftc)
-        
+
         # Return code of 'file' is "almost always" 0 based on some man pages
         # so we need to check the file existance first.
         if not os.path.exists(ftc):
             continue
 
         filecmd = misc.find_binary_path("file")
-        
+
         for line in subprocess.Popen([filecmd, ftc],
                                      stdout=subprocess.PIPE,
                                      stderr=dev_null).communicate()[0].strip().splitlines():
@@ -272,10 +272,10 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
             if 'Intel' in line:
                 architecture_found = True
                 break
-                
+
         if architecture_found:
             break
-                
+
     os.close(dev_null)
     if not architecture_found:
         raise errors.CreatorError("Failed to get architecture from any of the following files %s from chroot." % files_to_check)
@@ -292,4 +292,4 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
     finally:
         cleanup_chrootenv(chrootdir, bindmounts, globalmounts)
         if qemu_emulator:
-            os.unlink(chrootdir + qemu_emulator)        
+            os.unlink(chrootdir + qemu_emulator)

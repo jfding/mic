@@ -40,15 +40,11 @@ class FsPlugin(ImagerPlugin):
         if not pkgmgr:
             #logging.warn("Can't find backend plugin: %s" % createopts['pkgmgr'])
             raise CreatorError("Can't find backend plugin: %s" % createopts['pkgmgr'])
-            # try other backend plugin
-            #try:
-            #except:    
-            #    raise CreatorError("None backend found, please check it")
 
         creator = fs.FsImageCreator(createopts, pkgmgr)
         try:
             creator.check_depend_tools()
-            creator.mount(None, createopts["cachedir"])  
+            creator.mount(None, createopts["cachedir"])
             creator.install()
             #Download the source packages ###private options
             if opts.include_src:
@@ -57,7 +53,7 @@ class FsPlugin(ImagerPlugin):
                 print 'Generating the image with source rpms included, The number of source packages is %d.' %(len(installed_pkgs))
                 if not misc.SrcpkgsDownload(installed_pkgs, createopts["repomd"], creator._instroot, createopts["cachedir"]):
                     print "Source packages can't be downloaded"
-    
+
             creator.configure(createopts["repomd"])
             creator.unmount()
             creator.package(createopts["outdir"])
@@ -68,8 +64,9 @@ class FsPlugin(ImagerPlugin):
         finally:
             creator.cleanup()
             print "Finished."
-        return 0    
-           
+
+        return 0
+
     @classmethod
     def do_chroot(self, target):#chroot.py parse opts&args
             try:
@@ -79,5 +76,5 @@ class FsPlugin(ImagerPlugin):
             finally:
                 chroot.cleanup_after_chroot("dir", None, None, None)
                 return 1
-            
+
 mic_plugin = ["fs", FsPlugin]

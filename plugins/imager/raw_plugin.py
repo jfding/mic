@@ -39,7 +39,7 @@ class RawPlugin(ImagerPlugin):
         cfgmgr.setProperty("ksconf", ksconf)
         plgmgr = pluginmgr.PluginMgr()
         plgmgr.loadPlugins()
-        
+
         for (key, pcls) in plgmgr.getBackendPlugins():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
@@ -64,8 +64,8 @@ class RawPlugin(ImagerPlugin):
             creator.cleanup()
             print "Finished."
         return 0
-    
-    @classmethod    
+
+    @classmethod
     def do_chroot(cls, target):
         img = target
         imgsize = misc.get_file_size(img) * 1024L * 1024L
@@ -74,13 +74,13 @@ class RawPlugin(ImagerPlugin):
         imgmnt = misc.mkdtemp()
         imgloop = PartitionedMount({'/dev/sdb':disk}, imgmnt, skipformat = True)
         img_fstype = "ext3"
-        
+
         # Check the partitions from raw disk.
         p1 = subprocess.Popen([partedcmd,"-s",img,"unit","B","print"],
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out,err = p1.communicate()
         lines = out.strip().split("\n")
-        
+
         root_mounted = False
         partition_mounts = 0
 
@@ -90,10 +90,10 @@ class RawPlugin(ImagerPlugin):
             # because parted can be translated we can't refer to any text lines.
             if not line or not line[0].isdigit():
                 continue
-            
+
             # Some vars have extra , as list seperator.
             line = line.replace(",","")
-            
+
             # Example of parted output lines that are handled:
             # Number  Start        End          Size         Type     File system     Flags
             #  1      512B         3400000511B  3400000000B  primary
@@ -106,7 +106,7 @@ class RawPlugin(ImagerPlugin):
 
             if len(partition_info) < 6 or partition_info[5] in ["boot"]:
                 # No filesystem can be found from partition line. Assuming
-                # btrfs, because that is the only MeeGo fs that parted does 
+                # btrfs, because that is the only MeeGo fs that parted does
                 # not recognize properly.
                 # TODO: Can we make better assumption?
                 fstype = "btrfs"
@@ -134,11 +134,11 @@ class RawPlugin(ImagerPlugin):
                 boot = True
             else:
                 boot = False
-            
+
             print "Size: %s Bytes, fstype: %s, mountpoint: %s, boot: %s" % ( size, fstype, mountpoint, boot )
             # TODO: add_partition should take bytes as size parameter.
             imgloop.add_partition((int)(size)/1024/1024, "/dev/sdb", mountpoint, fstype = fstype, boot = boot)
-        
+
         try:
             imgloop.mount()
         except MountError, e:
@@ -149,10 +149,10 @@ class RawPlugin(ImagerPlugin):
         try:
             chroot.chroot(imgmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            raise CreatorError("Failed to chroot to %s." %img)  
+            raise CreatorError("Failed to chroot to %s." %img)
         finally:
             chroot.cleanup_after_chroot("img", imgloop, None, imgmnt)
-            
+
     @classmethod
     def do_unpack(cls, srcimg):
         srcimgsize = (misc.get_file_size(srcimg)) * 1024L * 1024L

@@ -118,7 +118,7 @@ class Zypp(BackendPlugin):
         """ Select a given package or package pattern, can be specified with name.arch or name* or *name """
         if not self.Z:
             self.__initialize_zypp()
-        
+
         found = False
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
@@ -170,10 +170,10 @@ class Zypp(BackendPlugin):
 
     def deselectPackage(self, pkg):
         """Deselect package.  Can be specified as name.arch or name*"""
-        
+
         if not self.Z:
             self.__initialize_zypp()
-        
+
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
         ispattern = startx or endx
@@ -197,7 +197,7 @@ class Zypp(BackendPlugin):
                                 item.status().resetTransact(zypp.ResStatus.USER)
                             if name in self.packages:
                                 self.packages.remove(name)
-                            break                             
+                            break
                 else:
                     if startx and name.endswith(sp[0][1:]):
                         if item.status().isToBeInstalled():
@@ -210,8 +210,8 @@ class Zypp(BackendPlugin):
                             item.status().resetTransact(zypp.ResStatus.USER)
                         if name in self.packages:
                             self.packages.remove(name)
-    
-    def __selectIncpkgs(self):        
+
+    def __selectIncpkgs(self):
         found = False
         for pkg in self.incpkgs:
             for item in self.Z.pool():
@@ -224,12 +224,12 @@ class Zypp(BackendPlugin):
                         if name not in self.packages:
                             self.packages.append(name)
                             item.status().setToBeInstalled (zypp.ResStatus.USER)
-                        break         
+                        break
         if not found:
             raise CreatorError("Unable to find package: %s" % (pkg,))
-    
-    def __selectExcpkgs(self):    
-        found = False        
+
+    def __selectExcpkgs(self):
+        found = False
         for pkg in self.excpkgs:
             for item in self.Z.pool():
                 kind = "%s" % item.kind()
@@ -241,11 +241,10 @@ class Zypp(BackendPlugin):
                         if name not in self.packages:
                             self.packages.append(name)
                             item.status().setToBeInstalled (zypp.ResStatus.USER)
-                        break                     
+                        break
         if not found:
             raise CreatorError("Unable to find package: %s" % (pkg,))
 
-        
     def selectGroup(self, grp, include = pykickstart.parser.GROUP_DEFAULT):
         if not self.Z:
             self.__initialize_zypp()
@@ -261,7 +260,7 @@ class Zypp(BackendPlugin):
                         self.patterns.append(name)
                         item.status().setToBeInstalled (zypp.ResStatus.USER)
                     break
-                
+
         if found:
             if include == pykickstart.parser.GROUP_REQUIRED:
                 map(lambda p: self.deselectPackage(p), grp.default_packages.keys())
@@ -481,7 +480,7 @@ class Zypp(BackendPlugin):
             self.__selectIncpkgs()
         if self.excpkgs:
             self.__selectExcpkgs()
-        
+
         os.environ["HOME"] = "/"
         self.buildTransaction()
 
@@ -527,7 +526,7 @@ class Zypp(BackendPlugin):
                 print "downloading packages..."
             self.downloadPkgs(dlpkgs, download_count)
             self.installPkgs(dlpkgs)
-    
+
         except RepoError, e:
             raise CreatorError("Unable to download from repo : %s" % (e,))
         except RpmError, e:
@@ -545,7 +544,7 @@ class Zypp(BackendPlugin):
         shutil.rmtree(self.creator.cachedir + "/etc", ignore_errors = True)
         shutil.rmtree(self.creator.cachedir + "/raw", ignore_errors = True)
         shutil.rmtree(self.creator.cachedir + "/solv", ignore_errors = True)
-        
+
         zypp.KeyRing.setDefaultAccept( zypp.KeyRing.ACCEPT_UNSIGNED_FILE
                                        | zypp.KeyRing.ACCEPT_VERIFICATION_FAILED
                                        | zypp.KeyRing.ACCEPT_UNKNOWNKEY
@@ -557,7 +556,7 @@ class Zypp(BackendPlugin):
         self.repo_manager_options.repoRawCachePath = zypp.Pathname(self.creator.cachedir + "/raw")
         self.repo_manager_options.repoSolvCachePath = zypp.Pathname(self.creator.cachedir + "/solv")
         self.repo_manager_options.repoPackagesCachePath = zypp.Pathname(self.creator.cachedir + "/packages")
-        
+
         self.repo_manager = zypp.RepoManager(self.repo_manager_options)
 
 
@@ -592,7 +591,7 @@ class Zypp(BackendPlugin):
             elif self.creator.target_arch == "armv7nhl":
                 arch_map["armv7nhl"] = zypp.Arch_armv7nhl()
             elif self.creator.target_arch == "armv7hl":
-                arch_map["armv7hl"] = zypp.Arch_armv7hl() 
+                arch_map["armv7hl"] = zypp.Arch_armv7hl()
             zconfig.setSystemArchitecture(arch_map[self.creator.target_arch])
 
         print "zypp architecture: %s" % zconfig.systemArchitecture()
@@ -660,7 +659,7 @@ class Zypp(BackendPlugin):
             proxies = {}
             if proxy:
                 proxies = {str(proxy.split(":")[0]):str(proxy)}
-          
+
             location = zypp.asKindPackage(po).location()
             location = location.filename().__str__()
             if location.startswith("./"):

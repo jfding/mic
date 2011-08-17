@@ -57,7 +57,7 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('-d', '--debug', action='store_true', help='print debug info')
         optparser.add_option('-v', '--verbose', action='store_true', help='verbose output')
         #optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='output directory')
-        return optparser 
+        return optparser
 
     def preoptparse(self, argv):
         pass

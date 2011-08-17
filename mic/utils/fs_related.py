@@ -126,7 +126,7 @@ def my_fuser(file):
     if not os.path.exists(file):
         return ret
     dev_null = os.open("/dev/null", os.O_WRONLY)
-    rc = subprocess.call([fuser, "-s", file], stderr=dev_null) 
+    rc = subprocess.call([fuser, "-s", file], stderr=dev_null)
     if rc == 0:
         fuser_proc = subprocess.Popen([fuser, file], stdout=subprocess.PIPE, stderr=dev_null)
         pids = fuser_proc.communicate()[0].strip().split()
@@ -839,7 +839,7 @@ class DeviceMapperSnapshot(object):
     def remove(self, ignore_errors = False):
         if not self.__created:
             return
-        
+
         time.sleep(2)
         rc = subprocess.call([self.dmsetupcmd, "remove", self.__name])
         if not ignore_errors and rc != 0:

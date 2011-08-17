@@ -38,7 +38,7 @@ class PartitionedMount(Mount):
                                  'mapped': False, # True if kpartx mapping exists
                                  'numpart': 0, # Number of allocate partitions
                                  'partitions': [], # indexes to self.partitions
-                                 # Partitions with part num higher than 3 will 
+                                 # Partitions with part num higher than 3 will
                                  # be put inside extended partition.
                                  'extended': 0, # Size of extended partition
                                  # Sector 0 is used by the MBR and can't be used
@@ -124,15 +124,15 @@ class PartitionedMount(Mount):
 
     def __format_disks(self):
         logging.debug("Assigning partitions to disks")
-        
+
         mbr_sector_skipped = False
-        
+
         for n in range(len(self.partitions)):
             p = self.partitions[n]
 
             if not self.disks.has_key(p['disk']):
                 raise MountError("No disk %s for partition %s" % (p['disk'], p['mountpoint']))
-            
+
             if not mbr_sector_skipped:
                 # This hack is used to remove one sector from the first partition,
                 # that is the used to the MBR.
@@ -158,15 +158,15 @@ class PartitionedMount(Mount):
         if self.skipformat:
             logging.debug("Skipping disk format, because skipformat flag is set.")
             return
-            
+
         for dev in self.disks.keys():
             d = self.disks[dev]
             logging.debug("Initializing partition table for %s" % (d['disk'].device))
             p1 = subprocess.Popen([self.parted, "-s", d['disk'].device, "mklabel", "msdos"],
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            (out,err) = p1.communicate()            
+            (out,err) = p1.communicate()
             logging.debug(out)
-            
+
             if p1.returncode != 0:
                 # NOTE: We don't throw exception when return code is not 0, because
                 # parted always fails to reload part table with loop devices.
@@ -179,7 +179,7 @@ class PartitionedMount(Mount):
             d = self.disks[p['disk']]
             if p['num'] == 5:
                 self.__create_part_to_image(d['disk'].device,"extended",None,p['start'],d['extended'])
-                
+
             if p['fstype'] == "swap":
                 parted_fs_type = "linux-swap"
             elif p['fstype'] == "vfat":
@@ -190,14 +190,14 @@ class PartitionedMount(Mount):
                 # Type for ext2/ext3/ext4/btrfs
                 parted_fs_type = "ext2"
 
-            # Boot ROM of OMAP boards require vfat boot partition to have an 
+            # Boot ROM of OMAP boards require vfat boot partition to have an
             # even number of sectors.
             if p['mountpoint'] == "/boot" and p['fstype'] in ["vfat","msdos"] and p['size'] % 2:
                 logging.debug("Substracting one sector from '%s' partition to get even number of sectors for the partition." % (p['mountpoint']))
                 p['size'] -= 1
-                
-            p1 = self.__create_part_to_image(d['disk'].device,p['type'], 
-                                             parted_fs_type, p['start'], 
+
+            p1 = self.__create_part_to_image(d['disk'].device,p['type'],
+                                             parted_fs_type, p['start'],
                                              p['size'])
 
             if p1.returncode != 0:
@@ -212,7 +212,7 @@ class PartitionedMount(Mount):
                 logging.debug(boot_cmd)
                 p1 = subprocess.Popen(boot_cmd,
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                (out,err) = p1.communicate()            
+                (out,err) = p1.communicate()
                 logging.debug(out)
 
                 if p1.returncode != 0:
@@ -277,10 +277,10 @@ class PartitionedMount(Mount):
             logging.debug("Adding partx mapping for %s" % d['disk'].device)
             p1 = subprocess.Popen([self.kpartx, "-v", "-a", d['disk'].device],
                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            
+
             (out,err) = p1.communicate()
             logging.debug(out)
-            
+
             if p1.returncode != 0:
                 # Make sure that the device maps are also removed on error case.
                 # The d['mapped'] isn't set to True if the kpartx fails so
@@ -477,7 +477,7 @@ class PartitionedMount(Mount):
                                 break
                         pdisk.fsopts = ",".join(opts)
                         break
-            
+
         if len(self.subvolumes) == 0:
             """ Return directly if no subvolumes """
             return
@@ -554,7 +554,7 @@ class PartitionedMount(Mount):
             if p1.returncode != 0:
                 raise MountError("Failed to create subvolume snapshot '%s' for '%s', return code: %d." % (snapshotpath, subvolpath, p1.returncode))
         self.snapshot_created = True
-  
+
     def mount(self):
         for dev in self.disks.keys():
             d = self.disks[dev]
@@ -589,7 +589,7 @@ class PartitionedMount(Mount):
 
             if p['fstype'] == "btrfs" and not p['fsopts']:
                 p['fsopts'] = "subvolid=0"
-                
+
             pdisk = myDiskMount(RawDisk(p['size'] * self.sector_size, p['device']),
                                  self.mountdir + p['mountpoint'],
                                  p['fstype'],

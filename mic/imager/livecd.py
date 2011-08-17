@@ -25,7 +25,7 @@ import logging
 import re
 import time
 
-import mic.utils.kickstart as kickstart 
+import mic.utils.kickstart as kickstart
 import mic.utils.fs_related as fs_related
 import mic.utils.rpmmisc as rpmmisc
 import mic.utils.misc as misc
@@ -37,7 +37,7 @@ class LiveImageCreatorBase(LoopImageCreator):
 
         This class serves as a base class for the architecture-specific LiveCD
         image creator subclass, LiveImageCreator.
-    
+
         LiveImageCreator creates a bootable ISO containing the system image,
         bootloader, bootloader configuration, kernel and initramfs.
     """
@@ -50,7 +50,7 @@ class LiveImageCreatorBase(LoopImageCreator):
         LoopImageCreator.__init__(self, creatoropts, pkgmgr)
 
         #Controls whether to use squashfs to compress the image.
-        self.skip_compression = False 
+        self.skip_compression = False
 
         #Controls whether an image minimizing snapshot should be created.
         #
@@ -58,11 +58,11 @@ class LiveImageCreatorBase(LoopImageCreator):
         #order to minimize the amount of data that needs to be copied; simply,
         #it makes it possible to create a version of the image's filesystem with
         #no spare space.
-        self.skip_minimize = False 
+        self.skip_minimize = False
 
         #A flag which indicates i act as a convertor default false
         self.actasconvertor = False
-        
+
         #The bootloader timeout from kickstart.
         if self.ks:
             self._timeout = kickstart.get_timeout(self.ks, 10)
@@ -92,7 +92,7 @@ class LiveImageCreatorBase(LoopImageCreator):
 
             This is the hook where subclasses must create the booloader
             configuration in order to allow a bootable ISO to be built.
-    
+
             isodir -- the directory where the contents of the ISO are to be staged
         """
         raise CreatorError("Bootloader configuration is arch-specific, "
@@ -110,7 +110,7 @@ class LiveImageCreatorBase(LoopImageCreator):
 
             This is the hook where subclasses may specify a set of kernel options
             which should be included in the images bootloader configuration.
-    
+
             A sensible default implementation is provided.
         """
         if self.ks is None:
@@ -131,7 +131,7 @@ class LiveImageCreatorBase(LoopImageCreator):
 
             This is the hook where subclasses may specify additional arguments to
             mkisofs, e.g. to enable a bootable ISO to be built.
-    
+
             By default, an empty list is returned.
         """
         return []
@@ -456,8 +456,7 @@ menu color cmdline 0 #ffffffff #00000000
             is_xen = self.__copy_kernel_and_initramfs(isodir, version, index)
 
             default = self.__is_default_kernel(kernel, kernels)
-            
-                
+
             if default:
                 long = "Boot %s" % self.distro_name
             elif kernel.startswith("kernel-"):

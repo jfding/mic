@@ -41,7 +41,7 @@ class PluginMgr(object):
         # intial plugin sets
         for plugintype in self.plugin_types:
             self.plugin_sets[plugintype] = []
-    
+
     def addPluginDir(self, plugin_dir):
         if not os.path.isdir(plugin_dir):
             logging.debug("Plugin dir is not a directory or does not exist: %s" % plugin_dir)
@@ -109,7 +109,7 @@ class PluginMgr(object):
             logging.warn("Failed to get plugin category: %s" % categ)
             return None
         else:
-            return self.plugin_sets[categ]                            
+            return self.plugin_sets[categ]
 
     def getImagerPlugins(self):
         return self.plugin_sets['imager']

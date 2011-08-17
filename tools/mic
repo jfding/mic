@@ -29,9 +29,10 @@ import mic.pluginmgr as pluginmgr
 import mic.creator as creator
 
 class Mic(cmdln.Cmdln):
-    """ Usage: mic SUBCOMMAND [OPTS] [ARGS...]
+    """
+    Usage: mic SUBCOMMAND [OPTS] [ARGS...]
 
-    MeeGo Image Creator Tool.
+    Image Creator
 
     ${command_list}
     ${help_list}
@@ -55,9 +56,9 @@ class Mic(cmdln.Cmdln):
     @cmdln.alias("cv")
     def do_convert(self, subcmd, opts, *args):
         """${cmd_name}: convert an image format to another one
-        
+
         usage:
-            mic convert <imagefile> <destformat>  
+            mic convert <imagefile> <destformat>
         """
         if len(args) == 0:
             self.emptyline()
@@ -100,7 +101,7 @@ class Mic(cmdln.Cmdln):
     @cmdln.option("-v", "--verbose", action="store_true", help="verbose infomation")
     @cmdln.alias("ch")
     def do_chroot(self, subcmd, opts, *args):
-        """${cmd_name}: chroot an image
+        """${cmd_name}: chroot into an image
 
         usage:
             mic chroot <imagefile>

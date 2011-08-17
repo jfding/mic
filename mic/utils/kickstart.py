@@ -214,11 +214,11 @@ class RootPasswordConfig(KickstartConfig):
     def set_encrypted(self, password):
         self.call(["/usr/sbin/usermod", "-p", password, "root"])
 
-    def set_unencrypted(self, password):        
+    def set_unencrypted(self, password):
         for p in ("/bin/echo", "/usr/sbin/chpasswd"):
             if not os.path.exists("%s/%s" %(self.instroot, p)):
-                raise errors.KickstartError("Unable to set unencrypted password due to lack of %s" % p) 
-        
+                raise errors.KickstartError("Unable to set unencrypted password due to lack of %s" % p)
+
         p1 = subprocess.Popen(["/bin/echo", "root:%s" %password],
                               stdout = subprocess.PIPE,
                               preexec_fn = self.chroot)
@@ -742,7 +742,7 @@ def add_repo(ks, repostr):
     args = repostr.split()
     repoobj = ks.handler.repo.parse(args[1:])
     if repoobj and repoobj not in ks.handler.repo.repoList:
-        ks.handler.repo.repoList.append(repoobj) 
+        ks.handler.repo.repoList.append(repoobj)
 
 def remove_all_repos(ks):
     while len(ks.handler.repo.repoList) != 0:
@@ -786,7 +786,7 @@ def resolve_groups(creator, repometadata, use_comps = False):
             continue
 
         """
-            But we also must handle such cases, use zypp but repo only has comps, 
+            But we also must handle such cases, use zypp but repo only has comps,
             use yum but repo only has patterns, use zypp but use_comps is true,
             use yum but use_comps is false.
         """
@@ -799,7 +799,7 @@ def resolve_groups(creator, repometadata, use_comps = False):
             if (not use_comps and repo["patterns"]) or (not repo["comps"] and repo["patterns"]):
                 groupfile = repo["patterns"]
                 get_pkglist_handler = misc.get_pkglist_in_patterns
-            
+
         if groupfile:
             i = 0
             while True:

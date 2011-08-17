@@ -71,7 +71,7 @@ class RPMInstallCallback:
             fmt = "\r  %-10.10s: " + bar + " " + done
         else:
             bar = fmt_bar % (self.mark * marks, )
-            fmt = "  %-10.10s: "  + bar + " " + done 
+            fmt = "  %-10.10s: "  + bar + " " + done
         return fmt
 
     def _logPkgString(self, hdr):
@@ -122,7 +122,6 @@ class RPMInstallCallback:
                 # log stuff
                 #pkgtup = self._dopkgtup(hdr)
                 self.logString.append(self._logPkgString(hdr))
-                
 
         elif what == rpm.RPMCALLBACK_INST_PROGRESS:
             if h is not None:
@@ -146,7 +145,7 @@ class RPMInstallCallback:
 
         elif what == rpm.RPMCALLBACK_UNINST_STOP:
             self.total_removed += 1
-            
+
         elif what == rpm.RPMCALLBACK_REPACKAGE_START:
             pass
         elif what == rpm.RPMCALLBACK_REPACKAGE_STOP:
@@ -251,7 +250,7 @@ def getCanonArch():
     return arch
 
 # dict mapping arch -> ( multicompat, best personality, biarch personality )
-multilibArches = { 
+multilibArches = {
                    "x86_64":  ( "athlon", "x86_64", "athlon" ),
                    "sparc64v": ( "sparc", "sparcv9v", "sparc64v" ),
                    "sparc64": ( "sparc", "sparcv9", "sparc64" ),
@@ -365,7 +364,7 @@ def checkRpmIntegrity(bin_rpm, package):
     finally:
         os.close(dev_null)
 
-    return ret 
+    return ret
 
 def checkSig(ts, package):
     """ Takes a transaction set and a package, check it's sigs,

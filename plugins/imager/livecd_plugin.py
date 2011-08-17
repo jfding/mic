@@ -37,7 +37,7 @@ class LiveCDPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         plgmgr = pluginmgr.PluginMgr()
         plgmgr.loadPlugins()
-        
+
         for (key, pcls) in plgmgr.getBackendPlugins():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls

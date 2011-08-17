@@ -41,7 +41,7 @@ class LoopImageCreator(BaseImageCreator):
 
             This method takes the same arguments as ImageCreator.__init__() with
             the addition of:
-    
+
             fslabel -- A string used as a label for any filesystems created.
         """
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
@@ -97,7 +97,6 @@ class LoopImageCreator(BaseImageCreator):
     #mke2fs silently truncates the label, but mkisofs aborts if the label is too
     #long. So, for convenience sake, any string assigned to this attribute is
     #silently truncated to FSLABEL_MAXLEN (32) characters.
-    
     fslabel = property(__get_fslabel, __set_fslabel)
 
 
@@ -109,7 +108,7 @@ class LoopImageCreator(BaseImageCreator):
     #
     #This is the path to the filesystem image. Subclasses may use this path
     #in order to package the image in _stage_final_image().
-    #    
+    #
     #Note, this directory does not exist before ImageCreator.mount() is called.
     #
     #Note also, this is a read-only attribute.
@@ -148,7 +147,7 @@ class LoopImageCreator(BaseImageCreator):
     #
     #Note, only ext2 and ext3 are currently supported.
     #
-    #Note also, this attribute may only be set before calling mount(). 
+    #Note also, this attribute may only be set before calling mount().
     _fstype = property(__get_fstype, __set_fstype)
 
 
@@ -172,11 +171,11 @@ class LoopImageCreator(BaseImageCreator):
             This method should be used by subclasses when staging the final image
             in order to reduce the actual space taken up by the sparse image file
             to be as little as possible.
-    
+
             This is done by resizing the filesystem to the minimal size (thereby
             eliminating any space taken up by deleted files) and then resizing it
             back to the supplied size.
-    
+
             size -- the size in, in bytes, which the filesystem image should be
                     resized to after it has been minimized; this defaults to None,
                     causing the original size specified by the kickstart file to

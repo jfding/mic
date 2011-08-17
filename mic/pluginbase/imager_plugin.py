@@ -32,5 +32,5 @@ class ImagerPlugin(object):
     def do_unpack(self):
         pass
 
-# [a, b]: a is for subcmd name, b is for plugin class 
+# [a, b]: a is for subcmd name, b is for plugin class
 mic_plugin = ["", None]

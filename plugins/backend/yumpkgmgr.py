@@ -53,9 +53,9 @@ class Yum(BackendPlugin, yum.YumBase):
         if not isinstance(creator, ImageCreator):
             raise CreatorError("Invalid argument: creator")
         yum.YumBase.__init__(self)
-        
+
         self.creator = creator
-        
+
         if self.creator.target_arch:
             if rpmUtils.arch.arches.has_key(self.creator.target_arch):
                 self.arch.setup_arch(self.creator.target_arch)
@@ -416,7 +416,7 @@ class Yum(BackendPlugin, yum.YumBase):
         try:
             self.downloadPkgs(dlpkgs)
             # FIXME: sigcheck?
-    
+
             self.initActionTs()
             self.populateTs(keepold=0)
             deps = self.ts.check()
@@ -427,7 +427,7 @@ class Yum(BackendPlugin, yum.YumBase):
             rc = self.ts.order()
             if rc != 0:
                 raise CreatorError("ordering packages for installation failed!")
-    
+
             # FIXME: callback should be refactored a little in yum
             sys.path.append('/usr/share/yum-cli')
             import callback

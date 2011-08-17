@@ -38,7 +38,7 @@ class LiveUSBPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         cfgmgr.setProperty("ksconf", args[0])
         plgmgr = pluginmgr.PluginMgr()
-        plgmgr.loadPlugins()       
+        plgmgr.loadPlugins()
 
         for (key, pcls) in plgmgr.getBackendPlugins():
             if key == creatoropts['pkgmgr']:

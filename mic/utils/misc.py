@@ -724,7 +724,7 @@ def get_package(pkg, repometadata, arch = None):
                         target_repo = repo
                     break
             con.close()
-    if target_repo: 
+    if target_repo:
         makedirs("%s/%s/packages" % (target_repo["cachedir"], target_repo["name"]))
         url = str(target_repo["baseurl"] + "/" + pkgpath)
         filename = str("%s/%s/packages/%s" % (target_repo["cachedir"], target_repo["name"], os.path.basename(pkgpath)))
@@ -1006,7 +1006,7 @@ def create_release(config, destdir, name, outimages, release):
 
     """ Create release directory and files """
     os.system ("cp %s %s/%s.ks" % (config, destdir, name))
-    # When building a release we want to make sure the .ks 
+    # When building a release we want to make sure the .ks
     # file generates the same build even when --release= is not used.
     fd = open(config, "r")
     kscont = fd.read()
@@ -1093,7 +1093,7 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
         m = re.match("(.*)-(\d+.*)-(\d+\.\d+).src.rpm", srpm)
         if m:
             return m.group(1)
-        return None    
+        return None
 
     src_repometadata = get_source_repometadata(repometadata)
 
@@ -1107,24 +1107,24 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
     for repo in src_repometadata:
         cachepath = "%s/%s/packages/*.src.rpm" %(cachedir, repo["name"])
         lpkgs_path += glob.glob(cachepath)
-    
+
     for lpkg in lpkgs_path:
         lpkg_name = get_src_name(os.path.basename(lpkg))
         lpkgs_dict[lpkg_name] = lpkg
     localpkgs = lpkgs_dict.keys()
-    
+
     cached_count = 0
     destdir = instroot+'/usr/src/SRPMS'
     if not os.path.exists(destdir):
         os.makedirs(destdir)
-    
+
     srcpkgset = set()
     for _pkg in pkgs:
         srcpkg_name = get_source_name(_pkg, repometadata)
         if not srcpkg_name:
             return None
         srcpkgset.add(srcpkg_name)
-    
+
     for pkg in list(srcpkgset):
         if pkg in localpkgs:
             cached_count += 1
@@ -1133,7 +1133,7 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
         else:
             src_pkg = get_package(pkg, src_repometadata, 'src')
             if src_pkg:
-                shutil.copy(src_pkg, destdir)            
+                shutil.copy(src_pkg, destdir)
                 src_pkgs.append(src_pkg)
     print '--------------------------------------------------'
     print "%d source packages gotten from cache" %cached_count
