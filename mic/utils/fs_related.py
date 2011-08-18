@@ -33,6 +33,7 @@ import termios
 from errors import *
 from urlgrabber.grabber import URLGrabber
 from urlgrabber.grabber import URLGrabError
+from mic import msger
 
 def terminal_width(fd=1):
     """ Get the real terminal width """
@@ -59,7 +60,7 @@ class TextProgress(object):
             if self.total is None:
                 sys.stdout.write("\rRetrieving %s ..." % truncate_url(self.url, self.termwidth - 15))
             else:
-                sys.stdout.write("\rRetrieving %s (%d|%d) ..." % (truncate_url(self.url, self.termwidth - 25), self.counter, self.total))
+                sys.stdout.write("\rRetrieving %s [%d/%d] ..." % (truncate_url(self.url, self.termwidth - 25), self.counter, self.total))
         else:
             sys.stdout.write("Retrieving %s ..." % truncate_url(self.url, self.termwidth - 15))
 
@@ -921,7 +922,7 @@ def load_module(module):
             found = True
             break
     if not found:
-        print "Loading %s..." % module
+        msger.info("Loading %s..." % module)
         dev_null = os.open("/dev/null", os.O_WRONLY)
         modprobecmd = find_binary_path("modprobe")
         modprobe = subprocess.Popen([modprobecmd, module],

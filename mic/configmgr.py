@@ -22,6 +22,7 @@ import logging
 import ConfigParser
 import mic.utils as utils
 import mic.utils.errors as errors
+from mic import msger
 
 DEFAULT_GSITECONF='/etc/mic/mic.conf'
 
@@ -58,7 +59,7 @@ class ConfigMgr(object):
         self._siteconf = siteconf
         if not self.siteconf:
             self._siteconf = DEFAULT_GSITECONF
-        
+
         self._ksconf = ksconf
 
     def __set_siteconf(self, siteconf):
@@ -112,10 +113,10 @@ class ConfigMgr(object):
         try:
             kickstart = utils.kickstart.read_kickstart(ksconf)
             ksrepos = utils.misc.get_repostrs_from_ks(kickstart)
+            msger.info("Retrieving repo metadata:")
             repometadata = utils.misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
-            sys.stdout.write("Retrieving repo metadata:\n")
-            sys.stdout.write("%s" % repometadata)
-            sys.stdout.flush()
+            msger.info("\nDONE")
+
             self.create['ks'] = kickstart
             self.create['repomd'] = repometadata
             self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]

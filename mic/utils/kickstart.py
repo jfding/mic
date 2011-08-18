@@ -16,15 +16,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os
+import os, sys
 import os.path
 import shutil
 import subprocess
 import time
 import logging
 import string
-
-#import rhpl.keyboard
 
 import pykickstart.commands as kscommands
 import pykickstart.constants as ksconstants
@@ -40,9 +38,7 @@ import kscommands.desktop as desktop
 import kscommands.moblinrepo as moblinrepo
 import kscommands.micboot as micboot
 
-import sys
-sys.path.append("~/0509/mic")
-import misc as misc
+import misc
 
 def read_kickstart(path):
     """Parse a kickstart file and return a KickstartParser instance.

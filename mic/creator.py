@@ -23,6 +23,7 @@ import logging
 import mic.utils.cmdln as cmdln
 import mic.configmgr as configmgr
 import mic.pluginmgr as pluginmgr
+from mic import msger
 
 class Creator(cmdln.Cmdln):
     """${name}: create an image
@@ -101,8 +102,7 @@ class Creator(cmdln.Cmdln):
 
         if args:
             if os.geteuid() != 0:
-                print >> sys.stderr, "You must run %s as root" % sys.argv[0]
-                return 1
+                msger.error('Need root permission to run this command')
 
             return self.cmd(args)
 

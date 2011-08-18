@@ -25,6 +25,7 @@ import subprocess
 import mic.utils.fs_related as fs_related
 import mic.utils.misc as misc
 import mic.utils.errors as errors
+from mic import msger
 
 BIND_MOUNTS = (
                 "/proc",
@@ -75,7 +76,7 @@ def check_bind_mounts(chrootdir, bindmounts):
 
             tmpdir = chrootdir + "/" + srcdst[1]
             if os.path.isdir(tmpdir):
-                print "Warning: dir %s has existed."  % tmpdir
+                msger.warning("Warning: dir %s has existed."  % tmpdir)
 
     return True
 
@@ -98,7 +99,7 @@ def cleanup_mounts(chrootdir):
                 args = [ umountcmd, "-l", point ]
                 ret = subprocess.call(args, stdout=dev_null, stderr=dev_null)
                 if ret != 0:
-                    print "ERROR: failed to unmount %s" % point
+                    msger.warning("failed to unmount %s" % point)
                     os.close(dev_null)
                     return ret
 
@@ -152,7 +153,7 @@ def setup_chrootenv(chrootdir, bindmounts = None):
 
     def bind_mount(chrootmounts):
         for b in chrootmounts:
-            print "bind_mount: %s -> %s" % (b.src, b.dest)
+            msger.info("bind_mount: %s -> %s" % (b.src, b.dest))
             b.mount()
 
     def setup_resolv(chrootdir):
@@ -179,7 +180,7 @@ def cleanup_chrootenv(chrootdir, bindmounts = None, globalmounts = []):
     def bind_unmount(chrootmounts):
         chrootmounts.reverse()
         for b in chrootmounts:
-            print "bind_unmount: %s -> %s" % (b.src, b.dest)
+            msger.info("bind_unmount: %s -> %s" % (b.src, b.dest))
             b.unmount()
 
     def cleanup_resolv(chrootdir):
@@ -219,7 +220,7 @@ def cleanup_chrootenv(chrootdir, bindmounts = None, globalmounts = []):
                 if len(os.listdir(tmpdir)) == 0:
                     shutil.rmtree(tmpdir, ignore_errors = True)
                 else:
-                    print "Warning: dir %s isn't empty." % tmpdir
+                    msger.warning("Warning: dir %s isn't empty." % tmpdir)
 
     chroot_lockfd.close()
     bind_unmount(globalmounts)
@@ -281,8 +282,7 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
         raise errors.CreatorError("Failed to get architecture from any of the following files %s from chroot." % files_to_check)
 
     try:
-        print "Launching shell. Exit to continue."
-        print "----------------------------------"
+        msger.info("Launching shell. Exit to continue.\n----------------------------------")
         globalmounts = setup_chrootenv(chrootdir, bindmounts)
         subprocess.call(execute, preexec_fn = mychroot, shell=True)
 
