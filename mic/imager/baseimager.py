@@ -69,7 +69,7 @@ class BaseImageCreator(object):
             self.repometadata = createopts['repomd']
 
             # A name for the image."""
-            self.name = 'output'
+            self.name = createopts['name']
 
             # The directory in which all temporary files will be created."""
             self.tmpdir = createopts['tmpdir']

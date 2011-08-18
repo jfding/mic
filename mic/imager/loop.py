@@ -103,7 +103,7 @@ class LoopImageCreator(BaseImageCreator):
     def __get_image(self):
         if self.__imgdir is None:
             raise CreatorError("_image is not valid before calling mount()")
-        return self.__imgdir + "/meego.img"
+        return os.path.join(self.__imgdir, self._img_name) 
     #The location of the image file.
     #
     #This is the path to the filesystem image. Subclasses may use this path
