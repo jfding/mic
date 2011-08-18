@@ -24,6 +24,14 @@ import time
 import logging
 import string
 
+try:
+    import pykickstart
+except:
+    import mic
+    sys.path.insert(0, mic.__path__[0])
+    import pykickstart
+    del(sys.path[0])
+
 import pykickstart.commands as kscommands
 import pykickstart.constants as ksconstants
 import pykickstart.errors as kserrors
@@ -34,11 +42,10 @@ from pykickstart.handlers.control import dataMap
 
 import errors as errors
 import fs_related as fs
+import misc as misc
 import kscommands.desktop as desktop
 import kscommands.moblinrepo as moblinrepo
 import kscommands.micboot as micboot
-
-import misc
 
 def read_kickstart(path):
     """Parse a kickstart file and return a KickstartParser instance.
