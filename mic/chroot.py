@@ -27,6 +27,8 @@ import mic.utils.misc as misc
 import mic.utils.errors as errors
 from mic import msger
 
+chroot_lockfd = -1
+chroot_lock = ""
 BIND_MOUNTS = (
                 "/proc",
                 "/proc/sys/fs/binfmt_misc",

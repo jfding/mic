@@ -176,6 +176,7 @@ class RawPlugin(ImagerPlugin):
         if rc != 0:
             raise CreatorError("Failed to dd")
         srcloop.cleanup()
+        shutil.rmtree(srcmnt, ignore_errors = True)
         return image
 
 mic_plugin = ["raw", RawPlugin]

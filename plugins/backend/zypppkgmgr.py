@@ -582,7 +582,7 @@ class Zypp(BackendPlugin):
 
         """ Set system architecture """
         if self.creator.target_arch and self.creator.target_arch.startswith("arm"):
-            arches = ["armv7l", "armv7nhl", "armv7hl"]
+            arches = ["armv7l", "armv7nhl", "armv7hl", "armv5tel"]
             if self.creator.target_arch not in arches:
                 raise CreatorError("Invalid architecture: %s" % self.creator.target_arch)
             arch_map = {}
@@ -592,6 +592,8 @@ class Zypp(BackendPlugin):
                 arch_map["armv7nhl"] = zypp.Arch_armv7nhl()
             elif self.creator.target_arch == "armv7hl":
                 arch_map["armv7hl"] = zypp.Arch_armv7hl()
+            elif self.creator.target_arch == "armv5tel":
+                arch_map["armv5tel"] = zypp.Arch_armv5tel()
             zconfig.setSystemArchitecture(arch_map[self.creator.target_arch])
 
         print "zypp architecture: %s" % zconfig.systemArchitecture()

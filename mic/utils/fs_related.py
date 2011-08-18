@@ -184,7 +184,7 @@ class BindChrootMount:
             raise MountError("Bind-mounting '%s' to '%s' failed" %
                              (self.src, self.dest))
         if self.option:
-            rc = subprocess.call([self.mountcmd, "-o", "remount,%s" % self.option, self.dest])
+            rc = subprocess.call([self.mountcmd, "--bind", "-o", "remount,%s" % self.option, self.dest])
             if rc != 0:
                 raise MountError("Bind-remounting '%s' failed" % self.dest)
         self.mounted = True

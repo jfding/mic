@@ -93,7 +93,7 @@ class LiveCDPlugin(ImagerPlugin):
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            raise CreatorError("Failed to chroot to %s." %img)
+            raise CreatorError("Failed to chroot to %s." %target)
         finally:
             chroot.cleanup_after_chroot("img", extloop, os_image_dir, extmnt)
 

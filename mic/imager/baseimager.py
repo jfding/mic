@@ -77,6 +77,8 @@ class BaseImageCreator(object):
             self.cachedir = createopts['cachedir']
 
             self.destdir = createopts['outdir']
+            # target arch for non-x86 image
+            self.target_arch = createopts['arch']
         else:
             self.ks = None
             self.repometadata = None
@@ -84,6 +86,7 @@ class BaseImageCreator(object):
             self.tmpdir = "/var/tmp"
             self.cachedir = "/var/cache"
             self.destdir = "."
+            self.target_arch = None
 
         self.__builddir = None
         self.__bindmounts = []
@@ -106,8 +109,6 @@ class BaseImageCreator(object):
         self._local_pkgs_path = None
         # available size in root fs, init to 0
         self._root_fs_avail = 0
-        # target arch for non-x86 image
-        self.target_arch = None
         # Name of the disk image file that is created. """
         self._img_name = None
         # Image format """
@@ -404,7 +405,7 @@ class BaseImageCreator(object):
         RPM's n-v-r in the case of e.g. xen)
 
         """
-        def get_kernel_versions(self, instroot):
+        def get_kernel_versions(instroot):
             ret = {}
             versions = set()
             files = glob.glob(instroot + "/boot/vmlinuz-*")

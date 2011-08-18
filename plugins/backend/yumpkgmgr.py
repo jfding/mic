@@ -57,10 +57,13 @@ class Yum(BackendPlugin, yum.YumBase):
         self.creator = creator
 
         if self.creator.target_arch:
-            if rpmUtils.arch.arches.has_key(self.creator.target_arch):
-                self.arch.setup_arch(self.creator.target_arch)
-            else:
-                raise CreatorError("Invalid target arch: %s" % self.creator.target_arch)
+            if not rpmUtils.arch.arches.has_key(self.creator.target_arch):
+                rpmUtils.arch.arches["armv7hl"] = "noarch"
+                rpmUtils.arch.arches["armv7tnhl"] = "armv7nhl"
+                rpmUtils.arch.arches["armv7tnhl"] = "armv7thl"
+                rpmUtils.arch.arches["armv7thl"] = "armv7hl"
+                rpmUtils.arch.arches["armv7nhl"] = "armv7hl"
+            self.arch.setup_arch(self.creator.target_arch)
 
         self.__recording_pkgs = recording_pkgs
         self.__pkgs_content = {}

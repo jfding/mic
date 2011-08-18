@@ -42,9 +42,6 @@ xmlparse = cElementTree.parse
 from errors import *
 from fs_related import *
 
-chroot_lockfd = -1
-chroot_lock = ""
-
 def setlocale():
     import locale
     import codecs

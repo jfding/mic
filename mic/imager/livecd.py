@@ -101,7 +101,7 @@ class LiveImageCreatorBase(LoopImageCreator):
         """Return a menu options string for syslinux configuration.
         """
         if self.ks is None:
-            return "bootinstall autoinst"
+            return "liveinst autoinst"
         r = kickstart.get_menu_args(self.ks)
         return r
 
