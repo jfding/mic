@@ -19,7 +19,9 @@
 
 import os, sys
 import logging
+import ConfigParser
 import mic.utils as utils
+import mic.utils.errors as errors
 
 DEFAULT_GSITECONF='/etc/mic/mic.conf'
 
@@ -27,36 +29,65 @@ DEFAULT_OUTDIR='.'
 DEFAULT_TMPDIR='/var/tmp'
 DEFAULT_CACHEDIR='/var/cache'
 
+DEFAULT_CREATE = {
+    "tmpdir": DEFAULT_TMPDIR,
+    "cachedir": DEFAULT_CACHEDIR,
+    "outdir": DEFAULT_OUTDIR,
+    "arch": "i586",
+    "pkgmgr": "zypp",
+    "name": "output",
+    "ksfile": None,
+    "ks": None,
+    "repomd": None,
+}
+
 class ConfigMgr(object):
-    def __init__(self, siteconf=None, ksconf=None):
+    def __init__(self, ksconf=None, siteconf=None):
         self.common = {}
         self.create = {}
         self.convert = {}
         self.chroot = {}
+        self.ksconf = None
+        self.siteconf = None
 
-        self.siteconf = siteconf
+        # initial create
+        for key in DEFAULT_CREATE.keys():
+            self.create[key] = DEFAULT_CREATE[key]
+
+        # initial options from siteconf
+        self._siteconf = siteconf
+        if not self.siteconf:
+            self._siteconf = DEFAULT_GSITECONF
+        
+        self._ksconf = ksconf
+
+    def __set_siteconf(self, siteconf):
+        try:
+            self.siteconf = siteconf
+            self.parse_siteconf(siteconf)
+        except ConfigParser.Error, error:
+            raise errors.ConfigError("%s" % error)
+    def __get_siteconf(self):
+        return self.siteconf
+    _siteconf = property(__get_siteconf, __set_siteconf)
+
+    def __set_ksconf(self, ksconf):
         self.ksconf = ksconf
+        self.parse_kickstart(ksconf)
+        pass
+    def __get_ksconf(self):
+        return self.ksconf
+    _ksconf = property(__get_ksconf, __set_ksconf)
 
-        self.create["tmpdir"] = DEFAULT_TMPDIR
-        self.create["cachedir"] = DEFAULT_CACHEDIR
-        self.create["outdir"] = DEFAULT_OUTDIR
-
-        self.init_siteconf(self.siteconf)
-        self.init_kickstart(self.ksconf)
-
-    def init_siteconf(self, siteconf = None):
-        from ConfigParser import SafeConfigParser
-        siteconf_parser = SafeConfigParser()
-        siteconf_files = [DEFAULT_GSITECONF]
-
-        if not os.path.exists(DEFAULT_GSITECONF):
-            logging.debug("No default config file: %s" % DEFAULT_GSITECONF)
+    def parse_siteconf(self, siteconf = None):
+        if not siteconf:
             return
 
-        if siteconf:
-            self.siteconf = siteconf
-            siteconf_files = [self.siteconf]
-        siteconf_parser.read(siteconf_files)
+        from ConfigParser import SafeConfigParser
+        siteconf_parser = SafeConfigParser()
+        if not os.path.exists(siteconf):
+            raise errors.ConfigError("Failed to find config file: %s" % siteconf)
+        siteconf_parser.read(siteconf)
 
         for option in siteconf_parser.options('common'):
             value = siteconf_parser.get('common', option)
@@ -74,38 +105,33 @@ class ConfigMgr(object):
             value = siteconf_parser.get('chroot', option)
             self.chroot[option] = value
 
-    def init_kickstart(self, ksconf=None):
+    def parse_kickstart(self, ksconf=None):
         if not ksconf:
-            self.create['ks'] = None
-            self.create['repomd'] = None
             return
 
-        self.ksconf = ksconf
         try:
-            self.kickstart = utils.kickstart.read_kickstart(self.ksconf)
-            self.ksrepos = utils.misc.get_repostrs_from_ks(self.kickstart)
-            print "Retrieving repo metadata:"
-            self.repometadata = utils.misc.get_metadata_from_repos(self.ksrepos, self.create['cachedir'])
-            print
-            self.create['ks'] = self.kickstart
-            self.create['repomd'] = self.repometadata
+            kickstart = utils.kickstart.read_kickstart(ksconf)
+            ksrepos = utils.misc.get_repostrs_from_ks(kickstart)
+            repometadata = utils.misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
+            sys.stdout.write("Retrieving repo metadata:\n")
+            sys.stdout.write("%s" % repometadata)
+            sys.stdout.flush()
+            self.create['ks'] = kickstart
+            self.create['repomd'] = repometadata
             self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
-
-        except OSError, e:
-            raise Exception("Failed to create image: %s" % e)
         except Exception, e:
-            raise Exception("Unable to load kickstart file '%s': %s" % (self.ksconf, e))
+            raise errors.KickstartError("Unable to load kickstart file '%s': %s" % (ksconf, e))
 
     def setProperty(self, key, value):
         if not hasattr(self, key):
-            return None
+            return False
 
         if key == 'ksconf':
-            self.init_kickstart(value)
+            self._ksconf = value
             return True
 
         if key == 'siteconf':
-            self.init_siteconf(value)
+            self._siteconf = value
             return True
 
         return setattr(self, key, value)
@@ -118,29 +144,29 @@ class ConfigMgr(object):
 
     def setCategoryProperty(self, category, key, value):
         if not hasattr(self, category):
-            raise Exception("Error to parse %s", category)
+            raise errors.ConfigError("Error to parse %s", category)
         categ = getattr(self, category)
         categ[key] = value
 
     def getCategoryProperty(self, category, key):
         if not hasattr(self, category):
-            raise Exception("Error to parse %s", category)
+            raise errors.ConfigError("Error to parse %s", category)
         categ = getattr(self, category)
         return categ[key]
 
     def getCreateOption(self, key):
         if not self.create.has_key(key):
-            raise Exception("Attribute Error: not such attribe %s" % key)
+            raise errors.ConfigError("Attribute Error: not such attribe %s" % key)
         return self.create[key]
 
     def getConvertOption(self, key):
         if not self.convert.has_key(key):
-            raise Exception("Attribute Error: not such attribe %s" % key)
+            raise errors.ConfigError("Attribute Error: not such attribe %s" % key)
         return self.convert[key]
 
     def getChrootOption(self, key):
         if not self.chroot.has_key(key):
-            raise Exception("Attribute Error: not such attribe %s" % key)
+            raise errors.ConfigError("Attribute Error: not such attribe %s" % key)
         return self.chroot[key]
 
     def dumpAllConfig(self):

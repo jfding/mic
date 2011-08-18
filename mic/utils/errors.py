@@ -20,6 +20,10 @@ class Usage(Exception):
     def __init__(self, msg=None):
         Exception.__init__(self, msg)
 
+class ConfigError(Exception):
+    def __init__(self, msg=None):
+        Exception.__init__(self, msg)
+
 class CreatorError(Exception):
     """An exception base class for all imgcreate errors."""
     def __init__(self, msg):
