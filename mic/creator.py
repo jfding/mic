@@ -25,9 +25,12 @@ import mic.configmgr as configmgr
 import mic.pluginmgr as pluginmgr
 
 class Creator(cmdln.Cmdln):
-    """
+    """${name}: create an image
+
+    usage:
+        ${name} SUBCOMMAND [OPTS] [ARGS..]
+
     ${command_list}
-    ${help_list}
     ${option_list}
     """
 

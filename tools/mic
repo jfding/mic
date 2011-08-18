@@ -20,49 +20,80 @@
 import os, sys
 import logging
 
-from mic.__version__ import VERSION
 import mic.utils.cmdln as cmdln
 import mic.utils.misc as misc
 import mic.utils.errors as errors
 import mic.configmgr as configmgr
 import mic.pluginmgr as pluginmgr
 import mic.creator as creator
+try:
+    from mic.__version__ import VERSION
+except:
+    VERSION = 'unknown'
 
 class Mic(cmdln.Cmdln):
     """
     Usage: mic SUBCOMMAND [OPTS] [ARGS...]
 
-    Image Creator
+    Mic Image Creation Tool.
+    Try 'mic help SUBCOMAND' for help on a specific subcommand. 
 
     ${command_list}
-    ${help_list}
     global ${option_list}
+    ${help_list}
     """
 
     name = 'mic'
     version = VERSION
 
+    def get_version(self):
+        return self.version
+
+    def get_optparser(self):
+       optparser = cmdln.CmdlnOptionParser(self, version=self.get_version())
+       optparser.add_option('-d', '--debug', action='store_true', dest='debug', help='print debug message')
+       optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='verbose infomation')
+       return optparser
+
+    def postoptparse(self):
+       if self.options.verbose is True:
+          logging.getLogger().setLevel(logging.INFO)
+       if self.options.debug is True:
+          logging.getLogger().setLevel(logging.DEBUG)
+       pass
+
     @cmdln.alias("cr")
     def do_create(self, argv):
-        """${cmd_name}: create image
+        try:
+            cr = creator.Creator()
+            cr.main(argv[1:])
+        except:
+            raise
 
-        ${cmd_usage}
-        ${cmd_option_list}
-        """
+    def help_create(self):
         cr = creator.Creator()
-        ret = cr.main(argv[1:])
-        return ret
+        cr.optparser = cr.get_optparser()
+        doc = cr.__doc__
+        doc = cr._help_reindent(doc)
+        doc = cr._help_preprocess(doc, None)
+        doc = doc.replace(cr.name, "${cmd_name}", 1)
+        doc = doc.rstrip() + '\n'
+        return doc
 
     @cmdln.alias("cv")
     def do_convert(self, subcmd, opts, *args):
-        """${cmd_name}: convert an image format to another one
+        """${cmd_name}: convert image format
 
         usage:
             mic convert <imagefile> <destformat>
+
+        ${cmd_option_list}
         """
         if len(args) == 0:
-            self.emptyline()
             # print help
+            handler = self._get_cmd_handler('convert')
+            if hasattr(handler, "optparser"):
+                handler.optparser.print_help()
             return
         if len(args) == 1:
             raise errors.Usage("It takes 2 arguments (1 given)")
@@ -109,8 +140,10 @@ class Mic(cmdln.Cmdln):
         ${cmd_option_list}
         """
         if len(args) == 0:
-            self.emptyline()
             # print help
+            handler = self._get_cmd_handler('chroot')
+            if hasattr(handler, "optparser"):
+                handler.optparser.print_help()
             return
         if len(args) == 1:
             targetimage = args[0]
@@ -147,14 +180,29 @@ class Mic(cmdln.Cmdln):
         chrootclass.do_chroot(targetimage)
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.ERROR)
+    logging.getLogger().setLevel(logging.CRITICAL)
     mic = Mic()
     try:
         ret = mic.main()
-    except errors.CreatorError, msg:
-        ret = 2
-        print >> sys.stderr, msg
     except errors.Usage, msg:
         ret = 2
-        print >> sys.stderr, msg
+        logging.exception(msg)
+        sys.stderr.write("Usage error: %s\n" % msg)
+        sys.stderr.flush()
+    except errors.ConfigError, msg:
+        ret = 3
+        logging.exception(msg)
+        sys.stderr.write("Config error: %s\n" % msg)
+        sys.stderr.flush()
+    except errors.CreatorError, msg:
+        ret = 4
+        logging.exception(msg)
+        sys.stderr.write("Creator error: %s\n" % msg)
+        sys.stderr.flush()
+    except:
+        ret = 127
+        exctype, excvalue, exctb = sys.exc_info()
+        logging.exception(exctb)
+        sys.stderr.write("Unknown exception: %s\n" % excvalue)
+        sys.stderr.flush()
     sys.exit(ret)
