@@ -19,7 +19,7 @@ import mic.chroot as chroot
 class LoopPlugin(ImagerPlugin):
     @classmethod
     def do_create(self, subcmd, opts, *args):
-        """${cmd_name}: create fs image
+        """${cmd_name}: create loop image
 
         ${cmd_usage}
         ${cmd_option_list}

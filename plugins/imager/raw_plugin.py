@@ -22,7 +22,7 @@ class RawPlugin(ImagerPlugin):
 
     @classmethod
     def do_create(self, subcmd, opts, *args):
-        """${cmd_name}: create fs image
+        """${cmd_name}: create raw image
 
         ${cmd_usage}
         ${cmd_option_list}

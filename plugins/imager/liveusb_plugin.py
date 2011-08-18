@@ -21,7 +21,7 @@ class LiveUSBPlugin(ImagerPlugin):
     #@cmdln.option
     @classmethod
     def do_create(self, subcmd, opts, *args):
-        """${cmd_name}: create livecd image
+        """${cmd_name}: create liveusb image
 
         ${cmd_usage}
         ${cmd_option_list}
