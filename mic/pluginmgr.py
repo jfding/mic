@@ -77,6 +77,10 @@ class PluginMgr(object):
             logging.debug("Not a python file: %s" % os.path.join(dir_path, plugin_filename))
             return
 
+        if plugin_filename == ".py":
+            logging.debug("Empty module name: %s" % os.path.join(dir_path, plugin_filename))
+            return
+
         if plugin_filename == "__init__.py":
             logging.debug("Unsupported python file: %s" % os.path.join(dir_path, plugin_filename))
             return
