@@ -22,6 +22,7 @@ import logging
 import ConfigParser
 import mic.utils as utils
 import mic.utils.errors as errors
+from mic import kickstart
 from mic import msger
 
 DEFAULT_GSITECONF='/etc/mic/mic.conf'
@@ -75,7 +76,6 @@ class ConfigMgr(object):
     def __set_ksconf(self, ksconf):
         self.ksconf = ksconf
         self.parse_kickstart(ksconf)
-        pass
     def __get_ksconf(self):
         return self.ksconf
     _ksconf = property(__get_ksconf, __set_ksconf)
@@ -111,17 +111,17 @@ class ConfigMgr(object):
             return
 
         try:
-            kickstart = utils.kickstart.read_kickstart(ksconf)
-            ksrepos = utils.misc.get_repostrs_from_ks(kickstart)
+            ks = kickstart.read_kickstart(ksconf)
+            ksrepos = utils.misc.get_repostrs_from_ks(ks)
             msger.info("Retrieving repo metadata:")
             repometadata = utils.misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
-            msger.info("\nDONE")
+            msger.raw(" DONE")
 
-            self.create['ks'] = kickstart
+            self.create['ks'] = ks
             self.create['repomd'] = repometadata
             self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
         except Exception, e:
-            raise errors.KickstartError("Unable to load kickstart file '%s': %s" % (ksconf, e))
+            raise errors.KsError("Unable to load kickstart file '%s': %s" % (ksconf, e))
 
     def setProperty(self, key, value):
         if not hasattr(self, key):

@@ -36,9 +36,9 @@ PACKAGES = [MOD_NAME,
             MOD_NAME + '/pluginbase',
             MOD_NAME + '/kickstart',
             MOD_NAME + '/kickstart/custom_commands',
-            MOD_NAME + '/kickstart/pykickstart',
-            MOD_NAME + '/kickstart/pykickstart/commands',
-            MOD_NAME + '/kickstart/pykickstart/handlers',
+            MOD_NAME + '/pykickstart',
+            MOD_NAME + '/pykickstart/commands',
+            MOD_NAME + '/pykickstart/handlers',
            ]
 
 setup(name=MOD_NAME,

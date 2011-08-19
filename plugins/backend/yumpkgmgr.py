@@ -23,7 +23,7 @@ import logging
 
 import yum
 import rpmUtils
-from mic.kickstart.pykickstart import parser as ksparser
+from pykickstart import parser as ksparser
 
 import urlparse
 import urllib2 as u2

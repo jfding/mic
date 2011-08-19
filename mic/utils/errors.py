@@ -29,7 +29,7 @@ class CreatorError(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
 
-class KickstartError(CreatorError):
+class KsError(CreatorError):
     pass
 class MountError(CreatorError):
     pass

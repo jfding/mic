@@ -17,13 +17,12 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os
-import os.path
 import subprocess
-import mic.kickstart as kickstart
 from baseimager import BaseImageCreator
 from mic.utils.errors import *
 from mic.utils.fs_related import *
 from mic.utils.misc import *
+from mic import kickstart
 
 FSLABEL_MAXLEN = 32
 """The maximum string length supported for LoopImageCreator.fslabel."""

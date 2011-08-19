@@ -139,8 +139,8 @@ class BaseImageCreator(object):
                 vdso_value = vdso_fh.read().strip()
                 vdso_fh.close()
                 if (int)(vdso_value) == 1:
-                    msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n" +
-                                  "\tYou can disable vdso with following command before starting image build:\n" +
+                    msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n"
+                                  "\tYou can disable vdso with following command before starting image build:\n"
                                   "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
 
         return True

@@ -28,9 +28,6 @@ from mic.utils import misc
 from mic.utils import fs_related as fs
 from mic import msger
 
-sys.path.insert(0, os.path.dirname(__file__) or '.')
-import pykickstart
-
 import pykickstart.commands as kscommands
 import pykickstart.constants as ksconstants
 import pykickstart.errors as kserrors
@@ -72,11 +69,11 @@ def read_kickstart(path):
     try:
         ks.readKickstart(path)
     except IOError, (err, msg):
-        raise errors.KickstartError("Failed to read kickstart file "
-                                    "'%s' : %s" % (path, msg))
-    except kserrors.KickstartError, e:
-        raise errors.KickstartError("Failed to parse kickstart file "
-                                    "'%s' : %s" % (path, e))
+        raise errors.KsError("Failed to read kickstart file "
+                             "'%s' : %s" % (path, msg))
+    except kserrors.KickstartParseError, e:
+        raise errors.KsError("Failed to parse kickstart file "
+                             "'%s' : %s" % (path, e))
     return ks
 
 def build_name(kscfg, prefix = None, suffix = None, maxlen = None):
@@ -136,7 +133,7 @@ class KickstartConfig(object):
     def call(self, args):
         if not os.path.exists("%s/%s" %(self.instroot, args[0])):
             msger.warning("%s/%s" %(self.instroot, args[0]))
-            raise errors.KickstartError("Unable to run %s!" %(args))
+            raise errors.KsError("Unable to run %s!" %(args))
         subprocess.call(args, preexec_fn = self.chroot)
 
     def apply(self):
@@ -179,7 +176,7 @@ class TimezoneConfig(KickstartConfig):
             shutil.copyfile(self.path("/usr/share/zoneinfo/%s" %(tz,)),
                             self.path("/etc/localtime"))
         except (IOError, OSError), (errno, msg):
-            raise errors.KickstartError("Error copying timezone info: %s" %(msg,))
+            raise errors.KsError("Error copying timezone info: %s" %(msg,))
 
 
 class AuthConfig(KickstartConfig):
@@ -216,7 +213,7 @@ class RootPasswordConfig(KickstartConfig):
     def set_unencrypted(self, password):
         for p in ("/bin/echo", "/usr/sbin/chpasswd"):
             if not os.path.exists("%s/%s" %(self.instroot, p)):
-                raise errors.KickstartError("Unable to set unencrypted password due to lack of %s" % p)
+                raise errors.KsError("Unable to set unencrypted password due to lack of %s" % p)
 
         p1 = subprocess.Popen(["/bin/echo", "root:%s" %password],
                               stdout = subprocess.PIPE,
@@ -245,7 +242,7 @@ class UserConfig(KickstartConfig):
     def set_unencrypted_passwd(self, user, password):
         for p in ("/bin/echo", "/usr/sbin/chpasswd"):
             if not os.path.exists("%s/%s" %(self.instroot, p)):
-                raise errors.KickstartError("Unable to set unencrypted password due to lack of %s" % p)
+                raise errors.KsError("Unable to set unencrypted password due to lack of %s" % p)
 
         p1 = subprocess.Popen(["/bin/echo", "%s:%s" %(user, password)],
                               stdout = subprocess.PIPE,
@@ -276,7 +273,7 @@ class UserConfig(KickstartConfig):
             else:
                 self.set_empty_passwd(userconfig.name)
         else:
-            raise errors.KickstartError("Invalid kickstart command: %s" % userconfig.__str__())
+            raise errors.KsError("Invalid kickstart command: %s" % userconfig.__str__())
 
     def apply(self, user):
         for userconfig in user.userList:
@@ -559,12 +556,12 @@ class NetworkConfig(KickstartConfig):
 
         for network in ksnet.network:
             if not network.device:
-                raise errors.KickstartError("No --device specified with "
+                raise errors.KsError("No --device specified with "
                                             "network kickstart command")
 
             if (network.onboot and network.bootProto.lower() != "dhcp" and
                 not (network.ip and network.netmask)):
-                raise errors.KickstartError("No IP address and/or netmask "
+                raise errors.KsError("No IP address and/or netmask "
                                             "specified with static "
                                             "configuration for '%s'" %
                                             network.device)
