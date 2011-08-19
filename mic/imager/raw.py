@@ -24,7 +24,6 @@ import shutil
 import zipfile
 import tarfile
 import subprocess
-import logging
 
 import mic.kickstart as kickstart
 import mic.utils.fs_related as fs_related
@@ -32,6 +31,7 @@ import urlgrabber.progress as progress
 from baseimager import BaseImageCreator
 from mic.utils.partitionedfs import PartitionedMount
 from mic.utils.errors import *
+from mic import msger
 
 
 class RawImageCreator(BaseImageCreator):
@@ -114,7 +114,7 @@ class RawImageCreator(BaseImageCreator):
         mkinitrd += "rootfs=\"ext3\"\n"
         mkinitrd += "rootopts=\"defaults\"\n"
 
-        logging.debug("Writing mkinitrd config %s/etc/sysconfig/mkinitrd" % self._instroot)
+        msger.debug("Writing mkinitrd config %s/etc/sysconfig/mkinitrd" % self._instroot)
         os.makedirs(self._instroot + "/etc/sysconfig/",mode=644)
         cfg = open(self._instroot + "/etc/sysconfig/mkinitrd", "w")
         cfg.write(mkinitrd)
@@ -164,7 +164,7 @@ class RawImageCreator(BaseImageCreator):
 
         #create disk
         for item in disks:
-            logging.debug("Adding disk %s as %s/%s-%s.raw" % (item['name'], self.__imgdir,self.name, item['name']))
+            msger.debug("Adding disk %s as %s/%s-%s.raw" % (item['name'], self.__imgdir,self.name, item['name']))
             disk = fs_related.SparseLoopbackDisk("%s/%s-%s.raw" % (self.__imgdir,self.name, item['name']),item['size'])
             self.__disks[item['name']] = disk
 
@@ -261,7 +261,7 @@ class RawImageCreator(BaseImageCreator):
                syslinux_conf += "\tmenu default\n"
             footlabel += 1;
 
-        logging.debug("Writing syslinux config %s/boot/extlinux/extlinux.conf" % self._instroot)
+        msger.debug("Writing syslinux config %s/boot/extlinux/extlinux.conf" % self._instroot)
         cfg = open(self._instroot + "/boot/extlinux/extlinux.conf", "w")
         cfg.write(syslinux_conf)
         cfg.close()
@@ -272,7 +272,7 @@ class RawImageCreator(BaseImageCreator):
             loopdev = self.__disks[name].device
             i =i+1
 
-        logging.debug("Installing syslinux bootloader to %s" % loopdev)
+        msger.debug("Installing syslinux bootloader to %s" % loopdev)
 
         (bootdevnum, rootdevnum, rootdev, prefix) = self._get_syslinux_boot_config()
 
@@ -325,12 +325,12 @@ class RawImageCreator(BaseImageCreator):
         """
         self._resparse()
 
-        logging.debug("moving disks to stage location")
+        msger.debug("moving disks to stage location")
         for name in self.__disks.keys():
             src = "%s/%s-%s.raw" % (self.__imgdir, self.name,name)
             self._img_name = "%s-%s.%s" % (self.name, name, self.__disk_format)
             dst = "%s/%s" % (self._outdir, self._img_name)
-            logging.debug("moving %s to %s" % (src,dst))
+            msger.debug("moving %s to %s" % (src,dst))
             shutil.move(src,dst)
         self._write_image_xml()
 
@@ -415,7 +415,7 @@ class RawImageCreator(BaseImageCreator):
         xml += "  </storage>\n"
         xml += "</image>\n"
 
-        logging.debug("writing image XML to %s/%s.xml" %  (self._outdir, self.name))
+        msger.debug("writing image XML to %s/%s.xml" %  (self._outdir, self.name))
         cfg = open("%s/%s.xml" % (self._outdir, self.name), "w")
         cfg.write(xml)
         cfg.close()

@@ -22,7 +22,6 @@ import stat
 import sys
 import tempfile
 import shutil
-import logging
 import subprocess
 import re
 import tarfile
@@ -57,7 +56,7 @@ class FsImageCreator(BaseImageCreator):
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
 
-        logging.info("Copying %s to %s, please be patient to wait" % (self._instroot, destdir + "/" + self.name))
+        msger.info("Copying %s to %s, please be patient to wait" % (self._instroot, destdir + "/" + self.name))
 
         copycmd = find_binary_path("cp")
         args = [ copycmd, "-af", self._instroot, destdir + "/" + self.name ]

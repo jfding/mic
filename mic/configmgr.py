@@ -18,7 +18,6 @@
 #
 
 import os, sys
-import logging
 import ConfigParser
 import mic.utils as utils
 import mic.utils.errors as errors

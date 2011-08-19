@@ -20,7 +20,7 @@
 import os, sys, re
 import rpm
 import subprocess
-import logging
+from mic import msger
 
 class RPMInstallCallback:
     """ Command line callback class for callbacks from the RPM library.
@@ -134,8 +134,7 @@ class RPMInstallCallback:
                         sys.stdout.flush()
                         self.lastmsg = msg
                         if self.total_installed == self.total_actions:
-                             sys.stdout.write("\n")
-                             logging.info('\n'.join(self.logString))
+                             msger.info('\n'.join(self.logString))
 
         elif what == rpm.RPMCALLBACK_UNINST_START:
             pass

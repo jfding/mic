@@ -20,7 +20,6 @@ import os.path
 import glob
 import shutil
 import subprocess
-import logging
 import re
 import time
 

@@ -19,7 +19,6 @@
 import glob
 import os
 import sys
-import logging
 
 import yum
 import rpmUtils
@@ -35,6 +34,7 @@ from mic.utils.errors import *
 from mic.utils.fs_related import *
 from mic.pluginbase.backend_plugin import BackendPlugin
 from mic.imager.baseimager import BaseImageCreator as ImageCreator
+from mic import msger
 
 def getRPMCallback():
     sys.path.append('/usr/share/yum-cli')
@@ -248,7 +248,7 @@ class Yum(BackendPlugin, yum.YumBase):
                         pkgs.remove(x)
                         self.tsInfo.conditionals[req] = pkgs
         else:
-            logging.warn("No such package %s to remove" %(pkg,))
+            msger.warning("No such package %s to remove" %(pkg,))
 
     def selectGroup(self, grp, include = ksparser.GROUP_DEFAULT):
         try:
@@ -514,7 +514,7 @@ class Yum(BackendPlugin, yum.YumBase):
             if len(deps) != 0:
                 """ This isn't fatal, Ubuntu has this issue but it is ok. """
                 print deps
-                logging.warn("Dependency check failed!")
+                msger.warning("Dependency check failed!")
             rc = self.ts.order()
             if rc != 0:
                 raise CreatorError("ordering packages for installation failed!")

@@ -19,7 +19,7 @@
 import os,sys
 import re
 
-__ALL__ = ['set_mode', 'info', 'warning', 'error', 'ask']
+__ALL__ = ['set_mode', 'set_loglevel', 'raw' 'debug', 'verbose', 'info', 'warning', 'error', 'ask']
 
 # COLORs in ANSI
 INFO_COLOR = 32 # green
@@ -32,7 +32,19 @@ PREFIX_RE = re.compile('^<(.*?)>\s*(.*)')
 
 INTERACTIVE = True
 
-def _color_print(head, color, msg = None, stream = sys.stdout):
+LOG_LEVELS = {
+                'quiet': 0,
+                'normal': 1,
+                'verbose': 2,
+                'debug': 3,
+             }
+LOG_LEVEL = 1
+
+def _color_print(head, color, msg = None, stream = sys.stdout, level = 'normal'):
+
+    if LOG_LEVELS[level] > LOG_LEVEL:
+        # skip
+        return
 
     colored = True
     if color == NO_COLOR or \
@@ -64,8 +76,8 @@ def _color_print(head, color, msg = None, stream = sys.stdout):
 
     stream.flush()
 
-def _color_perror(head, color, msg):
-    _color_print(head, color, msg, sys.stderr)
+def _color_perror(head, color, msg, level = 'normal'):
+    _color_print(head, color, msg, sys.stderr, level)
 
 def _split_msg(head, msg):
     if msg.startswith('\n'):
@@ -85,6 +97,14 @@ def _split_msg(head, msg):
 
     return head, msg
 
+def set_loglevel(level):
+    global LOG_LEVEL
+    if level not in LOG_LEVELS:
+        # no effect
+        return
+
+    LOG_LEVEL = LOG_LEVELS[level]
+
 def set_mode(interactive):
     global INTERACTIVE
     if interactive:
@@ -100,9 +120,17 @@ def info(msg):
     head, msg = _split_msg('Info', msg)
     _color_print(head, INFO_COLOR, msg)
 
+def verbose(msg):
+    head, msg = _split_msg('Verbose', msg)
+    _color_print(head, INFO_COLOR, msg, level = 'verbose')
+
 def warning(msg):
     head, msg = _split_msg('Warning', msg)
     _color_perror(head, WARN_COLOR, msg)
+
+def debug(msg):
+    head, msg = _split_msg('Debug', msg)
+    _color_perror(head, ERR_COLOR, msg, level = 'debug')
 
 def error(msg):
     head, msg = _split_msg('Error', msg)

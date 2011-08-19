@@ -18,7 +18,6 @@
 #
 
 import os, sys
-import logging
 
 from mic import configmgr
 from mic import pluginmgr

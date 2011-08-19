@@ -21,7 +21,6 @@ import sys
 import glob
 import shutil
 import subprocess
-import logging
 import re
 import time
 
@@ -31,6 +30,7 @@ import mic.utils.rpmmisc as rpmmisc
 import mic.utils.misc as misc
 from mic.utils.errors import *
 from loop import LoopImageCreator
+from mic import msger
 
 class LiveImageCreatorBase(LoopImageCreator):
     """A base class for LiveCD image creators.
@@ -250,7 +250,7 @@ class LiveImageCreatorBase(LoopImageCreator):
         elif os.path.exists("/usr/lib/anaconda-runtime/implantisomd5"):
             implantisomd5 = "/usr/lib/anaconda-runtime/implantisomd5"
         else:
-            logging.warn("isomd5sum not installed; not setting up mediacheck")
+            msger.warn("isomd5sum not installed; not setting up mediacheck")
             implantisomd5 = ""
             return
 

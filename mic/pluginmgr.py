@@ -18,7 +18,7 @@
 #
 
 import os, sys
-import logging
+from mic import msger
 
 DEFAULT_PLUGIN_LOCATION = "/usr/lib/mic/plugins"
 
@@ -44,7 +44,7 @@ class PluginMgr(object):
 
     def addPluginDir(self, plugin_dir):
         if not os.path.isdir(plugin_dir):
-            logging.debug("Plugin dir is not a directory or does not exist: %s" % plugin_dir)
+            msger.debug("Plugin dir is not a directory or does not exist: %s" % plugin_dir)
             return
 
         if plugin_dir not in self.plugin_locations:
@@ -52,19 +52,19 @@ class PluginMgr(object):
 
     def pluginCheck(self, pymod):
         if not hasattr(pymod, STRING_PLUGIN_MARK):
-            logging.debug("Not a valid plugin: %s" % pymod.__file__)
-            logging.debug("Please check whether %s given" % STRING_PLUGIN_MARK)
+            msger.debug("Not a valid plugin: %s" % pymod.__file__)
+            msger.debug("Please check whether %s given" % STRING_PLUGIN_MARK)
             return False
 
         plclass = getattr(pymod, STRING_PLUGIN_MARK)[1]
         if not hasattr(plclass, STRING_PTYPE_MARK):
-            logging.debug("Not a valid plugin: %s" % pymod.__file__)
-            logging.debug("Please check whether %s given" % STRING_PTYPE_MARK)
+            msger.debug("Not a valid plugin: %s" % pymod.__file__)
+            msger.debug("Please check whether %s given" % STRING_PTYPE_MARK)
             return False
 
         pltype = getattr(plclass, STRING_PTYPE_MARK)
         if not (pltype in self.plugin_types):
-            logging.debug("Unsupported plugin type in %s: %s" % (pymod.__file__, plugintype))
+            msger.debug("Unsupported plugin type in %s: %s" % (pymod.__file__, plugintype))
             return False
 
         return True
@@ -74,26 +74,26 @@ class PluginMgr(object):
             return
 
         if not plugin_filename.endswith(".py"):
-            logging.debug("Not a python file: %s" % os.path.join(dir_path, plugin_filename))
+            msger.debug("Not a python file: %s" % os.path.join(dir_path, plugin_filename))
             return
 
         if plugin_filename == ".py":
-            logging.debug("Empty module name: %s" % os.path.join(dir_path, plugin_filename))
+            msger.debug("Empty module name: %s" % os.path.join(dir_path, plugin_filename))
             return
 
         if plugin_filename == "__init__.py":
-            logging.debug("Unsupported python file: %s" % os.path.join(dir_path, plugin_filename))
+            msger.debug("Unsupported python file: %s" % os.path.join(dir_path, plugin_filename))
             return
 
         modname = os.path.splitext(plugin_filename)[0]
         if sys.modules.has_key(modname):
             pymod = sys.modules[modname]
-            logging.debug("Module %s already exists: %s" % (modname, pymod.__file__))
+            msger.debug("Module %s already exists: %s" % (modname, pymod.__file__))
         else:
             pymod = __import__(modname)
             pymod.__file__ = os.path.join(dir_path, plugin_filename)
         if not self.pluginCheck(pymod):
-            logging.warn("Failed to check plugin: %s" % os.path.join(dir_path, plugin_filename))
+            msger.warning("Failed to check plugin: %s" % os.path.join(dir_path, plugin_filename))
             return
 
         (pname, pcls) = pymod.__dict__[STRING_PLUGIN_MARK]
@@ -110,7 +110,7 @@ class PluginMgr(object):
 
     def getPluginByCateg(self, categ = None):
         if not (categ in self.plugin_types):
-            logging.warn("Failed to get plugin category: %s" % categ)
+            msger.warning("Failed to get plugin category: %s" % categ)
             return None
         else:
             return self.plugin_sets[categ]
@@ -135,7 +135,7 @@ class PluginMgr(object):
         pass
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.DEBUG)
+    msger.set_loglevel('debug')
 
     pluginmgr = PluginMgr()
     pluginmgr.loadPlugins()

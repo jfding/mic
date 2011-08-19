@@ -20,7 +20,6 @@ import os, sys
 import stat
 import tempfile
 import shutil
-import logging
 import subprocess
 import re
 import tarfile
@@ -738,7 +737,7 @@ class BaseImageCreator(object):
                                        (pkg, e))
 
         for pkg in skipped_pkgs:
-            logging.warn("Skipping missing package '%s'" % (pkg,))
+            msger.warning("Skipping missing package '%s'" % (pkg,))
 
     def __select_groups(self, pkg_manager):
         skipped_groups = []
@@ -752,7 +751,7 @@ class BaseImageCreator(object):
                                        (group.name, e))
 
         for group in skipped_groups:
-            logging.warn("Skipping missing group '%s'" % (group.name,))
+            msger.warning("Skipping missing group '%s'" % (group.name,))
 
     def __deselect_packages(self, pkg_manager):
         for pkg in self._excluded_pkgs:
@@ -942,7 +941,7 @@ class BaseImageCreator(object):
                                  stdout=subprocess.PIPE)
             (md5sum, errorstr) = p.communicate()
             if p.returncode != 0:
-                logging.warning("Can't generate md5sum for image %s" % image_name)
+                msger.warning("Can't generate md5sum for image %s" % image_name)
             else:
                 pattern = re.compile("\*.*$")
                 md5sum = pattern.sub("*" + os.path.basename(image_name), md5sum)
@@ -990,7 +989,7 @@ class BaseImageCreator(object):
         """ For image formats with two or multiple image files, it will be better to put them under a directory """
         if self.image_format in ("raw", "vmdk", "vdi", "nand", "mrstnand"):
             destdir = os.path.join(destdir, "%s-%s" % (self.name, self.image_format))
-            logging.debug("creating destination dir: %s" % destdir)
+            msger.debug("creating destination dir: %s" % destdir)
             makedirs(destdir)
 
         # Ensure all data is flushed to _outdir

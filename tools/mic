@@ -18,7 +18,6 @@
 #
 
 import os, sys
-import logging
 
 import mic.utils.misc as misc
 import mic.utils.errors as errors
@@ -54,11 +53,10 @@ class Mic(cmdln.Cmdln):
         return optparser
 
     def postoptparse(self):
-        if self.options.verbose is True:
-           logging.getLogger().setLevel(logging.INFO)
-        if self.options.debug is True:
-           logging.getLogger().setLevel(logging.DEBUG)
-        pass
+        if self.options.verbose:
+           msger.set_loglevel('verbose')
+        if self.options.debug:
+           msger.set_loglevel('debug')
 
     @cmdln.alias("cr")
     def do_create(self, argv):
@@ -172,8 +170,7 @@ class Mic(cmdln.Cmdln):
 if __name__ == "__main__":
     try:
         mic = Mic()
-        ret = mic.main()
-        sys.exit(ret)
+        sys.exit(mic.main())
 
     except errors.Usage, msg:
         msger.error("Usage error: %s\n" % msg)

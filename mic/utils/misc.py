@@ -20,7 +20,6 @@
 import os
 import sys
 import subprocess
-import logging
 import tempfile
 import re
 import shutil
@@ -136,7 +135,7 @@ def convert_image(srcimg, srcfmt, dstimg, dstfmt):
     #convert disk format
     if dstfmt != "raw":
         raise CreatorError("Invalid destination image format: %s" % dstfmt)
-    logging.debug("converting %s image to %s" % (srcimg, dstimg))
+    msger.debug("converting %s image to %s" % (srcimg, dstimg))
     if srcfmt == "vmdk":
         path = find_binary_path("qemu-img")
         argv = [path, "convert", "-f", "vmdk", srcimg, "-O", dstfmt,  dstimg]
@@ -148,7 +147,7 @@ def convert_image(srcimg, srcfmt, dstimg, dstfmt):
 
     rc = subprocess.call(argv)
     if rc == 0:
-        logging.debug("convert successful")
+        msger.debug("convert successful")
     if rc != 0:
         raise CreatorError("Unable to convert disk to %s" % dstfmt)
 
@@ -1042,7 +1041,7 @@ def create_release(config, destdir, name, outimages, release):
                              stdout=subprocess.PIPE)
             (md5sum, errorstr) = p.communicate()
             if p.returncode != 0:
-                logging.warning("Can't generate md5sum for image %s/%s" %(destdir, f ))
+                msger.warning("Can't generate md5sum for image %s/%s" %(destdir, f ))
             else:
                 md5sum = md5sum.split(" ")[0]
                 fd.write(md5sum+" "+f+"\n")
