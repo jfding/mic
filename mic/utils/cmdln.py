@@ -1,6 +1,7 @@
-# Copyright (c) 2002-2005 ActiveState Corp.
+#!/usr/bin/env python
+# Copyright (c) 2002-2007 ActiveState Software Inc.
 # License: MIT (see LICENSE.txt for license details)
-# Author:  Trent Mick (TrentM@ActiveState.com)
+# Author:  Trent Mick
 # Home:    http://trentm.com/projects/cmdln/
 
 """An improvement on Python's standard cmd.py module.
@@ -34,16 +35,16 @@ See the README.txt or <http://trentm.com/projects/cmdln/> for more
 details.
 """
 
-__revision__ = "$Id: cmdln.py 1666 2007-05-09 03:13:03Z trentm $"
-__version_info__ = (1, 0, 0)
+__version_info__ = (1, 1, 2)
 __version__ = '.'.join(map(str, __version_info__))
 
 import os
+import sys
 import re
 import cmd
 import optparse
 from pprint import pprint
-from datetime import date
+import sys
 
 
 
@@ -61,28 +62,7 @@ _NOT_SPECIFIED = ("Not", "Specified")
 _INCORRECT_NUM_ARGS_RE = re.compile(
     r"(takes [\w ]+ )(\d+)( arguments? \()(\d+)( given\))")
 
-# Static bits of man page
-MAN_HEADER = r""".TH %(ucname)s "1" "%(date)s" "%(name)s %(version)s" "User Commands"
-.SH NAME
-%(name)s \- Program to do useful things.
-.SH SYNOPSIS
-.B %(name)s
-[\fIGLOBALOPTS\fR] \fISUBCOMMAND \fR[\fIOPTS\fR] [\fIARGS\fR...]
-.br
-.B %(name)s
-\fIhelp SUBCOMMAND\fR
-.SH DESCRIPTION
-"""
-MAN_COMMANDS_HEADER = r"""
-.SS COMMANDS
-"""
-MAN_OPTIONS_HEADER = r"""
-.SS GLOBAL OPTIONS
-"""
-MAN_FOOTER = r"""
-.SH AUTHOR
-This man page is automatically generated.
-"""
+
 
 #---- exceptions
 
@@ -103,7 +83,7 @@ class CmdlnUserError(Exception):
 
 def alias(*aliases):
     """Decorator to add aliases for Cmdln.do_* command handlers.
-
+    
     Example:
         class MyShell(cmdln.Cmdln):
             @cmdln.alias("!", "sh")
@@ -117,25 +97,6 @@ def alias(*aliases):
         return f
     return decorate
 
-MAN_REPLACES = [
-    (re.compile(r'(^|[ \t\[\'])--([^/ \t/,-]*)-([^/ \t/,-]*)-([^/ \t/,-]*)(?=$|[ \t=\]\'/,])'), r'\1\-\-\2\-\3\-\4'),
-    (re.compile(r'(^|[ \t\[\'])-([^/ \t/,-]*)-([^/ \t/,-]*)-([^/ \t/,-]*)(?=$|[ \t=\]\'/,])'), r'\1\-\2\-\3\-\4'),
-    (re.compile(r'(^|[ \t\[\'])--([^/ \t/,-]*)-([^/ \t/,-]*)(?=$|[ \t=\]\'/,])'), r'\1\-\-\2\-\3'),
-    (re.compile(r'(^|[ \t\[\'])-([^/ \t/,-]*)-([^/ \t/,-]*)(?=$|[ \t=\]\'/,])'), r'\1\-\2\-\3'),
-    (re.compile(r'(^|[ \t\[\'])--([^/ \t/,-]*)(?=$|[ \t=\]\'/,])'), r'\1\-\-\2'),
-    (re.compile(r'(^|[ \t\[\'])-([^/ \t/,-]*)(?=$|[ \t=\]\'/,])'), r'\1\-\2'),
-    (re.compile(r"^'"), r" '"),
-    ]
-
-def man_escape(text):
-    '''
-    Escapes text to be included in man page.
-
-    For now it only escapes dashes in command line options.
-    '''
-    for repl in MAN_REPLACES:
-        text = repl[0].sub(repl[1], text)
-    return text
 
 class RawCmdln(cmd.Cmd):
     """An improved (on cmd.Cmd) framework for building multi-subcommand
@@ -171,13 +132,7 @@ class RawCmdln(cmd.Cmd):
 
     helpindent = '' # string with which to indent help output
 
-    # Default man page parts, please change them in subclass
-    man_header = MAN_HEADER
-    man_commands_header = MAN_COMMANDS_HEADER
-    man_options_header = MAN_OPTIONS_HEADER
-    man_footer = MAN_FOOTER
-
-    def __init__(self, completekey='tab',
+    def __init__(self, completekey='tab', 
                  stdin=None, stdout=None, stderr=None):
         """Cmdln(completekey='tab', stdin=None, stdout=None, stderr=None)
 
@@ -185,11 +140,11 @@ class RawCmdln(cmd.Cmd):
         completion key; it defaults to the Tab key. If completekey is
         not None and the readline module is available, command completion
         is done automatically.
-
+        
         The optional arguments 'stdin', 'stdout' and 'stderr' specify
         alternate input, output and error output file objects; if not
         specified, sys.* are used.
-
+        
         If 'stdout' but not 'stderr' is specified, stdout is used for
         error output. This is to provide least surprise for users used
         to only the 'stdin' and 'stdout' options with cmd.Cmd.
@@ -230,22 +185,16 @@ class RawCmdln(cmd.Cmd):
         can return None to have no options at the top-level. Typically
         an instance of CmdlnOptionParser should be returned.
         """
-        version = (self.version is not None
+        version = (self.version is not None 
                     and "%s %s" % (self._name_str, self.version)
                     or None)
         return CmdlnOptionParser(self, version=version)
-
-    def get_version(self):
-        """
-        Returns version of program. To be replaced in subclass.
-        """
-        return __version__
 
     def postoptparse(self):
         """Hook method executed just after `.main()' parses top-level
         options.
 
-        When called `self.values' holds the results of the option parse.
+        When called `self.options' holds the results of the option parse.
         """
         pass
 
@@ -256,14 +205,14 @@ class RawCmdln(cmd.Cmd):
             class MyCmd(cmdln.Cmdln):
                 name = "mycmd"
                 ...
-
+            
             if __name__ == "__main__":
                 MyCmd().main()
 
         By default this will use sys.argv to issue a single command to
         'MyCmd', then exit. The 'loop' argument can be use to control
         interactive shell behaviour.
-
+        
         Arguments:
             "argv" (optional, default sys.argv) is the command to run.
                 It must be a sequence, where the first element is the
@@ -316,7 +265,7 @@ class RawCmdln(cmd.Cmd):
 
     def cmd(self, argv):
         """Run one command and exit.
-
+        
             "argv" is the arglist for the command to run. argv[0] is the
                 command to run. If argv is an empty list then the
                 'emptyline' handler is run.
@@ -352,50 +301,66 @@ class RawCmdln(cmd.Cmd):
         """Repeatedly issue a prompt, accept input, parse into an argv, and
         dispatch (via .precmd(), .onecmd() and .postcmd()), passing them
         the argv. In other words, start a shell.
-
+        
             "intro" (optional) is a introductory message to print when
                 starting the command loop. This overrides the class
                 "intro" attribute, if any.
         """
         self.cmdlooping = True
         self.preloop()
-        if intro is None:
-            intro = self.intro
-        if intro:
-            intro_str = self._str(intro)
-            self.stdout.write(intro_str+'\n')
-        self.stop = False
-        retval = None
-        while not self.stop:
-            if self.cmdqueue:
-                argv = self.cmdqueue.pop(0)
-                assert isinstance(argv, (list, tuple)), \
-                        "item on 'cmdqueue' is not a sequence: %r" % argv
-            else:
-                if self.use_rawinput:
-                    try:
-                        line = raw_input(self._prompt_str)
-                    except EOFError:
-                        line = 'EOF'
-                else:
-                    self.stdout.write(self._prompt_str)
-                    self.stdout.flush()
-                    line = self.stdin.readline()
-                    if not len(line):
-                        line = 'EOF'
-                    else:
-                        line = line[:-1] # chop '\n'
-                argv = line2argv(line)
+        if self.use_rawinput and self.completekey:
             try:
-                argv = self.precmd(argv)
-                retval = self.onecmd(argv)
-                self.postcmd(argv)
-            except:
-                if not self.cmdexc(argv):
-                    raise
-                retval = 1
-            self.lastretval = retval
-        self.postloop()
+                import readline
+                self.old_completer = readline.get_completer()
+                readline.set_completer(self.complete)
+                readline.parse_and_bind(self.completekey+": complete")
+            except ImportError:
+                pass
+        try:
+            if intro is None:
+                intro = self.intro
+            if intro:
+                intro_str = self._str(intro)
+                self.stdout.write(intro_str+'\n')
+            self.stop = False
+            retval = None
+            while not self.stop:
+                if self.cmdqueue:
+                    argv = self.cmdqueue.pop(0)
+                    assert isinstance(argv, (list, tuple)), \
+                            "item on 'cmdqueue' is not a sequence: %r" % argv
+                else:
+                    if self.use_rawinput:
+                        try:
+                            line = raw_input(self._prompt_str)
+                        except EOFError:
+                            line = 'EOF'
+                    else:
+                        self.stdout.write(self._prompt_str)
+                        self.stdout.flush()
+                        line = self.stdin.readline()
+                        if not len(line):
+                            line = 'EOF'
+                        else:
+                            line = line[:-1] # chop '\n'
+                    argv = line2argv(line)
+                try:
+                    argv = self.precmd(argv)
+                    retval = self.onecmd(argv)
+                    self.postcmd(argv)
+                except:
+                    if not self.cmdexc(argv):
+                        raise
+                    retval = 1
+                self.lastretval = retval
+            self.postloop()
+        finally:
+            if self.use_rawinput and self.completekey:
+                try:
+                    import readline
+                    readline.set_completer(self.old_completer)
+                except ImportError:
+                    pass
         self.cmdlooping = False
         return retval
 
@@ -404,7 +369,7 @@ class RawCmdln(cmd.Cmd):
         interpreted, but after the input prompt is generated and issued.
 
             "argv" is the cmd to run.
-
+            
         Returns an argv to run (i.e. this method can modify the command
         to run).
         """
@@ -412,7 +377,7 @@ class RawCmdln(cmd.Cmd):
 
     def postcmd(self, argv):
         """Hook method executed just after a command dispatch is finished.
-
+        
             "argv" is the command that was run.
         """
         pass
@@ -454,7 +419,7 @@ class RawCmdln(cmd.Cmd):
         """Hook called to handle a command for which there is no handler.
 
             "argv" is the command and arguments to run.
-
+        
         The default implementation writes and error message to stderr
         and returns an error exit status.
 
@@ -490,7 +455,7 @@ class RawCmdln(cmd.Cmd):
             "cmd" is the command name on which help was requested.
             "known" is a boolean indicating if this command is known
                 (i.e. if there is a handler for it).
-
+        
         Returns a return code.
         """
         if known:
@@ -510,12 +475,11 @@ class RawCmdln(cmd.Cmd):
         self.stderr.flush()
         return 1
 
-
     def do_help(self, argv):
         """${cmd_name}: give detailed help on a specific sub-command
 
-        usage:
-            ${name} help [SUBCOMMAND]
+        Usage:
+            ${name} help [COMMAND]
         """
         if len(argv) > 1: # asking for help on a particular command
             doc = None
@@ -538,9 +502,9 @@ class RawCmdln(cmd.Cmd):
                 # Try to provide some reasonable useful default help.
                 if self.cmdlooping: prefix = ""
                 else:               prefix = self.name+' '
-                doc = """usage:
-                    %sSUBCOMMAND [ARGS...]
-                    %shelp [SUBCOMMAND]
+                doc = """Usage:
+                    %sCOMMAND [ARGS...]
+                    %shelp [COMMAND]
 
                 ${option_list}
                 ${command_list}
@@ -555,41 +519,6 @@ class RawCmdln(cmd.Cmd):
             self.stdout.write(self._str(doc))
             self.stdout.flush()
     do_help.aliases = ["?"]
-
-
-    def do_man(self, argv):
-        """${cmd_name}: generates a man page
-
-        usage:
-            ${name} man
-        """
-        self.stdout.write(self.man_header % {
-                'date': date.today().strftime('%b %Y'),
-                'version': self.get_version(),
-                'name': self.name,
-                'ucname': self.name.upper()
-                }
-        )
-
-        self.stdout.write(self.man_commands_header)
-        commands = self._help_get_command_list()
-        for command, doc in commands:
-            cmdname = command.split(' ')[0]
-            text = self._help_preprocess(doc, cmdname)
-            lines = []
-            for line in text.splitlines(False):
-                if line[:8] == ' ' * 8:
-                    line = line[8:]
-                lines.append(man_escape(line))
-
-            self.stdout.write('.TP\n\\fB%s\\fR\n%s\n' % (command, '\n'.join(lines)))
-
-        self.stdout.write(self.man_options_header)
-        self.stdout.write(man_escape(self._help_preprocess('${option_list}', None)))
-
-        self.stdout.write(self.man_footer)
-
-        self.stdout.flush()
 
     def _help_reindent(self, help, indent=None):
         """Hook to re-indent help strings before writing to stdout.
@@ -652,7 +581,7 @@ class RawCmdln(cmd.Cmd):
             i.e.  using @cmdln.option decorators or manually setting the
             'optparser' attribute on the 'do_*' method.)
 
-        Returns the processed help.
+        Returns the processed help. 
         """
         preprocessors = {
             "${name}":            self._help_preprocess_name,
@@ -687,11 +616,16 @@ class RawCmdln(cmd.Cmd):
             block = self.optparser.format_option_help() + '\n'
         else:
             block = ""
-
+            
         help = help.replace(indent+marker+suffix, block, 1)
         return help
 
-    def _help_get_command_list(self):
+
+    def _help_preprocess_command_list(self, help, cmdname=None):
+        marker = "${command_list}"
+        indent, indent_width = _get_indent(marker, help)
+        suffix = _get_trailing_whitespace(marker, help)
+
         # Find any aliases for commands.
         token2canonical = self._get_canonical_map()
         aliases = {}
@@ -706,9 +640,7 @@ class RawCmdln(cmd.Cmd):
             if attr.startswith("do_"):
                 cmdnames[attr[3:]] = True
         cmdnames = cmdnames.keys()
-        cmdnames.remove("help")
-        cmdnames.remove("man")
-        #cmdnames.sort()
+        cmdnames.sort()
         linedata = []
         for cmdname in cmdnames:
             if aliases.get(cmdname):
@@ -726,7 +658,7 @@ class RawCmdln(cmd.Cmd):
                     doc = handler.__doc__
             else:
                 doc = helpfunc()
-
+                
             # Strip "${cmd_name}: " from the start of a command's doc. Best
             # practice dictates that command help strings begin with this, but
             # it isn't at all wanted for the command list.
@@ -735,25 +667,27 @@ class RawCmdln(cmd.Cmd):
                 #log.debug("stripping %r from start of %s's help string",
                 #          to_strip, cmdname)
                 doc = doc[len(to_strip):].lstrip()
-            if not getattr(self._get_cmd_handler(cmdname), "hidden", None):
-                linedata.append( (cmdstr, doc) )
-
-        return linedata
-
-    def _help_preprocess_command_list(self, help, cmdname=None):
-        marker = "${command_list}"
-        indent, indent_width = _get_indent(marker, help)
-        suffix = _get_trailing_whitespace(marker, help)
-
-        linedata = self._help_get_command_list()
+            linedata.append( (cmdstr, doc) )
 
         if linedata:
             subindent = indent + ' '*4
             lines = _format_linedata(linedata, subindent, indent_width+4)
-            block = indent + "commands:\n" \
+            block = indent + "Commands:\n" \
                     + '\n'.join(lines) + "\n\n"
             help = help.replace(indent+marker+suffix, block, 1)
         return help
+
+    def _gen_names_and_attrs(self):
+        # Inheritance says we have to look in class and
+        # base classes; order is not important.
+        names = []
+        classes = [self.__class__]
+        while classes:
+            aclass = classes.pop(0)
+            if aclass.__bases__:
+                classes = classes + list(aclass.__bases__)
+            for name in dir(aclass):
+                yield (name, getattr(aclass, name))
 
     def _help_preprocess_help_list(self, help, cmdname=None):
         marker = "${help_list}"
@@ -763,21 +697,22 @@ class RawCmdln(cmd.Cmd):
         # Determine the additional help topics, if any.
         helpnames = {}
         token2cmdname = self._get_canonical_map()
-        for attr in self.get_names():
-            if not attr.startswith("help_"): continue
-            helpname = attr[5:]
+        for attrname, attr in self._gen_names_and_attrs():
+            if not attrname.startswith("help_"): continue
+            helpname = attrname[5:]
             if helpname not in token2cmdname:
-                helpnames[helpname] = True
+                helpnames[helpname] = attr
 
         if helpnames:
-            helpnames = helpnames.keys()
-            helpnames.sort()
-            linedata = [(self.name+" help "+n, "") for n in helpnames]
+            linedata = [(n, a.__doc__ or "") for n, a in helpnames.items()]
+            linedata.sort()
 
             subindent = indent + ' '*4
             lines = _format_linedata(linedata, subindent, indent_width+4)
-            block = indent + "additional help topics:\n" \
-                    + '\n'.join(lines) + "\n\n"
+            block = (indent
+                    + "Additional help topics (run `%s help TOPIC'):\n" % self.name
+                    + '\n'.join(lines)
+                    + "\n\n")
         else:
             block = ''
         help = help.replace(indent+marker+suffix, block, 1)
@@ -788,7 +723,7 @@ class RawCmdln(cmd.Cmd):
         handler = self._get_cmd_handler(cmdname)
         if not handler:
             raise CmdlnError("cannot preprocess '%s' into help string: "
-                             "could not find command handler for %r"
+                             "could not find command handler for %r" 
                              % (marker, cmdname))
         s = cmdname
         if hasattr(handler, "aliases"):
@@ -804,7 +739,7 @@ class RawCmdln(cmd.Cmd):
         handler = self._get_cmd_handler(cmdname)
         if not handler:
             raise CmdlnError("cannot preprocess '%s' into help string: "
-                             "could not find command handler for %r"
+                             "could not find command handler for %r" 
                              % (marker, cmdname))
         indent, indent_width = _get_indent(marker, help)
         suffix = _get_trailing_whitespace(marker, help)
@@ -840,7 +775,7 @@ class RawCmdln(cmd.Cmd):
                 # keyword arguments from the command line. Could
                 # *perhaps* consider: arg=value arg2=value2 ...
                 warnings.warn("argument '**%s' on '%s.%s' command "
-                              "handler will never get values"
+                              "handler will never get values" 
                               % (name, self.__class__.__name__,
                                  func.func_name))
             if co_flags & CO_FLAGS_ARGS:
@@ -856,7 +791,7 @@ class RawCmdln(cmd.Cmd):
             usage += ' ' + tail
 
         block_lines = [
-            self.helpindent + "usage:",
+            self.helpindent + "Usage:",
             self.helpindent + ' '*4 + usage
         ]
         block = '\n'.join(block_lines) + '\n\n'
@@ -872,7 +807,7 @@ class RawCmdln(cmd.Cmd):
         handler = self._get_cmd_handler(cmdname)
         if not handler:
             raise CmdlnError("cannot preprocess '%s' into help string: "
-                             "could not find command handler for %r"
+                             "could not find command handler for %r" 
                              % (marker, cmdname))
         indent, indent_width = _get_indent(marker, help)
         suffix = _get_trailing_whitespace(marker, help)
@@ -965,7 +900,7 @@ class StopOptionProcessing(Exception):
     StopIteration. This is raised by _OptionParserEx's default "help"
     and "version" option actions and can be raised by custom option
     callbacks too.
-
+    
     Hence the typical CmdlnOptionParser (a subclass of _OptionParserEx)
     usage is:
 
@@ -1061,7 +996,7 @@ class SubCmdOptionParser(_OptionParserEx):
 def option(*args, **kwargs):
     """Decorator to add an option to the optparser argument of a Cmdln
     subcommand.
-
+    
     Example:
         class MyShell(cmdln.Cmdln):
             @cmdln.option("-f", "--force", help="force removal")
@@ -1074,20 +1009,6 @@ def option(*args, **kwargs):
         if not hasattr(f, "optparser"):
             f.optparser = SubCmdOptionParser()
         f.optparser.add_option(*args, **kwargs)
-        return f
-    return decorate
-
-def hide(*args):
-    """For obsolete calls, hide them in help listings.
-
-    Example:
-        class MyShell(cmdln.Cmdln):
-            @cmdln.hide()
-            def do_shell(self, argv):
-                #...implement 'shell' command
-    """
-    def decorate(f):
-        f.hidden = 1
         return f
     return decorate
 
@@ -1208,14 +1129,14 @@ class Cmdln(RawCmdln):
             raise CmdlnError("incorrect argcount for %s(): takes %d, must "
                              "take 2 for 'argv' signature or 3+ for 'opts' "
                              "signature" % (handler.__name__, co_argcount))
-
+        
 
 
 #---- internal support functions
 
 def _format_linedata(linedata, indent, indent_width):
     """Format specific linedata into a pleasant layout.
-
+    
         "linedata" is a list of 2-tuples of the form:
             (<item-display-string>, <item-docstring>)
         "indent" is a string to use for one level of indentation
@@ -1226,10 +1147,15 @@ def _format_linedata(linedata, indent, indent_width):
     """
     lines = []
     WIDTH = 78 - indent_width
-    SPACING = 3
-    MAX_NAME_WIDTH = 15
+    SPACING = 2
+    NAME_WIDTH_LOWER_BOUND = 13
+    NAME_WIDTH_UPPER_BOUND = 16
+    NAME_WIDTH = max([len(s) for s,d in linedata])
+    if NAME_WIDTH < NAME_WIDTH_LOWER_BOUND:
+        NAME_WIDTH = NAME_WIDTH_LOWER_BOUND
+    else:
+        NAME_WIDTH = NAME_WIDTH_UPPER_BOUND
 
-    NAME_WIDTH = min(max([len(s) for s,d in linedata]), MAX_NAME_WIDTH)
     DOC_WIDTH = WIDTH - NAME_WIDTH - SPACING
     for namestr, doc in linedata:
         line = indent + namestr
@@ -1244,7 +1170,7 @@ def _format_linedata(linedata, indent, indent_width):
 
 def _summarize_doc(doc, length=60):
     r"""Parse out a short one line summary from the given doclines.
-
+    
         "doc" is the doc string to summarize.
         "length" is the max length for the summary
 
@@ -1276,19 +1202,19 @@ def _summarize_doc(doc, length=60):
 
     summary = ' '.join(summlines)
     if len(summary) > length:
-        summary = summary[:length-3] + "..."
+        summary = summary[:length-3] + "..." 
     return summary
 
 
 def line2argv(line):
     r"""Parse the given line into an argument vector.
-
+    
         "line" is the line of input to parse.
 
     This may get niggly when dealing with quoting and escaping. The
     current state of this parsing may not be completely thorough/correct
     in this respect.
-
+    
     >>> from cmdln import line2argv
     >>> line2argv("foo")
     ['foo']
@@ -1300,7 +1226,7 @@ def line2argv(line):
     ['foo', 'bar']
 
     Quote handling:
-
+    
     >>> line2argv("'foo bar'")
     ['foo bar']
     >>> line2argv('"foo bar"')
@@ -1311,14 +1237,7 @@ def line2argv(line):
     ['foo bar', 'spam']
     >>> line2argv("'foo 'bar spam")
     ['foo bar', 'spam']
-    >>> line2argv("'foo")
-    Traceback (most recent call last):
-        ...
-    ValueError: command line is not terminated: unfinished single-quoted segment
-    >>> line2argv('"foo')
-    Traceback (most recent call last):
-        ...
-    ValueError: command line is not terminated: unfinished double-quoted segment
+    
     >>> line2argv('some\tsimple\ttests')
     ['some', 'simple', 'tests']
     >>> line2argv('a "more complex" test')
@@ -1329,6 +1248,30 @@ def line2argv(line):
     ['a', 'more complex test of ', 'quotes']
     >>> line2argv('an "embedded \\"quote\\""')
     ['an', 'embedded "quote"']
+
+    # Komodo bug 48027
+    >>> line2argv('foo bar C:\\')
+    ['foo', 'bar', 'C:\\']
+
+    # Komodo change 127581
+    >>> line2argv(r'"\test\slash" "foo bar" "foo\"bar"')
+    ['\\test\\slash', 'foo bar', 'foo"bar']
+
+    # Komodo change 127629
+    >>> if sys.platform == "win32":
+    ...     line2argv(r'\foo\bar') == ['\\foo\\bar']
+    ...     line2argv(r'\\foo\\bar') == ['\\\\foo\\\\bar']
+    ...     line2argv('"foo') == ['foo']
+    ... else:
+    ...     line2argv(r'\foo\bar') == ['foobar']
+    ...     line2argv(r'\\foo\\bar') == ['\\foo\\bar']
+    ...     try:
+    ...         line2argv('"foo')
+    ...     except ValueError, ex:
+    ...         "not terminated" in str(ex)
+    True
+    True
+    True
     """
     import string
     line = line.strip()
@@ -1341,8 +1284,13 @@ def line2argv(line):
         if i >= len(line): break
         ch = line[i]
 
-        if ch == "\\": # escaped char always added to arg, regardless of state
+        if ch == "\\" and i+1 < len(line):
+            # escaped char always added to arg, regardless of state
             if arg is None: arg = ""
+            if (sys.platform == "win32"
+                or state in ("double-quoted", "single-quoted")
+               ) and line[i+1] not in tuple('"\''):
+                arg += ch
             i += 1
             arg += line[i]
             continue
@@ -1373,7 +1321,7 @@ def line2argv(line):
                 arg += ch
     if arg is not None:
         argv.append(arg)
-    if state != "default":
+    if not sys.platform == "win32" and state != "default":
         raise ValueError("command line is not terminated: unfinished %s "
                          "segment" % state)
     return argv
@@ -1381,9 +1329,9 @@ def line2argv(line):
 
 def argv2line(argv):
     r"""Put together the given argument vector into a command line.
-
+    
         "argv" is the argument vector to process.
-
+    
     >>> from cmdln import argv2line
     >>> argv2line(['foo'])
     'foo'
@@ -1416,18 +1364,18 @@ def argv2line(argv):
 # Recipe: dedent (0.1) in /Users/trentm/tm/recipes/cookbook
 def _dedentlines(lines, tabsize=8, skip_first_line=False):
     """_dedentlines(lines, tabsize=8, skip_first_line=False) -> dedented lines
-
+    
         "lines" is a list of lines to dedent.
         "tabsize" is the tab width to use for indent width calculations.
         "skip_first_line" is a boolean indicating if the first line should
             be skipped for calculating the indent width and for dedenting.
             This is sometimes useful for docstrings and similar.
-
+    
     Same as dedent() except operates on a sequence of lines. Note: the
     lines list is modified **in-place**.
     """
     DEBUG = False
-    if DEBUG:
+    if DEBUG: 
         print "dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
               % (tabsize, skip_first_line)
     indents = []
@@ -1489,7 +1437,7 @@ def _dedent(text, tabsize=8, skip_first_line=False):
         "skip_first_line" is a boolean indicating if the first line should
             be skipped for calculating the indent width and for dedenting.
             This is sometimes useful for docstrings and similar.
-
+    
     textwrap.dedent(s), but don't expand tabs to spaces
     """
     lines = text.splitlines(1)
@@ -1536,4 +1484,103 @@ def _get_trailing_whitespace(marker, s):
             break
         i += 1
     return suffix
+
+
+
+#---- bash completion support
+# Note: This is still experimental. I expect to change this
+# significantly.
+#
+# To get Bash completion for a cmdln.Cmdln class, run the following
+# bash command:
+#   $ complete -C 'python -m cmdln /path/to/script.py CmdlnClass' cmdname
+# For example:
+#   $ complete -C 'python -m cmdln ~/bin/svn.py SVN' svn
+#
+#TODO: Simplify the above so don't have to given path to script (try to
+#      find it on PATH, if possible). Could also make class name
+#      optional if there is only one in the module (common case).
+
+if __name__ == "__main__" and len(sys.argv) == 6:
+    def _log(s):
+        return # no-op, comment out for debugging
+        from os.path import expanduser
+        fout = open(expanduser("~/tmp/bashcpln.log"), 'a')
+        fout.write(str(s) + '\n')
+        fout.close()
+
+    # Recipe: module_from_path (1.0.1+)
+    def _module_from_path(path):
+        import imp, os, sys
+        path = os.path.expanduser(path)
+        dir = os.path.dirname(path) or os.curdir
+        name = os.path.splitext(os.path.basename(path))[0]
+        sys.path.insert(0, dir)
+        try:
+            iinfo = imp.find_module(name, [dir])
+            return imp.load_module(name, *iinfo)
+        finally:
+            sys.path.remove(dir)
+
+    def _get_bash_cplns(script_path, class_name, cmd_name,
+                        token, preceding_token):
+        _log('--')
+        _log('get_cplns(%r, %r, %r, %r, %r)'
+             % (script_path, class_name, cmd_name, token, preceding_token))
+        comp_line = os.environ["COMP_LINE"]
+        comp_point = int(os.environ["COMP_POINT"])
+        _log("COMP_LINE: %r" % comp_line)
+        _log("COMP_POINT: %r" % comp_point)
+
+        try:
+            script = _module_from_path(script_path)
+        except ImportError, ex:
+            _log("error importing `%s': %s" % (script_path, ex))
+            return []
+        shell = getattr(script, class_name)()
+        cmd_map = shell._get_canonical_map()
+        del cmd_map["EOF"]
+
+        # Determine if completing the sub-command name.
+        parts = comp_line[:comp_point].split(None, 1)
+        _log(parts)
+        if len(parts) == 1 or not (' ' in parts[1] or '\t' in parts[1]):
+            #TODO: if parts[1].startswith('-'): handle top-level opts
+            _log("complete sub-command names")
+            matches = {}
+            for name, canon_name in cmd_map.items():
+                if name.startswith(token):
+                    matches[name] = canon_name
+            if not matches:
+                return []
+            elif len(matches) == 1:
+                return matches.keys()
+            elif len(set(matches.values())) == 1:
+                return [matches.values()[0]]
+            else:
+                return matches.keys()
+
+        # Otherwise, complete options for the given sub-command.
+        #TODO: refine this so it does the right thing with option args
+        if token.startswith('-'):
+            cmd_name = comp_line.split(None, 2)[1]
+            try:
+                cmd_canon_name = cmd_map[cmd_name]
+            except KeyError:
+                return []
+            handler = shell._get_cmd_handler(cmd_canon_name)
+            optparser = getattr(handler, "optparser", None)
+            if optparser is None:
+                optparser = SubCmdOptionParser()
+            opt_strs = []
+            for option in optparser.option_list:
+                for opt_str in option._short_opts + option._long_opts:
+                    if opt_str.startswith(token):
+                        opt_strs.append(opt_str)
+            return opt_strs
+
+        return []
+
+    for cpln in _get_bash_cplns(*sys.argv[1:]):
+        print cpln
 

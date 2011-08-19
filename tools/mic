@@ -20,16 +20,17 @@
 import os, sys
 import logging
 
-import mic.utils.cmdln as cmdln
 import mic.utils.misc as misc
 import mic.utils.errors as errors
 import mic.configmgr as configmgr
 import mic.pluginmgr as pluginmgr
 import mic.creator as creator
+from mic import msger
+from mic.utils import cmdln
 try:
     from mic.__version__ import VERSION
 except:
-    VERSION = 'unknown'
+    VERSION = 'Unknown'
 
 class Mic(cmdln.Cmdln):
     """
@@ -46,21 +47,18 @@ class Mic(cmdln.Cmdln):
     name = 'mic'
     version = VERSION
 
-    def get_version(self):
-        return self.version
-
     def get_optparser(self):
-       optparser = cmdln.CmdlnOptionParser(self, version=self.get_version())
-       optparser.add_option('-d', '--debug', action='store_true', dest='debug', help='print debug message')
-       optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='verbose infomation')
-       return optparser
+        optparser = cmdln.CmdlnOptionParser(self, version=self.version)
+        optparser.add_option('-d', '--debug', action='store_true', dest='debug', help='print debug message')
+        optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='verbose infomation')
+        return optparser
 
     def postoptparse(self):
-       if self.options.verbose is True:
-          logging.getLogger().setLevel(logging.INFO)
-       if self.options.debug is True:
-          logging.getLogger().setLevel(logging.DEBUG)
-       pass
+        if self.options.verbose is True:
+           logging.getLogger().setLevel(logging.INFO)
+        if self.options.debug is True:
+           logging.getLogger().setLevel(logging.DEBUG)
+        pass
 
     @cmdln.alias("cr")
     def do_create(self, argv):
@@ -128,8 +126,6 @@ class Mic(cmdln.Cmdln):
             base_on = srcimager.do_unpack(srcimg)
             destimager.do_pack(base_on)
 
-    @cmdln.option("-d", "--debug", action="store_true", help="debug message")
-    @cmdln.option("-v", "--verbose", action="store_true", help="verbose infomation")
     @cmdln.alias("ch")
     def do_chroot(self, subcmd, opts, *args):
         """${cmd_name}: chroot into an image
@@ -153,12 +149,6 @@ class Mic(cmdln.Cmdln):
         if os.geteuid() != 0:
             raise errors.Usage("You must run as root")
 
-        # Fixeme? sub-logger to be used
-        if opts.verbose:
-            logging.getLogger().setLevel(logging.INFO)
-        if opts.debug:
-            logging.getLogger().setLevel(logging.DEBUG)
-
         imagetype = misc.get_image_type(targetimage)
         if not imagetype:
             imagetype = "fs"
@@ -180,29 +170,16 @@ class Mic(cmdln.Cmdln):
         chrootclass.do_chroot(targetimage)
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.CRITICAL)
-    mic = Mic()
     try:
+        mic = Mic()
         ret = mic.main()
+        sys.exit(ret)
+
     except errors.Usage, msg:
-        ret = 2
-        logging.exception(msg)
-        sys.stderr.write("Usage error: %s\n" % msg)
-        sys.stderr.flush()
+        msger.error("Usage error: %s\n" % msg)
+
     except errors.ConfigError, msg:
-        ret = 3
-        logging.exception(msg)
-        sys.stderr.write("Config error: %s\n" % msg)
-        sys.stderr.flush()
+        msger.error("Config error: %s\n" % msg)
+
     except errors.CreatorError, msg:
-        ret = 4
-        logging.exception(msg)
-        sys.stderr.write("Creator error: %s\n" % msg)
-        sys.stderr.flush()
-    except:
-        ret = 127
-        exctype, excvalue, exctb = sys.exc_info()
-        logging.exception(exctb)
-        sys.stderr.write("Unknown exception: %s\n" % excvalue)
-        sys.stderr.flush()
-    sys.exit(ret)
+        msger.error("Creator error: %s\n" % msg)

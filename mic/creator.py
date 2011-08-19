@@ -20,10 +20,10 @@
 import os, sys
 import logging
 
-import mic.utils.cmdln as cmdln
-import mic.configmgr as configmgr
-import mic.pluginmgr as pluginmgr
+from mic import configmgr
+from mic import pluginmgr
 from mic import msger
+from mic.utils import cmdln
 
 class Creator(cmdln.Cmdln):
     """${name}: create an image
@@ -51,27 +51,21 @@ class Creator(cmdln.Cmdln):
         # mix-in do_subcmd interface
         for subcmd, klass in self.plugincmds:
             if not hasattr(klass, 'do_create'):
-                logging.warn("Unsurpport subcmd: %s" % subcmd)
+                msger.warning("Unsurpport subcmd: %s" % subcmd)
                 continue
             func = getattr(klass, 'do_create')
             setattr(self.__class__, "do_"+subcmd, func)
 
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self)
-        optparser.add_option('-d', '--debug', action='store_true', help='print debug info')
-        optparser.add_option('-v', '--verbose', action='store_true', help='verbose output')
-        #optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='output directory')
+    #    #optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='output directory')
         return optparser
 
     def preoptparse(self, argv):
         pass
 
     def postoptparse(self):
-        if self.options.verbose is True:
-            logging.getLogger().setLevel(logging.INFO)
-        if self.options.debug is True:
-            logging.getLogger().setLevel(logging.DEBUG)
-
+        pass
         #if self.options.outdir is not None:
         #    self.configmgr.create['outdir'] = self.options.outdir
 
@@ -86,12 +80,12 @@ class Creator(cmdln.Cmdln):
             try:
                 self.preoptparse(argv)
                 self.options, args = self.optparser.parse_args(argv)
+
             except cmdln.CmdlnUserError, ex:
                 msg = "%s: %s\nTry '%s help' for info.\n"\
                       % (self.name, ex, self.name)
-                self.stderr.write(self._str(msg))
-                self.stderr.flush()
-                return 1
+                msger.error(msg)
+
             except cmdln.StopOptionProcessing, ex:
                 return 0
         else:

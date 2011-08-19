@@ -23,7 +23,7 @@ import logging
 
 import yum
 import rpmUtils
-import pykickstart.parser
+from mic.kickstart.pykickstart import parser as ksparser
 
 import urlparse
 import urllib2 as u2
@@ -162,12 +162,12 @@ class Yum(BackendPlugin, yum.YumBase):
         else:
             logging.warn("No such package %s to remove" %(pkg,))
 
-    def selectGroup(self, grp, include = pykickstart.parser.GROUP_DEFAULT):
+    def selectGroup(self, grp, include = ksparser.GROUP_DEFAULT):
         try:
             yum.YumBase.selectGroup(self, grp)
-            if include == pykickstart.parser.GROUP_REQUIRED:
+            if include == ksparser.GROUP_REQUIRED:
                 map(lambda p: self.deselectPackage(p), grp.default_packages.keys())
-            elif include == pykickstart.parser.GROUP_ALL:
+            elif include == ksparser.GROUP_ALL:
                 map(lambda p: self.selectPackage(p), grp.optional_packages.keys())
             return None
         except (yum.Errors.InstallError, yum.Errors.GroupsError), e:

@@ -27,9 +27,6 @@ import errors
 import misc
 import fs_related as fs
 
-sys.path.append(os.path.dirname(__file__) or '.')
-import pykickstart
-
 import pykickstart.commands as kscommands
 import pykickstart.constants as ksconstants
 import pykickstart.errors as kserrors
