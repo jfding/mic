@@ -17,20 +17,18 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os, sys
-import os.path
 import shutil
 import subprocess
 import time
 import logging
 import string
 
-try:
-    import pykickstart
-except:
-    import mic
-    sys.path.insert(0, mic.__path__[0])
-    import pykickstart
-    del(sys.path[0])
+import errors
+import misc
+import fs_related as fs
+
+sys.path.append(os.path.dirname(__file__) or '.')
+import pykickstart
 
 import pykickstart.commands as kscommands
 import pykickstart.constants as ksconstants
@@ -40,12 +38,9 @@ import pykickstart.version as ksversion
 from pykickstart.handlers.control import commandMap
 from pykickstart.handlers.control import dataMap
 
-import errors as errors
-import fs_related as fs
-import misc as misc
-import kscommands.desktop as desktop
-import kscommands.moblinrepo as moblinrepo
-import kscommands.micboot as micboot
+import custom_commands.desktop as desktop
+import custom_commands.moblinrepo as moblinrepo
+import custom_commands.micboot as micboot
 
 def read_kickstart(path):
     """Parse a kickstart file and return a KickstartParser instance.
