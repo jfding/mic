@@ -58,16 +58,15 @@ class Creator(cmdln.Cmdln):
 
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self)
-    #    #optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='output directory')
+        optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='output directory')
         return optparser
 
     def preoptparse(self, argv):
         pass
 
     def postoptparse(self):
-        pass
-        #if self.options.outdir is not None:
-        #    self.configmgr.create['outdir'] = self.options.outdir
+        if self.options.outdir is not None:
+            self.configmgr.create['outdir'] = self.options.outdir
 
     def main(self, argv=None):
         if argv is None:
@@ -94,11 +93,11 @@ class Creator(cmdln.Cmdln):
 
         self.postoptparse()
 
-        if args:
-            if os.geteuid() != 0:
-                msger.error('Need root permission to run this command')
-
-            return self.cmd(args)
-
-        else:
+        if not args:
             return self.emptyline()
+            
+        if os.geteuid() != 0:
+            msger.error('Need root permission to run this command')
+
+        return self.cmd(args)
+

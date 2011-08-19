@@ -965,6 +965,8 @@ class BaseImageCreator(object):
         """
         self._stage_final_image()
 
+        if not os.path.exists(destdir):
+            makedirs(destdir)
         if self.__img_compression_method:
             if not self._img_name:
                 raise CreatorError("Image name not set.")

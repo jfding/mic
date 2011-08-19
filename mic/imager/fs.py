@@ -52,7 +52,7 @@ class FsImageCreator(BaseImageCreator):
         self._stage_final_image()
 
         if not os.path.exists(destdir):
-            mkdirs(destdir)
+            makedirs(destdir)
         destdir = os.path.abspath(os.path.expanduser(destdir))
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
