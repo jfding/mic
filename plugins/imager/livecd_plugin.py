@@ -162,7 +162,7 @@ class LiveCDPlugin(ImagerPlugin):
                 raise CreatorError("'%s' is not a valid live CD ISO : neither "
                                     "LiveOS/ext3fs.img nor os.img exist" %img)
 
-            rtimage = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
+            rtimage = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "target.img")
             shutil.copyfile(os_image, rtimage)
         finally:
             imgloop.cleanup()

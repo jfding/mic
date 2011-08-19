@@ -82,7 +82,7 @@ class BaseImageCreator(object):
         else:
             self.ks = None
             self.repometadata = None
-            self.name = "MeeGo"
+            self.name = "target"
             self.tmpdir = "/var/tmp"
             self.cachedir = "/var/cache"
             self.destdir = "."
