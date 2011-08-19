@@ -36,6 +36,94 @@ from mic.utils.fs_related import *
 from mic.pluginbase.backend_plugin import BackendPlugin
 from mic.imager.baseimager import BaseImageCreator as ImageCreator
 
+def getRPMCallback():
+    sys.path.append('/usr/share/yum-cli')
+    import callback
+    import rpm
+    class MyRPMInstallCallback(callback.RPMInstallCallback):
+        def _makefmt(self, percent, progress = True):
+            l = len(str(self.total_actions))
+            size = "%s.%s" % (l, l)
+            fmt_done = "[%" + size + "s/%" + size + "s]"
+            done = fmt_done % (self.total_installed + self.total_removed,
+                               self.total_actions)
+            marks = self.marks - (2 * l)
+            width = "%s.%s" % (marks, marks)
+            fmt_bar = "%-" + width + "s"
+            if progress:
+                bar = fmt_bar % (self.mark * int(marks * (percent / 100.0)), )
+                fmt = "\r  %-10.10s: " + bar + " " + done
+            else:
+                bar = fmt_bar % (self.mark * marks, )
+                fmt = "  %-10.10s: "  + bar + " " + done
+            return fmt
+
+        def callback(self, what, bytes, total, h, user):
+            self.mark = "+"
+            if what == rpm.RPMCALLBACK_TRANS_START:
+                if bytes == 6:
+                    self.total_actions = total
+
+            elif what == rpm.RPMCALLBACK_TRANS_PROGRESS:
+                pass
+
+            elif what == rpm.RPMCALLBACK_TRANS_STOP:
+                pass
+
+            elif what == rpm.RPMCALLBACK_INST_OPEN_FILE:
+                self.lastmsg = None
+                hdr = None
+                if h is not None:
+                    hdr, rpmloc = h
+                    handle = self._makeHandle(hdr)
+                    fd = os.open(rpmloc, os.O_RDONLY)
+                    self.callbackfilehandles[handle]=fd
+                    self.total_installed += 1
+                    self.installed_pkg_names.append(hdr['name'])
+                    return fd
+                else:
+                    self._localprint("No header - huh?")
+
+            elif what == rpm.RPMCALLBACK_INST_CLOSE_FILE:
+                hdr = None
+                if h is not None:
+                    hdr, rpmloc = h
+                    handle = self._makeHandle(hdr)
+                    os.close(self.callbackfilehandles[handle])
+                    fd = 0
+
+            elif what == rpm.RPMCALLBACK_INST_PROGRESS:
+                if h is not None:
+                    percent = (self.total_installed*100L)/self.total_actions
+                    if self.output and (sys.stdout.isatty() or self.total_installed == self.total_actions):
+                        fmt = self._makefmt(percent)
+                        msg = fmt % ("Installing")
+                        if msg != self.lastmsg:
+                            sys.stdout.write(msg)
+                            sys.stdout.flush()
+                            self.lastmsg = msg
+                            if self.total_installed == self.total_actions:
+                                 sys.stdout.write("\n")
+
+            elif what == rpm.RPMCALLBACK_UNINST_START:
+                pass
+
+            elif what == rpm.RPMCALLBACK_UNINST_PROGRESS:
+                pass
+
+            elif what == rpm.RPMCALLBACK_UNINST_STOP:
+                self.total_removed += 1
+
+            elif what == rpm.RPMCALLBACK_REPACKAGE_START:
+                pass
+            elif what == rpm.RPMCALLBACK_REPACKAGE_STOP:
+                pass
+            elif what == rpm.RPMCALLBACK_REPACKAGE_PROGRESS:
+                pass
+
+    cb = MyRPMInstallCallback()
+    return cb
+
 class MyYumRepository(yum.yumRepo.YumRepository):
     def __init__(self, repoid):
         yum.yumRepo.YumRepository.__init__(self, repoid)
@@ -432,9 +520,7 @@ class Yum(BackendPlugin, yum.YumBase):
                 raise CreatorError("ordering packages for installation failed!")
 
             # FIXME: callback should be refactored a little in yum
-            sys.path.append('/usr/share/yum-cli')
-            import callback
-            cb = callback.RPMInstallCallback()
+            cb = getRPMCallback()
             cb.tsInfo = self.tsInfo
             cb.filelog = False
             ret = self.runTransaction(cb)
