@@ -26,6 +26,7 @@ import string
 import errors
 import misc
 import fs_related as fs
+from mic import msger
 
 import pykickstart.commands as kscommands
 import pykickstart.constants as ksconstants
@@ -131,7 +132,7 @@ class KickstartConfig(object):
 
     def call(self, args):
         if not os.path.exists("%s/%s" %(self.instroot, args[0])):
-            print "%s/%s" %(self.instroot, args[0])
+            msger.warning("%s/%s" %(self.instroot, args[0]))
             raise errors.KickstartError("Unable to run %s!" %(args))
         subprocess.call(args, preexec_fn = self.chroot)
 

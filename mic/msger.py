@@ -26,6 +26,7 @@ INFO_COLOR = 32 # green
 WARN_COLOR = 33 # yellow
 ERR_COLOR  = 31 # red
 ASK_COLOR  = 34 # blue
+NO_COLOR = 0
 
 PREFIX_RE = re.compile('^<(.*?)>\s*(.*)')
 
@@ -34,33 +35,54 @@ INTERACTIVE = True
 def _color_print(head, color, msg = None, stream = sys.stdout):
 
     colored = True
-    if not stream.isatty():
+    if color == NO_COLOR or \
+       not stream.isatty() or \
+       os.getenv('ANSI_COLORS_DISABLED') is not None:
         colored = False
-    elif os.getenv('ANSI_COLORS_DISABLED') is not None:
-        colored = False
+
+    if head.startswith('\r'):
+        # need not \n at last
+        newline = False
+    else:
+        newline = True
 
     if colored:
-        head = '\033[%dm%s:\033[0m' %(color, head)
+        head = '\033[%dm%s:\033[0m ' %(color, head)
+        if not newline:
+            # ESC cmd to clear line
+            head = '\033[2K' + head
     else:
-        head += ':'
+        if head:
+            head += ': '
 
     if msg:
-        stream.write('%s %s\n' % (head, msg))
+        stream.write('%s%s' % (head, msg))
+        if newline:
+            stream.write('\n')
     else:
         stream.write('%s ' % head)
+
+    stream.flush()
 
 def _color_perror(head, color, msg):
     _color_print(head, color, msg, sys.stderr)
 
 def _split_msg(head, msg):
     if msg.startswith('\n'):
+        # means print \n at first
         msg = msg.lstrip()
         head = '\n' + head
+
+    elif msg.startswith('\r'):
+        # means print \r at first
+        msg = msg.lstrip()
+        head = '\r' + head
 
     m = PREFIX_RE.match(msg)
     if m:
         head += ' <%s>' % m.group(1)
         msg = m.group(2)
+
     return head, msg
 
 def set_mode(interactive):
@@ -69,6 +91,10 @@ def set_mode(interactive):
         INTERACTIVE = True
     else:
         INTERACTIVE = False
+
+def raw(msg):
+    head, msg = _split_msg('', msg)
+    _color_print(head, NO_COLOR, msg)
 
 def info(msg):
     head, msg = _split_msg('Info', msg)

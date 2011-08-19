@@ -42,6 +42,8 @@ xmlparse = cElementTree.parse
 from errors import *
 from fs_related import *
 
+from mic import msger
+
 def setlocale():
     import locale
     import codecs
@@ -479,7 +481,7 @@ def output_siteconf(siteconf):
             output += "%s=%s\n" % (option, siteconf.get(section, option))
         output += "\n\n"
 
-    print output
+    msger.info(output)
     return output
 
 def get_repostrs_from_ks(ks):
@@ -657,7 +659,7 @@ def get_metadata_from_repos(repostrs, cachedir):
             repokey = get_metadata_from_repo(baseurl, proxies, cachedir, reponame, "repodata/repomd.xml.key")
         except CreatorError:
             repokey = None
-            print "Warning: can't get %s/%s" % (baseurl, "repodata/repomd.xml.key")
+            msger.warning("can't get %s/%s" % (baseurl, "repodata/repomd.xml.key"))
 
         my_repo_metadata.append({"name":reponame, "baseurl":baseurl, "repomd":repomd, "primary":primary, "cachedir":cachedir, "proxies":proxies, "patterns":patterns, "comps":comps, "repokey":repokey})
 
@@ -848,11 +850,12 @@ def get_kickstarts_from_repos(repometadata):
         return kickstarts
 
 def select_ks(ksfiles):
-    print "Available kickstart files:"
+    msger.info("Available kickstart files:")
     i = 0
     for ks in ksfiles:
         i += 1
-        print "\t%d. %s (%s)" % (i, ks["description"], os.path.basename(ks["filename"]))
+        msger.raw("\t%d. %s (%s)" % (i, ks["description"], os.path.basename(ks["filename"])))
+
     while True:
         choice = raw_input("Please input your choice and press ENTER. [1..%d] ? " % i)
         if choice.lower() == "q":
@@ -1056,18 +1059,19 @@ def create_release(config, destdir, name, outimages, release):
     return updated_list
 
 def get_local_distro():
-    print "Local linux distribution:"
+    msger.info("Local linux distribution:")
     for file in glob.glob("/etc/*-release"):
         fd = open(file, "r")
         content = fd.read()
         fd.close()
-        print content
+        msger.info(content)
     if os.path.exists("/etc/issue"):
         fd = open("/etc/issue", "r")
         content = fd.read()
         fd.close()
-        print content
-    print "Local Kernel version: " + os.uname()[2]
+        msger.info(content)
+
+    msger.info("Local Kernel version: " + os.uname()[2])
 
 def check_mic_installation(argv):
     creator_name = os.path.basename(argv[0])
@@ -1095,7 +1099,7 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
     src_repometadata = get_source_repometadata(repometadata)
 
     if not src_repometadata:
-        print "No source repo found"
+        msger.warning("No source repo found")
         return None
 
     src_pkgs = []
@@ -1132,7 +1136,6 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
             if src_pkg:
                 shutil.copy(src_pkg, destdir)
                 src_pkgs.append(src_pkg)
-    print '--------------------------------------------------'
-    print "%d source packages gotten from cache" %cached_count
+    msger.info("%d source packages gotten from cache" %cached_count)
 
     return src_pkgs

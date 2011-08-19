@@ -55,24 +55,19 @@ class TextProgress(object):
     def start(self, filename, url, *args, **kwargs):
         self.url = url
         self.termwidth = terminal_width()
-        if sys.stdout.isatty():
-            sys.stdout.write("\r%-*s" % (self.termwidth, " "))
-            if self.total is None:
-                sys.stdout.write("\rRetrieving %s ..." % truncate_url(self.url, self.termwidth - 15))
-            else:
-                sys.stdout.write("\rRetrieving %s [%d/%d] ..." % (truncate_url(self.url, self.termwidth - 25), self.counter, self.total))
+        msger.info("\r%-*s" % (self.termwidth, " "))
+        if self.total is None:
+            msger.info("\rRetrieving %s ..." % truncate_url(self.url, self.termwidth - 15))
         else:
-            sys.stdout.write("Retrieving %s ..." % truncate_url(self.url, self.termwidth - 15))
-
-        sys.stdout.flush()
+            msger.info("\rRetrieving %s [%d/%d] ..." % (truncate_url(self.url, self.termwidth - 25), self.counter, self.total))
 
     def update(self, *args):
         pass
 
     def end(self, *args):
-        if self.counter == self.total or not sys.stdout.isatty():
-            sys.stdout.write("\n")
-            sys.stdout.flush()
+        if self.counter == self.total:
+            msger.info("\n")
+
         self.counter += 1
 
 def find_binary_path(binary):

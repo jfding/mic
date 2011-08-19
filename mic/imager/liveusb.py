@@ -29,6 +29,7 @@ import mic.utils.misc as misc
 from livecd import LiveCDImageCreator
 from mic.utils.errors import *
 from mic.utils.partitionedfs import PartitionedMount
+from mic import msger
 
 class LiveUSBImageCreator(LiveCDImageCreator):
     def __init__(self, *args):
@@ -149,7 +150,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 text = text.replace("liveimg", "liveimg " + kernelargs)
 
             if overlaysizemb > 0:
-                print "Initializing persistent overlay file"
+                msger.info("Initializing persistent overlay file")
                 overfile = "overlay" + overlaysuffix
                 if fstype == "vfat":
                     args = [ddcmd, "if=/dev/zero", "of=" + usbmnt + "/LiveOS/" + overfile, "count=%d" % overlaysizemb, "bs=1M"]
@@ -162,7 +163,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 text = text.replace(" ro ", " rw ")
 
             if swapsizemb > 0:
-                print "Initializing swap file"
+                msger.info("Initializing swap file")
                 swapfile = usbmnt + "/LiveOS/" + "swap.img"
                 args = [ddcmd, "if=/dev/zero", "of=" + swapfile, "count=%d" % swapsizemb, "bs=1M"]
                 rc = subprocess.call(args)
@@ -174,7 +175,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                     raise CreatorError("Can't mkswap on swap file")
 
             if homesizemb > 0:
-                print "Initializing persistent /home"
+                msger.info("Initializing persistent /home")
                 homefile = usbmnt + "/LiveOS/" + homefile
                 if fstype == "vfat":
                     args = [ddcmd, "if=/dev/zero", "of=" + homefile, "count=%d" % homesizemb, "bs=1M"]
@@ -223,7 +224,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             usbloop.cleanup()
 
         #Need to do this after image is unmounted and device mapper is closed
-        print "set MBR"
+        msger.info("set MBR")
         mbrfile = "/usr/lib/syslinux/mbr.bin"
         if not os.path.exists(mbrfile):
             mbrfile = "/usr/share/syslinux/mbr.bin"

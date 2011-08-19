@@ -125,6 +125,7 @@ class PluginMgr(object):
         return self.plugin_sets['hook']
 
     def listAllPlugins(self):
+        # just for debug
         for key in self.plugin_sets.keys():
             sys.stdout.write("plugin type (%s) :::\n" % key)
             for item in self.plugin_sets[key]:

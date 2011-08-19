@@ -16,10 +16,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os
-import os.path
+import os, sys
 import stat
-import sys
 import tempfile
 import shutil
 import logging
@@ -35,6 +33,7 @@ from mic.utils.fs_related import *
 from mic.utils.rpmmisc import *
 from mic.utils.misc import *
 from mic.utils import kickstart
+from mic import msger
 
 class BaseImageCreator(object):
     """Installs a system to a chroot directory.
@@ -140,11 +139,9 @@ class BaseImageCreator(object):
                 vdso_value = vdso_fh.read().strip()
                 vdso_fh.close()
                 if (int)(vdso_value) == 1:
-                    print "\n= WARNING ="
-                    print "vdso is enabled on your host, which might cause problems with arm emulations."
-                    print "You can disable vdso with following command before starting image build:"
-                    print "echo 0 | sudo tee /proc/sys/vm/vdso_enabled"
-                    print "= WARNING =\n"
+                    msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n" +
+                                  "\tYou can disable vdso with following command before starting image build:\n" +
+                                  "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
 
         return True
 
@@ -849,7 +846,7 @@ class BaseImageCreator(object):
                 pass
 
     def __run_post_scripts(self):
-        print "Running scripts"
+        msger.info("Running scripts")
         for s in kickstart.get_post_scripts(self.ks):
             (fd, path) = tempfile.mkstemp(prefix = "ks-script-",
                                           dir = self._instroot + "/tmp")
@@ -918,7 +915,7 @@ class BaseImageCreator(object):
             self.__save_repo_keys(repodata)
             kickstart.MoblinRepoConfig(self._instroot).apply(ksh.repo, repodata)
         except:
-            print "Failed to apply configuration to image"
+            msger.warning("Failed to apply configuration to image")
             raise
 
         self._create_bootconfig()
@@ -932,8 +929,7 @@ class BaseImageCreator(object):
 
         """
         if launch:
-            print "Launching shell. Exit to continue."
-            print "----------------------------------"
+            msger.info("Launching shell. Exit to continue.")
             subprocess.call(["/bin/bash"], preexec_fn = self._chroot)
 
     def do_genchecksum(self, image_name):
@@ -976,12 +972,12 @@ class BaseImageCreator(object):
             img_location = os.path.join(self._outdir,self._img_name)
             if self.__img_compression_method == "bz2":
                 bzip2 = find_binary_path('bzip2')
-                print "Compressing %s with bzip2. Please wait..." % img_location
+                msger.info("Compressing %s with bzip2. Please wait..." % img_location)
                 rc = subprocess.call([bzip2, "-f", img_location])
                 if rc:
                     raise CreatorError("Failed to compress image %s with %s." % (img_location, self.__img_compression_method))
                 for bootimg in glob.glob(os.path.dirname(img_location) + "/*-boot.bin"):
-                    print "Compressing %s with bzip2. Please wait..." % bootimg
+                    msger.info("Compressing %s with bzip2. Please wait..." % bootimg)
                     rc = subprocess.call([bzip2, "-f", bootimg])
                     if rc:
                         raise CreatorError("Failed to compress image %s with %s." % (bootimg, self.__img_compression_method))
@@ -1020,10 +1016,10 @@ class BaseImageCreator(object):
         self.package(self.destdir)
 
     def print_outimage_info(self):
-        print "Your new image can be found here:"
+        msger.info("Your new image can be found here:")
         self.outimage.sort()
         for file in self.outimage:
-            print os.path.abspath(file)
+            msger.raw(os.path.abspath(file))
 
     def check_depend_tools(self):
         for tool in self._dep_checks:
@@ -1043,11 +1039,11 @@ class BaseImageCreator(object):
                 dst = "%s/%s-%s.tar.%s" % (destdir, self.name, image_format, comp)
             else:
                 dst = "%s/%s-%s.tar" % (destdir, self.name, image_format)
-            print "creating %s" % dst
+            msger.info("creating %s" % dst)
             tar = tarfile.open(dst, "w:" + comp)
 
             for file in self.outimage:
-                print "adding %s to %s" % (file, dst)
+                msger.info("adding %s to %s" % (file, dst))
                 tar.add(file, arcname=os.path.join("%s-%s" % (self.name, image_format), os.path.basename(file)))
                 if os.path.isdir(file):
                     shutil.rmtree(file, ignore_errors = True)

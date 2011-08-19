@@ -171,6 +171,7 @@ class ConfigMgr(object):
         return self.chroot[key]
 
     def dumpAllConfig(self):
+        # just for debug
         sys.stdout.write("create options:\n")
         for key in self.create.keys():
             sys.stdout.write("%-8s= %s\n" % (key, self.create[key]))
