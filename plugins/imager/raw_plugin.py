@@ -168,7 +168,7 @@ class RawPlugin(ImagerPlugin):
             raise CreatorError("Failed to loopback mount '%s' : %s" %
                                (srcimg, e))
 
-        image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "meego.img")
+        image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "target.img")
         ddcmd = misc.find_binary_path("dd")
         args = [ ddcmd, "if=%s" % srcloop.partitions[0]['device'], "of=%s" % image ]
         print "dd image..."
