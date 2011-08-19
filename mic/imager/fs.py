@@ -32,9 +32,9 @@ import rpm
 
 from mic.utils.errors import *
 from mic.utils.fs_related import *
-from mic.utils import kickstart
 from mic.utils.rpmmisc import *
 from mic.utils.misc import *
+from mic import kickstart
 from baseimager import BaseImageCreator
 
 

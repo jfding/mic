@@ -32,7 +32,7 @@ from mic.utils.errors import *
 from mic.utils.fs_related import *
 from mic.utils.rpmmisc import *
 from mic.utils.misc import *
-from mic.utils import kickstart
+from mic import kickstart
 from mic import msger
 
 class BaseImageCreator(object):

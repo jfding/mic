@@ -25,7 +25,7 @@ import logging
 import re
 import time
 
-import mic.utils.kickstart as kickstart
+import mic.kickstart as kickstart
 import mic.utils.fs_related as fs_related
 import mic.utils.rpmmisc as rpmmisc
 import mic.utils.misc as misc

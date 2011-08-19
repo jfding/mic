@@ -26,7 +26,7 @@ import tarfile
 import subprocess
 import logging
 
-import mic.utils.kickstart as kickstart
+import mic.kickstart as kickstart
 import mic.utils.fs_related as fs_related
 import urlgrabber.progress as progress
 from baseimager import BaseImageCreator

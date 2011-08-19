@@ -19,7 +19,7 @@
 import os
 import os.path
 import subprocess
-import mic.utils.kickstart as kickstart
+import mic.kickstart as kickstart
 from baseimager import BaseImageCreator
 from mic.utils.errors import *
 from mic.utils.fs_related import *
