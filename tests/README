@@ -1,0 +1,23 @@
+----------------------
+MIC autotest framework
+----------------------
+
+Included testcase:
+===================
+* check image creation
+* check root permission
+* check availability of ks file
+  
+Basic usage description:
+========================
+- add testcase
+  * customize your own testcase, meet your own needs
+	run the shell script named "addcase",  follow its usage:
+	./addcase.sh <casename> <caseks>.  <casename> represents the name of 
+	your testcase,  <caseks> represents your ks file 
+
+- run mic-test 
+  * test MIC with all testcases
+	run "make test" or "python mic-test.py",  you will get the result of
+	the sanity test(included testcase + custom testcase). The format of 
+	the result looks like this: testcase name ... FAIL | ok   

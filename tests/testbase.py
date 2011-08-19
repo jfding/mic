@@ -18,7 +18,7 @@ def ImgCheck(work_env):
     """check image generate"""
     genImage = False
     for file in os.listdir(work_env):
-        m = re.match('^meego-.*', file)
+        m = re.match(r'.*\.(img|raw|iso|usbimg)', file)
         if m:
             genImage = True
             break
@@ -40,7 +40,7 @@ def RunandCheck(object, work_env):
             expect = exp.strip()
     #set cmdline    
     opt_f = open('options','r')
-    args = opt_f.read().strip()+' -c test.ks'
+    args = opt_f.read().strip()+' test.ks'
     
     dev_null = os.open('/dev/null',os.O_WRONLY)
     proc = subprocess.Popen(args,stdout = dev_null,stderr=subprocess.PIPE,shell=True)
