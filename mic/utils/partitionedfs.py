@@ -19,15 +19,14 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os
-import os.path
 import glob
 import shutil
 import subprocess
-import logging
 import time
 
 from mic.utils.errors import *
 from mic.utils.fs_related import *
+from mic import msger
 
 class PartitionedMount(Mount):
     def __init__(self, disks, mountdir, skipformat = False):
@@ -111,19 +110,19 @@ class PartitionedMount(Mount):
     def __create_part_to_image(self,device, parttype, fstype, start, size):
         # Start is included to the size so we need to substract one from the end.
         end = start+size-1
-        logging.debug("Added '%s' part at %d of size %d" % (parttype,start,end))
+        msger.debug("Added '%s' part at %d of size %d" % (parttype,start,end))
         part_cmd = [self.parted, "-s", device, "unit", "s", "mkpart", parttype]
         if fstype:
             part_cmd.extend([fstype])
         part_cmd.extend(["%d" % start, "%d" % end])
-        logging.debug(part_cmd)
+        msger.debug(part_cmd)
         p1 = subprocess.Popen(part_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (out,err) = p1.communicate()
-        logging.debug(out)
+        msger.debug(out)
         return p1
 
     def __format_disks(self):
-        logging.debug("Assigning partitions to disks")
+        msger.debug("Assigning partitions to disks")
 
         mbr_sector_skipped = False
 
@@ -153,27 +152,27 @@ class PartitionedMount(Mount):
             p['start'] = d['offset']
             d['offset'] += p['size']
             d['partitions'].append(n)
-            logging.debug("Assigned %s to %s%d at %d at size %d" % (p['mountpoint'], p['disk'], p['num'], p['start'], p['size']))
+            msger.debug("Assigned %s to %s%d at %d at size %d" % (p['mountpoint'], p['disk'], p['num'], p['start'], p['size']))
 
         if self.skipformat:
-            logging.debug("Skipping disk format, because skipformat flag is set.")
+            msger.debug("Skipping disk format, because skipformat flag is set.")
             return
 
         for dev in self.disks.keys():
             d = self.disks[dev]
-            logging.debug("Initializing partition table for %s" % (d['disk'].device))
+            msger.debug("Initializing partition table for %s" % (d['disk'].device))
             p1 = subprocess.Popen([self.parted, "-s", d['disk'].device, "mklabel", "msdos"],
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             (out,err) = p1.communicate()
-            logging.debug(out)
+            msger.debug(out)
 
             if p1.returncode != 0:
                 # NOTE: We don't throw exception when return code is not 0, because
                 # parted always fails to reload part table with loop devices.
                 # This prevents us from distinguishing real errors based on return code.
-                logging.debug("WARNING: parted returned '%s' instead of 0 when creating partition-table for disk '%s'." % (p1.returncode,d['disk'].device))
+                msger.debug("WARNING: parted returned '%s' instead of 0 when creating partition-table for disk '%s'." % (p1.returncode,d['disk'].device))
 
-        logging.debug("Creating partitions")
+        msger.debug("Creating partitions")
 
         for p in self.partitions:
             d = self.disks[p['disk']]
@@ -193,7 +192,7 @@ class PartitionedMount(Mount):
             # Boot ROM of OMAP boards require vfat boot partition to have an
             # even number of sectors.
             if p['mountpoint'] == "/boot" and p['fstype'] in ["vfat","msdos"] and p['size'] % 2:
-                logging.debug("Substracting one sector from '%s' partition to get even number of sectors for the partition." % (p['mountpoint']))
+                msger.debug("Substracting one sector from '%s' partition to get even number of sectors for the partition." % (p['mountpoint']))
                 p['size'] -= 1
 
             p1 = self.__create_part_to_image(d['disk'].device,p['type'],
@@ -204,22 +203,22 @@ class PartitionedMount(Mount):
                 # NOTE: We don't throw exception when return code is not 0, because
                 # parted always fails to reload part table with loop devices.
                 # This prevents us from distinguishing real errors based on return code.
-                logging.debug("WARNING: parted returned '%s' instead of 0 when creating partition '%s' for disk '%s'." % (p1.returncode,p['mountpoint'],d['disk'].device))
+                msger.debug("WARNING: parted returned '%s' instead of 0 when creating partition '%s' for disk '%s'." % (p1.returncode,p['mountpoint'],d['disk'].device))
 
             if p['boot']:
-                logging.debug("Setting boot flag for partition '%s' on disk '%s'." % (p['num'],d['disk'].device))
+                msger.debug("Setting boot flag for partition '%s' on disk '%s'." % (p['num'],d['disk'].device))
                 boot_cmd = [self.parted, "-s", d['disk'].device, "set", "%d" % p['num'], "boot", "on"]
-                logging.debug(boot_cmd)
+                msger.debug(boot_cmd)
                 p1 = subprocess.Popen(boot_cmd,
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 (out,err) = p1.communicate()
-                logging.debug(out)
+                msger.debug(out)
 
                 if p1.returncode != 0:
                     # NOTE: We don't throw exception when return code is not 0, because
                     # parted always fails to reload part table with loop devices.
                     # This prevents us from distinguishing real errors based on return code.
-                    logging.debug("WARNING: parted returned '%s' instead of 0 when adding boot flag for partition '%s' disk '%s'." % (p1.returncode,p['num'],d['disk'].device))
+                    msger.debug("WARNING: parted returned '%s' instead of 0 when adding boot flag for partition '%s' disk '%s'." % (p1.returncode,p['num'],d['disk'].device))
 
     def __map_partitions(self):
         """Load it if dm_snapshot isn't loaded"""
@@ -231,7 +230,7 @@ class PartitionedMount(Mount):
             if d['mapped']:
                 continue
 
-            logging.debug("Running kpartx on %s" % d['disk'].device )
+            msger.debug("Running kpartx on %s" % d['disk'].device )
             kpartx = subprocess.Popen([self.kpartx, "-l", "-v", d['disk'].device],
                                       stdout=subprocess.PIPE, stderr=dev_null)
 
@@ -262,7 +261,7 @@ class PartitionedMount(Mount):
                 mapperdev = "/dev/mapper/" + newdev
                 loopdev = d['disk'].device + newdev[-1]
 
-                logging.debug("Dev %s: %s -> %s" % (newdev, loopdev, mapperdev))
+                msger.debug("Dev %s: %s -> %s" % (newdev, loopdev, mapperdev))
                 pnum = d['partitions'][i]
                 self.partitions[pnum]['device'] = loopdev
 
@@ -274,12 +273,12 @@ class PartitionedMount(Mount):
                     os.unlink(loopdev)
                 os.symlink(mapperdev, loopdev)
 
-            logging.debug("Adding partx mapping for %s" % d['disk'].device)
+            msger.debug("Adding partx mapping for %s" % d['disk'].device)
             p1 = subprocess.Popen([self.kpartx, "-v", "-a", d['disk'].device],
                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             (out,err) = p1.communicate()
-            logging.debug(out)
+            msger.debug(out)
 
             if p1.returncode != 0:
                 # Make sure that the device maps are also removed on error case.
@@ -301,13 +300,13 @@ class PartitionedMount(Mount):
             if not d['mapped']:
                 continue
 
-            logging.debug("Removing compat symlinks")
+            msger.debug("Removing compat symlinks")
             for pnum in d['partitions']:
                 if self.partitions[pnum]['device'] != None:
                     os.unlink(self.partitions[pnum]['device'])
                     self.partitions[pnum]['device'] = None
 
-            logging.debug("Unmapping %s" % d['disk'].device)
+            msger.debug("Unmapping %s" % d['disk'].device)
             rc = subprocess.call([self.kpartx, "-d", d['disk'].device],
                                  stdout=dev_null, stderr=dev_null)
             if rc != 0:
@@ -320,7 +319,7 @@ class PartitionedMount(Mount):
 
 
     def __calculate_mountorder(self):
-        logging.debug("Calculating mount order")
+        msger.debug("Calculating mount order")
         for p in self.partitions:
             self.mountOrder.append(p['mountpoint'])
             self.unmountOrder.append(p['mountpoint'])
@@ -367,7 +366,7 @@ class PartitionedMount(Mount):
         argv = [ self.btrfscmd, "subvolume", "list", rootpath ]
         p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (out,err) = p1.communicate()
-        logging.debug(out)
+        msger.debug(out)
         if p1.returncode != 0:
             raise MountError("Failed to get subvolume id from %s', return code: %d." % (rootpath, p1.returncode))
         subvolid = -1
@@ -386,7 +385,7 @@ class PartitionedMount(Mount):
         argv = [ self.btrfscmd, "subvolume", "list", pdisk.mountdir ]
         p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (out,err) = p1.communicate()
-        logging.debug(out)
+        msger.debug(out)
         if p1.returncode != 0:
             raise MountError("Failed to get subvolume id from %s', return code: %d." % (pdisk.mountdir, p1.returncode))
         subvolid_items = out.split("\n")
@@ -438,7 +437,7 @@ class PartitionedMount(Mount):
             argv = [ self.btrfscmd, "subvolume", "create", pdisk.mountdir + "/" + subvol["subvol"]]
             p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             (out,err) = p1.communicate()
-            logging.debug(out)
+            msger.debug(out)
             if p1.returncode != 0:
                 raise MountError("Failed to create subvolume '%s', return code: %d." % (subvol["subvol"], p1.returncode))
 
@@ -456,7 +455,7 @@ class PartitionedMount(Mount):
                 argv = [ self.btrfscmd, "subvolume", "set-default", "%d" % subvolid, pdisk.mountdir]
                 p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 (out,err) = p1.communicate()
-                logging.debug(out)
+                msger.debug(out)
                 if p1.returncode != 0:
                     raise MountError("Failed to set default subvolume id: %d', return code: %d." % (subvolid, p1.returncode))
 
@@ -494,7 +493,7 @@ class PartitionedMount(Mount):
                 continue
             subvolid = self. __get_subvolume_id(pdisk.mountdir, subvol["subvol"])
             if subvolid == -1:
-                logging.debug("WARNING: invalid subvolume %s" % subvol["subvol"])
+                msger.debug("WARNING: invalid subvolume %s" % subvol["subvol"])
                 continue
             """ Replace subvolume name with subvolume ID """
             opts = subvol["fsopts"].split(",")
@@ -550,7 +549,7 @@ class PartitionedMount(Mount):
             argv = [ self.btrfscmd, "subvolume", "snapshot", subvolpath, snapshotpath ]
             p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             (out,err) = p1.communicate()
-            logging.debug(out)
+            msger.debug(out)
             if p1.returncode != 0:
                 raise MountError("Failed to create subvolume snapshot '%s' for '%s', return code: %d." % (snapshotpath, subvolpath, p1.returncode))
         self.snapshot_created = True

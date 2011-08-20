@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import sys
 import subprocess
-import logging
 
 from mic.pluginbase.imager_plugin import ImagerPlugin
 import mic.utils.cmdln as cmdln
@@ -38,7 +37,6 @@ class FsPlugin(ImagerPlugin):
             if key == createopts['pkgmgr']:
                 pkgmgr = pcls
         if not pkgmgr:
-            #logging.warn("Can't find backend plugin: %s" % createopts['pkgmgr'])
             raise CreatorError("Can't find backend plugin: %s" % createopts['pkgmgr'])
 
         creator = fs.FsImageCreator(createopts, pkgmgr)

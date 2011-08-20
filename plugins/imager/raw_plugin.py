@@ -1,8 +1,7 @@
-#!/usr/bin/python
-import os.path
-import sys
+#!/usr/bin/python -tt
+
+import os, sys
 import subprocess
-import logging
 import shutil
 import re
 import tempfile

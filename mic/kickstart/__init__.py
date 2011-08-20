@@ -20,7 +20,6 @@ import os, sys
 import shutil
 import subprocess
 import time
-import logging
 import string
 
 from mic.utils import errors
@@ -671,7 +670,7 @@ def get_repos(ks, repo_urls = {}):
             mirrorlist = None
 
         if repos.has_key(repo.name):
-            logging.warn("Overriding already specified repo %s" %(repo.name,))
+            msger.warning("Overriding already specified repo %s" %(repo.name,))
 
         proxy = None
         if hasattr(repo, "proxy"):

@@ -1,8 +1,7 @@
-#!/usr/bin/python
-import os.path
-import sys
+#!/usr/bin/python -tt
+
+import os, sys
 import subprocess
-import logging
 import shutil
 import tempfile
 
@@ -56,7 +55,6 @@ class LiveUSBPlugin(ImagerPlugin):
             creator.print_outimage_info()
             outimage = creator.outimage
         except CreatorError, e:
-            logging.exception(e)
             raise CreatorError("failed to create image : %s" % e)
         finally:
             creator.cleanup()

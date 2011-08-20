@@ -1,8 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python -tt
+
 import os
 import sys
 import subprocess
-import logging
 import shutil
 import tempfile
 

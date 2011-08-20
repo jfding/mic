@@ -24,7 +24,6 @@ import stat
 import subprocess
 import random
 import string
-import logging
 import time
 import fcntl
 import struct
@@ -347,7 +346,7 @@ class LoopbackDisk(Disk):
 
         device = losetupOutput.split()[0]
 
-        logging.debug("Losetup add %s mapping to %s"  % (device, self.lofile))
+        msger.debug("Losetup add %s mapping to %s"  % (device, self.lofile))
         rc = subprocess.call([self.losetupcmd, device, self.lofile])
         if rc != 0:
             raise MountError("Failed to allocate loop device for '%s'" %
@@ -357,7 +356,7 @@ class LoopbackDisk(Disk):
     def cleanup(self):
         if self.device is None:
             return
-        logging.debug("Losetup remove %s" % self.device)
+        msger.debug("Losetup remove %s" % self.device)
         rc = subprocess.call([self.losetupcmd, "-d", self.device])
         self.device = None
 
@@ -378,7 +377,7 @@ class SparseLoopbackDisk(LoopbackDisk):
         if size is None:
             size = self.size
 
-        logging.debug("Extending sparse file %s to %d" % (self.lofile, size))
+        msger.debug("Extending sparse file %s to %d" % (self.lofile, size))
         if create:
             fd = os.open(self.lofile, flags, 0644)
         else:
@@ -392,7 +391,7 @@ class SparseLoopbackDisk(LoopbackDisk):
         if size is None:
             size = self.size
 
-        logging.debug("Truncating sparse file %s to %d" % (self.lofile, size))
+        msger.debug("Truncating sparse file %s to %d" % (self.lofile, size))
         fd = os.open(self.lofile, os.O_WRONLY)
         os.ftruncate(fd, size)
         os.close(fd)
@@ -439,7 +438,7 @@ class DiskMount(Mount):
 
     def unmount(self):
         if self.mounted:
-            logging.debug("Unmounting directory %s" % self.mountdir)
+            msger.debug("Unmounting directory %s" % self.mountdir)
             synccmd = find_binary_path("sync")
             subprocess.call([synccmd]) # sync the data on this mount point
             rc = subprocess.call([self.umountcmd, "-l", self.mountdir])
@@ -464,13 +463,13 @@ class DiskMount(Mount):
             return
 
         if not os.path.isdir(self.mountdir):
-            logging.debug("Creating mount point %s" % self.mountdir)
+            msger.debug("Creating mount point %s" % self.mountdir)
             os.makedirs(self.mountdir)
             self.rmdir = self.rmmountdir
 
         self.__create()
 
-        logging.debug("Mounting %s at %s" % (self.disk.device, self.mountdir))
+        msger.debug("Mounting %s at %s" % (self.disk.device, self.mountdir))
         if options:
             args = [ self.mountcmd, "-o", options, self.disk.device, self.mountdir ]
         else:
@@ -506,9 +505,9 @@ class ExtDiskMount(DiskMount):
 
     def __format_filesystem(self):
         if self.skipformat:
-            logging.debug("Skip filesystem format.")
+            msger.debug("Skip filesystem format.")
             return
-        logging.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
+        msger.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
         rc = subprocess.call([self.mkfscmd,
                               "-F", "-L", self.fslabel,
                               "-m", "1", "-b", str(self.blocksize),
@@ -527,7 +526,7 @@ class ExtDiskMount(DiskMount):
             os.close(dev_null)
 
         self.uuid = self.__parse_field(out, "Filesystem UUID")
-        logging.debug("Tuning filesystem on %s" % self.disk.device)
+        msger.debug("Tuning filesystem on %s" % self.disk.device)
         subprocess.call([self.tune2fs, "-c0", "-i0", "-Odir_index",
                          "-ouser_xattr,acl", self.disk.device],
                          stdout=sys.stdout, stderr=sys.stderr)
@@ -566,7 +565,7 @@ class ExtDiskMount(DiskMount):
         DiskMount.mount(self, options)
 
     def __fsck(self):
-        logging.debug("Checking filesystem %s" % self.disk.lofile)
+        msger.debug("Checking filesystem %s" % self.disk.lofile)
         subprocess.call(["/sbin/e2fsck", "-f", "-y", self.disk.lofile], stdout=sys.stdout, stderr=sys.stderr)
 
     def __get_size_from_filesystem(self):
@@ -618,14 +617,14 @@ class VfatDiskMount(DiskMount):
 
     def __format_filesystem(self):
         if self.skipformat:
-            logging.debug("Skip filesystem format.")
+            msger.debug("Skip filesystem format.")
             return
-        logging.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
+        msger.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
         blah = [self.mkfscmd, "-n", self.fslabel, "-i", self.uuid, self.disk.device]
         rc = subprocess.call(blah)
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))
-        logging.debug("Tuning filesystem on %s" % self.disk.device)
+        msger.debug("Tuning filesystem on %s" % self.disk.device)
 
     def __resize_filesystem(self, size = None):
         current_size = os.stat(self.disk.lofile)[stat.ST_SIZE]
@@ -661,7 +660,7 @@ class VfatDiskMount(DiskMount):
         DiskMount.mount(self, options)
 
     def __fsck(self):
-        logging.debug("Checking filesystem %s" % self.disk.lofile)
+        msger.debug("Checking filesystem %s" % self.disk.lofile)
         subprocess.call([self.fsckcmd, "-y", self.disk.lofile])
 
     def __get_size_from_filesystem(self):
@@ -722,9 +721,9 @@ class BtrfsDiskMount(DiskMount):
 
     def __format_filesystem(self):
         if self.skipformat:
-            logging.debug("Skip filesystem format.")
+            msger.debug("Skip filesystem format.")
             return
-        logging.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
+        msger.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
         rc = subprocess.call([self.mkfscmd, "-L", self.fslabel, self.disk.device])
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))
@@ -771,7 +770,7 @@ class BtrfsDiskMount(DiskMount):
         DiskMount.mount(self, options)
 
     def __fsck(self):
-        logging.debug("Checking filesystem %s" % self.disk.lofile)
+        msger.debug("Checking filesystem %s" % self.disk.lofile)
         subprocess.call([self.btrfsckcmd, self.disk.lofile])
 
     def __get_size_from_filesystem(self):
