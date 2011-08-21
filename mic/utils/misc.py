@@ -198,7 +198,6 @@ def is_meego_bootstrap(rootdir):
 
     return ret
 
-
 _my_proxies = {}
 _my_noproxy = None
 _my_noproxy_list = []
@@ -357,131 +356,10 @@ def get_proxy(url):
         proxy = None
     return proxy
 
-def remap_repostr(repostr, siteconf):
-    items = repostr.split(",")
-    name = None
-    baseurl = None
-    for item in items:
-        subitems = item.split(":")
-        if subitems[0] == "name":
-            name = subitems[1]
-        if subitems[0] == "baseurl":
-            baseurl = item[8:]
-    if not baseurl:
-        baseurl = repostr
-
-    for section in siteconf._sections:
-        if section != "main":
-            if not siteconf.has_option(section, "enabled") or siteconf.get(section, "enabled") == "0":
-                continue
-            if siteconf.has_option(section, "equalto"):
-                equalto = siteconf.get(section, "equalto")
-                if (name and equalto == name) or (baseurl and equalto == baseurl):
-                    remap_baseurl = siteconf.get(section, "baseurl")
-                    repostr = repostr.replace(baseurl, remap_baseurl)
-                    return repostr
-
-    return repostr
-
-
 def get_temp_reponame(baseurl):
     md5obj = hashlib.md5(baseurl)
     tmpreponame = "%s" % md5obj.hexdigest()
     return tmpreponame
-
-def get_repostr(repo, siteconf = None):
-    if siteconf:
-        repo = remap_repostr(repo, siteconf)
-    keys = ("baseurl", "mirrorlist", "name", "cost", "includepkgs", "excludepkgs", "proxy", "save", "proxyuser", "proxypasswd", "debuginfo", "source", "gpgkey")
-    repostr = "repo"
-    items = repo.split(",")
-    if len(items) == 1:
-        subitems = items[0].split(":")
-        if len(subitems) == 1:
-            url = subitems[0]
-            repostr += " --baseurl=%s" % url
-        elif subitems[0] == "baseurl":
-            url = items[0][8:]
-            repostr += " --baseurl=%s" % url
-        elif subitems[0] in ("http", "ftp", "https", "ftps", "file"):
-            url = items[0]
-            repostr += " --baseurl=%s" % url
-        else:
-            raise ValueError("Invalid repo string")
-        if url.find("://") == -1 \
-           or url[0:url.index("://")] not in ("http", "ftp", "https", "ftps", "file") \
-           or url.find("/", url.index("://")+3) == -1:
-            raise ValueError("Invalid repo string")
-    else:
-        if repo.find("baseurl:") == -1 and repo.find("mirrorlist:") == -1:
-            raise ValueError("Invalid repo string")
-        url = None
-        for item in items:
-            if not item:
-                continue
-            subitems = item.split(":")
-            if subitems[0] in keys:
-                if subitems[0] in ("baseurl", "mirrorlist"):
-                    url = item[len(subitems[0])+1:]
-                if subitems[0] in ("save", "debuginfo", "source"):
-                    repostr += " --%s" % subitems[0]
-                elif subitems[0] in ("includepkgs", "excludepkgs"):
-                    repostr += " --%s=%s" % (subitems[0], item[len(subitems[0])+1:].replace(";", ","))
-                else:
-                    repostr += " --%s=%s" % (subitems[0], item[len(subitems[0])+1:])
-            else:
-                raise ValueError("Invalid repo string")
-    if url.find("://") != -1 \
-       and url[0:url.index("://")] in ("http", "ftp", "https", "ftps", "file") \
-       and url.find("/", url.index("://")+3) != -1:
-        if repostr.find("--proxy=") == -1:
-            proxy = get_proxy(url)
-            if proxy:
-                repostr += " --proxy=%s" % proxy
-    else:
-        raise ValueError("Invalid repo string")
-
-    if repostr.find("--name=") == -1:
-        repostr += " --name=%s" % get_temp_reponame(url)
-
-    return repostr
-
-DEFAULT_SITECONF_GLOBAL="/etc/mic2/mic2.conf"
-DEFAULT_SITECONF_USER="~/.mic2.conf"
-
-def read_siteconf(siteconf = None):
-    from ConfigParser import SafeConfigParser
-
-    my_siteconf_parser = SafeConfigParser()
-    if not siteconf:
-        global_siteconf = DEFAULT_SITECONF_GLOBAL
-        if os.path.isfile(global_siteconf):
-            my_siteconf_parser.read(global_siteconf)
-
-        local_siteconf = os.path.expanduser(DEFAULT_SITECONF_USER)
-        if os.path.isfile(local_siteconf):
-            my_siteconf_parser.read(local_siteconf)
-    else:
-        my_siteconf_parser.read(siteconf)
-
-    if not my_siteconf_parser.sections():
-        return None
-    else:
-        return my_siteconf_parser
-
-def output_siteconf(siteconf):
-    output = ""
-    if not siteconf:
-        return output
-
-    for section in siteconf.sections():
-        output += "[%s]\n" % section
-        for option in siteconf.options(section):
-            output += "%s=%s\n" % (option, siteconf.get(section, option))
-        output += "\n\n"
-
-    msger.info(output)
-    return output
 
 def get_repostrs_from_ks(ks):
     kickstart_repos = []
@@ -517,43 +395,6 @@ def get_repostrs_from_ks(ks):
             repostr += ",gpgkey:" + repodata.gpgkey
         kickstart_repos.append(repostr[1:])
     return kickstart_repos
-
-def get_repostrs_from_siteconf(siteconf):
-    site_repos = []
-    if not siteconf:
-        return site_repos
-
-    for section in siteconf._sections:
-        if section != "main":
-            repostr = ""
-            if siteconf.has_option(section, "enabled") \
-               and siteconf.get(section, "enabled") == "1" \
-               and (not siteconf.has_option(section, "equalto") or not siteconf.get(section, "equalto")):
-                if siteconf.has_option(section, "name") and siteconf.get(section, "name"):
-                    repostr += ",name:%s" % siteconf.get(section, "name")
-                if siteconf.has_option(section, "baseurl") and siteconf.get(section, "baseurl"):
-                    repostr += ",baseurl:%s" % siteconf.get(section, "baseurl")
-                if siteconf.has_option(section, "mirrorlist") and siteconf.get(section, "mirrorlist"):
-                    repostr += ",mirrorlist:%s" % siteconf.get(section, "mirrorlist")
-                if siteconf.has_option(section, "includepkgs") and siteconf.get(section, "includepkgs"):
-                    repostr += ",includepkgs:%s" % siteconf.get(section, "includepkgs").replace(",", ";")
-                if siteconf.has_option(section, "excludepkgs") and siteconf.get(section, "excludepkgs"):
-                    repostr += ",excludepkgs:%s" % siteconf.get(section, "excludepkgs").replace(",", ";")
-                if siteconf.has_option(section, "cost") and siteconf.get(section, "cost"):
-                    repostr += ",cost:%s" % siteconf.get(section, "cost")
-                if siteconf.has_option(section, "save") and siteconf.get(section, "save"):
-                    repostr += ",save:"
-                if siteconf.has_option(section, "proxy") and siteconf.get(section, "proxy"):
-                    repostr += ",proxy:%s" % siteconf.get(section, "proxy")
-                if siteconf.has_option(section, "proxy_username") and siteconf.get(section, "proxy_username"):
-                    repostr += ",proxyuser:%s" % siteconf.get(section, "proxy_username")
-                if siteconf.has_option(section, "proxy_password") and siteconf.get(section, "proxy_password"):
-                    repostr += ",proxypasswd:%s" % siteconf.get(section, "proxy_password")
-            if repostr != "":
-                if repostr.find("name:") == -1:
-                    repostr = ",name:%s" % get_temp_reponame()
-                site_repos.append(repostr[1:])
-    return site_repos
 
 def get_uncompressed_data_from_url(url, filename, proxies):
     filename = myurlgrab(url, filename, proxies)
@@ -684,7 +525,6 @@ def get_arch(repometadata):
 
             con.close()
     return archlist
-
 
 def get_package(pkg, repometadata, arch = None):
     ver = ""
@@ -865,7 +705,6 @@ def select_ks(ksfiles):
                 break
 
     return ksfiles[choice-1]["filename"]
-
 
 def get_pkglist_in_patterns(group, patterns):
     found = False

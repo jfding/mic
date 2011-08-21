@@ -80,6 +80,9 @@ def _color_perror(head, color, msg, level = 'normal'):
     _color_print(head, color, msg, sys.stderr, level)
 
 def _split_msg(head, msg):
+    if isinstance(msg, list):
+        msg = '\n'.join(map(str, msg))
+
     if msg.startswith('\n'):
         # means print \n at first
         msg = msg.lstrip()
