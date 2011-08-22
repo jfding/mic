@@ -19,18 +19,15 @@
 
 import os
 import stat
-import glob
 import shutil
-import zipfile
-import tarfile
 import subprocess
 
-import mic.kickstart as kickstart
 import mic.utils.fs_related as fs_related
 import urlgrabber.progress as progress
 from baseimager import BaseImageCreator
 from mic.utils.partitionedfs import PartitionedMount
 from mic.utils.errors import *
+from mic import kickstart
 from mic import msger
 
 

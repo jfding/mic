@@ -16,26 +16,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os
-import os.path
-import stat
-import sys
-import tempfile
-import shutil
+import os, sys
 import subprocess
-import re
-import tarfile
-import glob
 
-import rpm
-
-from mic.utils.errors import *
-from mic.utils.fs_related import *
-from mic.utils.rpmmisc import *
-from mic.utils.misc import *
-from mic import kickstart
 from baseimager import BaseImageCreator
-
+from mic import msger
 
 class FsImageCreator(BaseImageCreator):
     def __init__(self, cfgmgr = None, pkgmgr = None):
@@ -58,8 +43,7 @@ class FsImageCreator(BaseImageCreator):
 
         msger.info("Copying %s to %s, please be patient to wait" % (self._instroot, destdir + "/" + self.name))
 
-        copycmd = find_binary_path("cp")
-        args = [ copycmd, "-af", self._instroot, destdir + "/" + self.name ]
+        args = ['cp', "-af", self._instroot, destdir + "/" + self.name ]
         subprocess.call(args)
 
         ignores = ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]

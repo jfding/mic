@@ -89,9 +89,12 @@ class PluginMgr(object):
         if sys.modules.has_key(modname):
             pymod = sys.modules[modname]
             msger.debug("Module %s already exists: %s" % (modname, pymod.__file__))
+
         else:
             pymod = __import__(modname)
             pymod.__file__ = os.path.join(dir_path, plugin_filename)
+            msger.debug("Plugin module %s:%s importing" % (modname, pymod.__file__))
+
         if not self.pluginCheck(pymod):
             msger.warning("Failed to check plugin: %s" % os.path.join(dir_path, plugin_filename))
             return
@@ -127,9 +130,9 @@ class PluginMgr(object):
     def listAllPlugins(self):
         # just for debug
         for key in self.plugin_sets.keys():
-            sys.stdout.write("plugin type (%s) :::\n" % key)
+            msger.debug("plugin type (%s) :::\n" % key)
             for item in self.plugin_sets[key]:
-                sys.stdout.write("%-6s: %s\n" % (item[0], item[1]))
+                msger.debug("%-6s: %s\n" % (item[0], item[1]))
 
     def getPluginType(self, plugin_str):
         pass

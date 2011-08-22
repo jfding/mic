@@ -171,15 +171,15 @@ class ConfigMgr(object):
 
     def dumpAllConfig(self):
         # just for debug
-        sys.stdout.write("create options:\n")
+        msger.debug("create options:\n")
         for key in self.create.keys():
-            sys.stdout.write("%-8s= %s\n" % (key, self.create[key]))
-        sys.stdout.write("convert options:\n")
+            msger.debug("%-8s= %s\n" % (key, self.create[key]))
+        msger.debug("convert options:\n")
         for key in self.convert.keys():
-            sys.stdout.write("%-8s= %s\n" % (key, self.ccnvert[key]))
-        sys.stdout.write("chroot options:\n")
+            msger.debug("%-8s= %s\n" % (key, self.ccnvert[key]))
+        msger.debug("chroot options:\n")
         for key in self.chroot.keys():
-            sys.stdout.write("%-8s= %s\n" % (key, self.chroot[key]))
+            msger.debug("%-8s= %s\n" % (key, self.chroot[key]))
 
 def getConfigMgr():
     return configmgr

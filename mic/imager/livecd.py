@@ -16,20 +16,17 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os
-import sys
+import os, sys
 import glob
 import shutil
 import subprocess
-import re
-import time
 
-import mic.kickstart as kickstart
 import mic.utils.fs_related as fs_related
 import mic.utils.rpmmisc as rpmmisc
 import mic.utils.misc as misc
 from mic.utils.errors import *
 from loop import LoopImageCreator
+from mic import kickstart
 from mic import msger
 
 class LiveImageCreatorBase(LoopImageCreator):
