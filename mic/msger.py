@@ -66,13 +66,14 @@ def _color_print(head, color, msg = None, stream = sys.stdout, level = 'normal')
     else:
         if head:
             head += ': '
+            if head.startswith('\r'):
+                head = head.lstrip()
+                newline = True
 
     if msg:
         stream.write('%s%s' % (head, msg))
         if newline:
             stream.write('\n')
-    else:
-        stream.write('%s ' % head)
 
     stream.flush()
 
@@ -115,9 +116,11 @@ def set_mode(interactive):
     else:
         INTERACTIVE = False
 
-def raw(msg):
-    head, msg = _split_msg('', msg)
-    _color_print(head, NO_COLOR, msg)
+def raw(msg=None):
+    if msg is None:
+        msg = ''
+    sys.stdout.write(msg)
+    sys.stdout.write('\n')
 
 def info(msg):
     head, msg = _split_msg('Info', msg)

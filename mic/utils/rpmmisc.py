@@ -135,7 +135,7 @@ class RPMInstallCallback:
                         msger.info(msg)
 
                         if self.total_installed == self.total_actions:
-                            msger.raw('\n')
+                            msger.raw('')
                             msger.verbose('\n'.join(self.logString))
 
         elif what == rpm.RPMCALLBACK_UNINST_START:
