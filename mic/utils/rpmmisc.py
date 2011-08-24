@@ -55,7 +55,7 @@ class RPMInstallCallback:
 
     def _localprint(self, msg):
         if self.output:
-            print msg
+            msger.info(msg)
 
     def _makefmt(self, percent, progress = True):
         l = len(str(self.total_actions))
@@ -130,11 +130,13 @@ class RPMInstallCallback:
                     fmt = self._makefmt(percent)
                     msg = fmt % ("Installing")
                     if msg != self.lastmsg:
-                        sys.stdout.write(msg)
-                        sys.stdout.flush()
                         self.lastmsg = msg
+
+                        msger.info(msg)
+
                         if self.total_installed == self.total_actions:
-                             msger.verbose('\n' + '\n'.join(self.logString))
+                            msger.raw('\n')
+                            msger.verbose('\n'.join(self.logString))
 
         elif what == rpm.RPMCALLBACK_UNINST_START:
             pass
@@ -147,8 +149,10 @@ class RPMInstallCallback:
 
         elif what == rpm.RPMCALLBACK_REPACKAGE_START:
             pass
+
         elif what == rpm.RPMCALLBACK_REPACKAGE_STOP:
             pass
+
         elif what == rpm.RPMCALLBACK_REPACKAGE_PROGRESS:
             pass
 

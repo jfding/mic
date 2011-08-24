@@ -31,9 +31,12 @@ class CreatorError(Exception):
 
 class KsError(CreatorError):
     pass
+
 class MountError(CreatorError):
     pass
+
 class SnapshotError(CreatorError):
     pass
+
 class SquashfsError(CreatorError):
     pass

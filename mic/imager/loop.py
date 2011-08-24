@@ -18,11 +18,13 @@
 
 import os
 import subprocess
+import shutil
 from baseimager import BaseImageCreator
-from mic.utils.errors import *
-from mic.utils.fs_related import *
-from mic.utils.misc import *
+from mic.utils.errors import CreatorError
 from mic import kickstart
+from mic import msger
+
+from mic.utils.fs_related import ExtDiskMount, BtrfsDiskMount, SparseLoopbackDisk
 
 FSLABEL_MAXLEN = 32
 """The maximum string length supported for LoopImageCreator.fslabel."""

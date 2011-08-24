@@ -27,10 +27,10 @@ import glob
 
 import rpm
 
-from mic.utils.errors import *
-from mic.utils.fs_related import *
-from mic.utils.rpmmisc import *
-from mic.utils.misc import *
+from mic.utils.errors import CreatorError
+from mic.utils.misc import get_filesystem_avail, is_statically_linked,setup_qemu_emulator, create_release
+from mic.utils.fs_related import find_binary_path, makedirs, BindChrootMount
+from mic.utils import rpmmisc
 from mic import kickstart
 from mic import msger
 
@@ -124,8 +124,9 @@ class BaseImageCreator(object):
                     break
 
     def set_target_arch(self, arch):
-        if arch not in arches.keys():
+        if arch not in rpmmisc.arches:
             return False
+
         self.target_arch = arch
         if self.target_arch.startswith("arm"):
             for dep in self._dep_checks:
@@ -320,7 +321,7 @@ class BaseImageCreator(object):
         excluded_packages = []
         for rpm_path in self._get_local_packages():
             rpm_name = os.path.basename(rpm_path)
-            package_name = splitFilename(rpm_name)[0]
+            package_name = rpmmisc.splitFilename(rpm_name)[0]
             excluded_packages += [package_name]
         return excluded_packages
 
@@ -881,6 +882,7 @@ class BaseImageCreator(object):
     def __save_repo_keys(self, repodata):
         if not repodata:
             return None
+
         gpgkeydir = "/etc/pki/rpm-gpg"
         makedirs(self._instroot + gpgkeydir)
         for repo in repodata:
@@ -900,6 +902,7 @@ class BaseImageCreator(object):
         """
         ksh = self.ks.handler
 
+        msger.info('Applying configurations ...')
         try:
             kickstart.LanguageConfig(self._instroot).apply(ksh.lang)
             kickstart.KeyboardConfig(self._instroot).apply(ksh.keyboard)

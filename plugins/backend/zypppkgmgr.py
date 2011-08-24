@@ -523,7 +523,7 @@ class Zypp(BackendPlugin):
         print "%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, download_count)
         try:
             if download_count > 0:
-                print "downloading packages..."
+                print "Downloading packages..."
             self.downloadPkgs(dlpkgs, download_count)
             self.installPkgs(dlpkgs)
 
