@@ -77,6 +77,8 @@ class BaseImageCreator(object):
             self.destdir = createopts['outdir']
             # target arch for non-x86 image
             self.target_arch = createopts['arch']
+            self._local_pkgs_path = createopts['local_pkgs_path']
+
         else:
             self.ks = None
             self.repometadata = None
@@ -85,6 +87,7 @@ class BaseImageCreator(object):
             self.cachedir = "/var/cache"
             self.destdir = "."
             self.target_arch = None
+            self._local_pkgs_path = None
 
         self.__builddir = None
         self.__bindmounts = []
@@ -104,7 +107,6 @@ class BaseImageCreator(object):
         # dependent commands to check
         self._recording_pkgs = None
         self._include_src = None
-        self._local_pkgs_path = None
         # available size in root fs, init to 0
         self._root_fs_avail = 0
         # Name of the disk image file that is created. """

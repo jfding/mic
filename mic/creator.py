@@ -58,6 +58,7 @@ class Creator(cmdln.Cmdln):
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self)
         optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='output directory')
+        optparser.add_option('', '--local-pkgs-path', type='string', dest='local_pkgs_path', default=None, help='Path for local pkgs(rpms) to be installed')
         return optparser
 
     def preoptparse(self, argv):
@@ -66,6 +67,8 @@ class Creator(cmdln.Cmdln):
     def postoptparse(self):
         if self.options.outdir is not None:
             self.configmgr.create['outdir'] = self.options.outdir
+        if self.options.local_pkgs_path is not None:
+            self.configmgr.create['local_pkgs_path'] = self.options.local_pkgs_path
 
     def main(self, argv=None):
         if argv is None:

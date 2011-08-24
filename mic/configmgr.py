@@ -40,6 +40,7 @@ DEFAULT_CREATE = {
     "ksfile": None,
     "ks": None,
     "repomd": None,
+    "local_pkgs_path": None,
 }
 
 class ConfigMgr(object):
