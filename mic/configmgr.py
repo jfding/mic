@@ -19,16 +19,17 @@
 
 import os, sys
 import ConfigParser
-import mic.utils as utils
-import mic.utils.errors as errors
+
+from mic.utils import misc
+from mic.utils import errors
 from mic import kickstart
 from mic import msger
 
 DEFAULT_GSITECONF='/etc/mic/mic.conf'
 
 DEFAULT_OUTDIR='.'
-DEFAULT_TMPDIR='/var/tmp'
-DEFAULT_CACHEDIR='/var/cache'
+DEFAULT_TMPDIR='/var/tmp/mic'
+DEFAULT_CACHEDIR='/var/tmp/mic/cache'
 
 DEFAULT_CREATE = {
     "tmpdir": DEFAULT_TMPDIR,
@@ -112,9 +113,9 @@ class ConfigMgr(object):
 
         try:
             ks = kickstart.read_kickstart(ksconf)
-            ksrepos = utils.misc.get_repostrs_from_ks(ks)
+            ksrepos = misc.get_repostrs_from_ks(ks)
             msger.info("Retrieving repo metadata:")
-            repometadata = utils.misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
+            repometadata = misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
             msger.raw(" DONE")
 
             self.create['ks'] = ks

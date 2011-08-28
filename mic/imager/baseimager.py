@@ -83,8 +83,8 @@ class BaseImageCreator(object):
             self.ks = None
             self.repometadata = None
             self.name = "target"
-            self.tmpdir = "/var/tmp"
-            self.cachedir = "/var/cache"
+            self.tmpdir = "/var/tmp/mic"
+            self.cachedir = "/var/tmp/mic/cache"
             self.destdir = "."
             self.target_arch = None
             self._local_pkgs_path = None
@@ -94,27 +94,35 @@ class BaseImageCreator(object):
 
         self._dep_checks = ["ls", "bash", "cp", "echo", "modprobe", "passwd"]
 
-        ### to be obsolete
+        #FIXME to be obsolete
         self.distro_name = "MeeGo"
+
         # Output image file names"""
         self.outimage = []
+
         # A flag to generate checksum"""
         self._genchecksum = False
+
         self._alt_initrd_name = None
+
         # the disk image after creation, e.g., bz2.
         # This value is set with compression_method function. """
         self.__img_compression_method = None
-        # dependent commands to check
+
         self._recording_pkgs = None
         self._include_src = None
+
         # available size in root fs, init to 0
         self._root_fs_avail = 0
+
         # Name of the disk image file that is created. """
         self._img_name = None
-        # Image format """
+
         self.image_format = None
+
         # Save qemu emulator file name in order to clean up it finally """
         self.qemu_emulator = None
+
         # No ks provided when called by convertor, so skip the dependency check """
         if self.ks:
             # If we have btrfs partition we need to check that we have toosl for those """
@@ -122,6 +130,12 @@ class BaseImageCreator(object):
                 if part.fstype and part.fstype == "btrfs":
                     self._dep_checks.append("mkfs.btrfs")
                     break
+
+        # make sure the specified tmpdir and cachedir exist
+        if not os.path.exists(self.tmpdir):
+            makedirs(self.tmpdir)
+        if not os.path.exists(self.cachedir):
+            makedirs(self.cachedir)
 
     def set_target_arch(self, arch):
         if arch not in rpmmisc.arches:
