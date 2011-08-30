@@ -20,6 +20,7 @@ import os, sys
 import subprocess
 
 from baseimager import BaseImageCreator
+from mic.utils.fs_related import makedirs
 from mic import msger
 
 class FsImageCreator(BaseImageCreator):
@@ -37,6 +38,7 @@ class FsImageCreator(BaseImageCreator):
 
         if not os.path.exists(destdir):
             makedirs(destdir)
+
         destdir = os.path.abspath(os.path.expanduser(destdir))
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
