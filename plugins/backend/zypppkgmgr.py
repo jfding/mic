@@ -16,7 +16,8 @@ from mic.imager.baseimager import BaseImageCreator as ImageCreator
 from mic.utils.fs_related import *
 from mic.utils.misc import *
 from mic.utils.rpmmisc import *
-from mic.pluginbase.backend_plugin import BackendPlugin
+
+from mic.pluginbase import BackendPlugin
 
 class RepositoryStub:
     def __init__(self):
@@ -41,6 +42,8 @@ class RpmError(CreatorError):
     pass
 
 class Zypp(BackendPlugin):
+    name = 'zypp'
+
     def __init__(self, creator = None, recording_pkgs=None):
         if not isinstance(creator, ImageCreator):
             raise CreatorError("Invalid argument: creator")
@@ -752,6 +755,4 @@ class Zypp(BackendPlugin):
         else:
             repourl = repoinfo.baseUrls()[0].__str__()
             return get_proxy(repourl)
-
-mic_plugin = ["zypp", Zypp]
 

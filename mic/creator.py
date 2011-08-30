@@ -44,14 +44,14 @@ class Creator(cmdln.Cmdln):
 
         # load pluginmgr
         self.pluginmgr = pluginmgr.PluginMgr()
-        self.pluginmgr.loadPlugins()
-        self.plugincmds = self.pluginmgr.getImagerPlugins()
+        self.plugincmds = self.pluginmgr.get_plugins('imager')
 
         # mix-in do_subcmd interface
-        for subcmd, klass in self.plugincmds:
+        for subcmd, klass in self.plugincmds.iteritems():
             if not hasattr(klass, 'do_create'):
                 msger.warning("Unsurpport subcmd: %s" % subcmd)
                 continue
+
             func = getattr(klass, 'do_create')
             setattr(self.__class__, "do_"+subcmd, func)
 

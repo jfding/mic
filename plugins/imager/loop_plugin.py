@@ -6,7 +6,7 @@ import subprocess
 import shutil
 import tempfile
 
-from mic.pluginbase.imager_plugin import ImagerPlugin
+from mic.pluginbase import ImagerPlugin
 import mic.utils.misc as misc
 import mic.utils.cmdln as cmdln
 import mic.utils.fs_related as fs_related
@@ -17,6 +17,8 @@ import mic.imager.loop as loop
 import mic.chroot as chroot
 
 class LoopPlugin(ImagerPlugin):
+    name = 'loop'
+
     @classmethod
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create loop image
@@ -36,9 +38,8 @@ class LoopPlugin(ImagerPlugin):
         cfgmgr.setProperty("ksconf", ksconf)
 
         plgmgr = pluginmgr.PluginMgr()
-        plgmgr.loadPlugins()
 
-        for (key, pcls) in plgmgr.getBackendPlugins():
+        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
 
@@ -92,6 +93,3 @@ class LoopPlugin(ImagerPlugin):
         print "Copying file system..."
         shutil.copyfile(srcimg, image)
         return image
-
-mic_plugin = ["loop", LoopPlugin]
-

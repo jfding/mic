@@ -6,7 +6,7 @@ import shutil
 import re
 import tempfile
 
-from mic.pluginbase.imager_plugin import ImagerPlugin
+from mic.pluginbase import ImagerPlugin
 import mic.utils.misc as misc
 import mic.utils.fs_related as fs_related
 import mic.utils.cmdln as cmdln
@@ -18,6 +18,7 @@ import mic.imager.raw as raw
 import mic.chroot as chroot
 
 class RawPlugin(ImagerPlugin):
+    name = 'raw'
 
     @classmethod
     def do_create(self, subcmd, opts, *args):
@@ -37,9 +38,8 @@ class RawPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         cfgmgr.setProperty("ksconf", ksconf)
         plgmgr = pluginmgr.PluginMgr()
-        plgmgr.loadPlugins()
 
-        for (key, pcls) in plgmgr.getBackendPlugins():
+        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
 
@@ -177,6 +177,3 @@ class RawPlugin(ImagerPlugin):
         srcloop.cleanup()
         shutil.rmtree(srcmnt, ignore_errors = True)
         return image
-
-mic_plugin = ["raw", RawPlugin]
-

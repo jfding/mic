@@ -2,7 +2,6 @@
 import sys
 import subprocess
 
-from mic.pluginbase.imager_plugin import ImagerPlugin
 import mic.utils.cmdln as cmdln
 import mic.utils.errors as errors
 import mic.configmgr as configmgr
@@ -10,8 +9,11 @@ import mic.pluginmgr as pluginmgr
 import mic.imager.fs as fs
 import mic.chroot as chroot
 
+from mic.pluginbase import ImagerPlugin
 
 class FsPlugin(ImagerPlugin):
+    name = 'fs'
+
     @classmethod
     @cmdln.option("--include-src", dest="include_src", help="include source pakcage")
     def do_create(self, subcmd, opts, *args):
@@ -32,10 +34,10 @@ class FsPlugin(ImagerPlugin):
         cfgmgr.setProperty("ksconf", ksconf)
 
         plgmgr = pluginmgr.PluginMgr()
-        plgmgr.loadPlugins()
-        for (key, pcls) in plgmgr.getBackendPlugins():
+        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
             if key == createopts['pkgmgr']:
                 pkgmgr = pcls
+
         if not pkgmgr:
             raise CreatorError("Can't find backend plugin: %s" % createopts['pkgmgr'])
 
@@ -75,4 +77,3 @@ class FsPlugin(ImagerPlugin):
                 chroot.cleanup_after_chroot("dir", None, None, None)
                 return 1
 
-mic_plugin = ["fs", FsPlugin]

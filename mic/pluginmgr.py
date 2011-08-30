@@ -19,127 +19,62 @@
 
 import os, sys
 from mic import msger
+from mic import pluginbase
 
 DEFAULT_PLUGIN_LOCATION = "/usr/lib/mic/plugins"
 
-PLGUIN_TYPES = ["imager", "backend", "hook"]
-
-STRING_PLUGIN_MARK = "mic_plugin"
-STRING_PTYPE_MARK = "plugin_type"
+PLUGIN_TYPES = ["imager", "backend"] # TODO  "hook"
 
 class PluginMgr(object):
+    plugin_dirs = {}
+
+    # make the manager class as singleton
+    _instance = None
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(PluginMgr, cls).__new__(cls, *args, **kwargs)
+
+        return cls._instance
+
     def __init__(self, plugin_dirs=[]):
-        self.plugin_locations = []
-        self.plugin_sets = {}
-        self.plugin_types = PLGUIN_TYPES
 
-        # initial plugin directory
-        self.addPluginDir(DEFAULT_PLUGIN_LOCATION)
-        for directory in plugin_dirs:
-            self.addPluginDir(os.path.expanduser(directory))
+        # default plugin directory
+        for pt in PLUGIN_TYPES:
+            self._add_plugindir(os.path.join(DEFAULT_PLUGIN_LOCATION, pt))
 
-        # intial plugin sets
-        for plugintype in self.plugin_types:
-            self.plugin_sets[plugintype] = []
+        for dir in plugin_dirs:
+            self._add_plugindir(dir)
 
-    def addPluginDir(self, plugin_dir):
-        if not os.path.isdir(plugin_dir):
-            msger.debug("Plugin dir is not a directory or does not exist: %s" % plugin_dir)
+        # load all the plugins
+        self._load_all()
+
+    def _add_plugindir(self, dir):
+        dir = os.path.abspath(os.path.expanduser(dir))
+
+        if not os.path.isdir(dir):
+            msger.warning("Plugin dir is not a directory or does not exist: %s" % dir)
             return
 
-        if plugin_dir not in self.plugin_locations:
-            self.plugin_locations.append(plugin_dir)
+        if dir not in self.plugin_dirs:
+            self.plugin_dirs[dir] = False
+            # the value True/False means "loaded"
 
-    def pluginCheck(self, pymod):
-        if not hasattr(pymod, STRING_PLUGIN_MARK):
-            msger.debug("Not a valid plugin: %s" % pymod.__file__)
-            msger.debug("Please check whether %s given" % STRING_PLUGIN_MARK)
-            return False
+    def _load_all(self):
+        for (pdir, loaded) in self.plugin_dirs.iteritems():
+            if loaded: continue
 
-        plclass = getattr(pymod, STRING_PLUGIN_MARK)[1]
-        if not hasattr(plclass, STRING_PTYPE_MARK):
-            msger.debug("Not a valid plugin: %s" % pymod.__file__)
-            msger.debug("Please check whether %s given" % STRING_PTYPE_MARK)
-            return False
+            sys.path.insert(0, pdir)
+            for mod in [x[:-3] for x in os.listdir(pdir) if x.endswith(".py")]:
+                if mod and mod != '__init__':
+                    if mod in sys.modules:
+                        msger.debug("Module %s already exists, skip" % mod)
+                    else:
+                        pymod = __import__(mod)
+                        self.plugin_dirs[pdir] = True
+                        msger.debug("Plugin module %s:%s importing" % (mod, pymod.__file__))
 
-        pltype = getattr(plclass, STRING_PTYPE_MARK)
-        if not (pltype in self.plugin_types):
-            msger.debug("Unsupported plugin type in %s: %s" % (pymod.__file__, plugintype))
-            return False
+            del(sys.path[0])
 
-        return True
-
-    def importModule(self, dir_path, plugin_filename):
-        if plugin_filename.endswith(".pyc"):
-            return
-
-        if not plugin_filename.endswith(".py"):
-            msger.debug("Not a python file: %s" % os.path.join(dir_path, plugin_filename))
-            return
-
-        if plugin_filename == ".py":
-            msger.debug("Empty module name: %s" % os.path.join(dir_path, plugin_filename))
-            return
-
-        if plugin_filename == "__init__.py":
-            msger.debug("Unsupported python file: %s" % os.path.join(dir_path, plugin_filename))
-            return
-
-        modname = os.path.splitext(plugin_filename)[0]
-        if sys.modules.has_key(modname):
-            pymod = sys.modules[modname]
-            msger.debug("Module %s already exists: %s" % (modname, pymod.__file__))
-
-        else:
-            pymod = __import__(modname)
-            pymod.__file__ = os.path.join(dir_path, plugin_filename)
-            msger.debug("Plugin module %s:%s importing" % (modname, pymod.__file__))
-
-        if not self.pluginCheck(pymod):
-            msger.warning("Failed to check plugin: %s" % os.path.join(dir_path, plugin_filename))
-            return
-
-        (pname, pcls) = pymod.__dict__[STRING_PLUGIN_MARK]
-        plugintype = getattr(pcls, STRING_PTYPE_MARK)
-        self.plugin_sets[plugintype].append((pname, pcls))
-
-    def loadPlugins(self):
-        for pdir in map(os.path.abspath, self.plugin_locations):
-            for pitem in os.walk(pdir):
-                sys.path.insert(0, pitem[0])
-                for pf in pitem[2]:
-                    self.importModule(pitem[0], pf)
-                del(sys.path[0])
-
-    def getPluginByCateg(self, categ = None):
-        if not (categ in self.plugin_types):
-            msger.warning("Failed to get plugin category: %s" % categ)
-            return None
-        else:
-            return self.plugin_sets[categ]
-
-    def getImagerPlugins(self):
-        return self.plugin_sets['imager']
-
-    def getBackendPlugins(self):
-        return self.plugin_sets['backend']
-
-    def getHookPlugins(self):
-        return self.plugin_sets['hook']
-
-    def listAllPlugins(self):
-        # just for debug
-        for key in self.plugin_sets.keys():
-            msger.debug("plugin type (%s) :::\n" % key)
-            for item in self.plugin_sets[key]:
-                msger.debug("%-6s: %s\n" % (item[0], item[1]))
-
-    def getPluginType(self, plugin_str):
-        pass
-
-if __name__ == "__main__":
-    msger.set_loglevel('debug')
-
-    pluginmgr = PluginMgr()
-    pluginmgr.loadPlugins()
-    pluginmgr.listAllPlugins()
+    def get_plugins(self, ptype):
+        """ the return value is dict of name:class pairs """
+        return pluginbase.get_plugins(ptype)

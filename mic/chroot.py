@@ -129,7 +129,7 @@ def setup_chrootenv(chrootdir, bindmounts = None):
                 continue
 
             if srcdst[0] in BIND_MOUNTS or srcdst[0] == '/':
-                pwarning("%s will be mounted by default." % srcdst[0])
+                msger.warning("%s will be mounted by default." % srcdst[0])
                 continue
 
             if srcdst[1] == "" or srcdst[1] == "none":
@@ -137,7 +137,7 @@ def setup_chrootenv(chrootdir, bindmounts = None):
             else:
                 srcdst[1] = os.path.abspath(os.path.expanduser(srcdst[1]))
                 if os.path.isdir(chrootdir + "/" + srcdst[1]):
-                    pwarning("%s has existed in %s , skip it." % (srcdst[1], chrootdir))
+                    msger.warning("%s has existed in %s , skip it." % (srcdst[1], chrootdir))
                     continue
 
             chrootmounts.append(fs_related.BindChrootMount(srcdst[0], chrootdir, srcdst[1]))

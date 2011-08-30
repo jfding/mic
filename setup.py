@@ -33,7 +33,6 @@ except IOError:
 PACKAGES = [MOD_NAME,
             MOD_NAME + '/utils',
             MOD_NAME + '/imager',
-            MOD_NAME + '/pluginbase',
             MOD_NAME + '/urlgrabber',
             MOD_NAME + '/kickstart',
             MOD_NAME + '/kickstart/custom_commands',

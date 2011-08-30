@@ -32,9 +32,10 @@ import subprocess
 
 from mic.utils.errors import *
 from mic.utils.fs_related import *
-from mic.pluginbase.backend_plugin import BackendPlugin
 from mic.imager.baseimager import BaseImageCreator as ImageCreator
+
 from mic import msger
+from mic.pluginbase import BackendPlugin
 
 def getRPMCallback():
     sys.path.append('/usr/share/yum-cli')
@@ -137,6 +138,8 @@ class MyYumRepository(yum.yumRepo.YumRepository):
         pass
 
 class Yum(BackendPlugin, yum.YumBase):
+    name = 'yum'
+
     def __init__(self, creator = None, recording_pkgs=None):
         if not isinstance(creator, ImageCreator):
             raise CreatorError("Invalid argument: creator")
@@ -534,5 +537,3 @@ class Yum(BackendPlugin, yum.YumBase):
 
     def getAllContent(self):
         return self.__pkgs_content
-
-mic_plugin = ["yum", Yum]

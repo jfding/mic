@@ -5,7 +5,7 @@ import subprocess
 import shutil
 import tempfile
 
-from mic.pluginbase.imager_plugin import ImagerPlugin
+from mic.pluginbase import ImagerPlugin
 import mic.imager.liveusb as liveusb
 import mic.utils.misc as misc
 import mic.utils.fs_related as fs_related
@@ -17,6 +17,8 @@ from mic.utils.errors import *
 import mic.chroot as chroot
 
 class LiveUSBPlugin(ImagerPlugin):
+    name = 'liveusb'
+
     #@cmdln.option
     @classmethod
     def do_create(self, subcmd, opts, *args):
@@ -37,9 +39,8 @@ class LiveUSBPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         cfgmgr.setProperty("ksconf", args[0])
         plgmgr = pluginmgr.PluginMgr()
-        plgmgr.loadPlugins()
 
-        for (key, pcls) in plgmgr.getBackendPlugins():
+        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
 
@@ -169,5 +170,3 @@ class LiveUSBPlugin(ImagerPlugin):
             shutil.rmtree(imgmnt, ignore_errors = True)
 
         return rtimage
-
-mic_plugin = ["liveusb", LiveUSBPlugin]

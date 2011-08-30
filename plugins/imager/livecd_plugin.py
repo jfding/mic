@@ -4,7 +4,6 @@ import subprocess
 import shutil
 import tempfile
 
-from mic.pluginbase.imager_plugin import ImagerPlugin
 import mic.chroot as chroot
 import mic.utils.misc as misc
 import mic.utils.fs_related as fs_related
@@ -14,7 +13,10 @@ import mic.pluginmgr as pluginmgr
 import mic.imager.livecd as livecd
 from mic.utils.errors import *
 
+from mic.pluginbase import ImagerPlugin
+
 class LiveCDPlugin(ImagerPlugin):
+    name = 'livecd'
 
     @classmethod
     def do_create(self, subcmd, opts, *args):
@@ -34,9 +36,8 @@ class LiveCDPlugin(ImagerPlugin):
         cfgmgr.setProperty("ksconf", ksconf)
         creatoropts = cfgmgr.create
         plgmgr = pluginmgr.PluginMgr()
-        plgmgr.loadPlugins()
 
-        for (key, pcls) in plgmgr.getBackendPlugins():
+        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
 
@@ -168,5 +169,3 @@ class LiveCDPlugin(ImagerPlugin):
             shutil.rmtree(imgmnt, ignore_errors = True)
 
         return rtimage
-
-mic_plugin = ["livecd", LiveCDPlugin]

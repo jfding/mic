@@ -17,8 +17,30 @@
 # with the express permission of Red Hat, Inc.
 #
 
-class ImagerPlugin(object):
-    plugin_type = "imager"
+from mic import msger
+
+class _Plugin(object):
+    class __metaclass__(type):
+        def __init__(cls, name, bases, attrs):
+            if not hasattr(cls, 'plugins'):
+                cls.plugins = {}
+
+            elif 'mic_plugin_type' in attrs:
+                    if attrs['mic_plugin_type'] not in cls.plugins:
+                        cls.plugins[attrs['mic_plugin_type']] = {}
+
+            elif hasattr(cls, 'mic_plugin_type') and 'name' in attrs:
+                    cls.plugins[cls.mic_plugin_type][attrs['name']] = cls
+
+        def show_plugins(cls):
+            for cls in cls.plugins[cls.mic_plugin_type]:
+                print cls
+
+        def get_plugins(cls):
+            return cls.plugins
+
+class ImagerPlugin(_Plugin):
+    mic_plugin_type = "imager"
 
     def do_create(self):
         pass
@@ -32,5 +54,17 @@ class ImagerPlugin(object):
     def do_unpack(self):
         pass
 
-# [a, b]: a is for subcmd name, b is for plugin class
-mic_plugin = ["", None]
+class BackendPlugin(_Plugin):
+    mic_plugin_type="backend"
+
+    def addRepository(self):
+        pass
+
+def get_plugins(typen):
+    ps = ImagerPlugin.get_plugins()
+    if typen in ps:
+        return ps[typen]
+    else:
+        return None
+
+__all__ = ['ImagerPlugin', 'BackendPlugin', 'get_plugins']
