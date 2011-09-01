@@ -16,7 +16,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-
 import os
 import sys
 import errno
@@ -30,8 +29,7 @@ import struct
 import termios
 
 from errors import *
-from urlgrabber.grabber import URLGrabber
-from urlgrabber.grabber import URLGrabError
+from urlgrabber.grabber import URLGrabber, URLGrabError
 from mic import msger
 
 def terminal_width(fd=1):

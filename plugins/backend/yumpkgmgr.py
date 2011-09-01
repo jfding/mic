@@ -1,41 +1,38 @@
-#
-# yum.py : yum utilities
+#!/usr/bin/python -tt
 #
 # Copyright 2007, Red Hat  Inc.
+# Copyright 2010, 2011 Intel, Inc.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; version 2 of the License.
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Library General Public License for more details.
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  Any Red Hat
+# trademarks that are incorporated in the source code or documentation are not
+# subject to the GNU General Public License and may only be used or replicated
+# with the express permission of Red Hat, Inc.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import glob
-import os
-import sys
-
-import yum
-import rpmUtils
-from pykickstart import parser as ksparser
-
+import os, sys
 import urlparse
 import urllib2 as u2
 import tempfile
 import shutil
 import subprocess
 
-from mic.utils.errors import *
-from mic.utils.fs_related import *
-from mic.imager.baseimager import BaseImageCreator as ImageCreator
+import yum
+import rpmUtils
+from pykickstart import parser as ksparser
 
 from mic import msger
-from mic.pluginbase import BackendPlugin
+from mic.utils.errors import CreatorError
+from mic.imager.baseimager import BaseImageCreator
+from mic.utils.fs_related import TextProgress
 
 def getRPMCallback():
     sys.path.append('/usr/share/yum-cli')
@@ -137,11 +134,12 @@ class MyYumRepository(yum.yumRepo.YumRepository):
     def __del__(self):
         pass
 
+from mic.pluginbase import BackendPlugin
 class Yum(BackendPlugin, yum.YumBase):
     name = 'yum'
 
     def __init__(self, creator = None, recording_pkgs=None):
-        if not isinstance(creator, ImageCreator):
+        if not isinstance(creator, BaseImageCreator):
             raise CreatorError("Invalid argument: creator")
         yum.YumBase.__init__(self)
 
@@ -203,6 +201,7 @@ class Yum(BackendPlugin, yum.YumBase):
     def _cleanupRpmdbLocks(self, installroot):
         # cleans up temporary files left by bdb so that differing
         # versions of rpm don't cause problems
+        import glob
         for f in glob.glob(installroot + "/var/lib/rpm/__db*"):
             os.unlink(f)
 
@@ -317,9 +316,9 @@ class Yum(BackendPlugin, yum.YumBase):
                 break
         if not file_showed:
             f = open(savepath)
-            print f.read()
+            msger.raw(f.read())
             f.close()
-            raw_input('press <ENTER> to continue...')
+            msger.pause()
 
     def checkRepositoryEULA(self, name, repo):
         """ This function is to check the LICENSE file if provided. """
@@ -364,7 +363,8 @@ class Yum(BackendPlugin, yum.YumBase):
                         user, password = user_pass.split(':', 1)
                 except ValueError, e:
                     raise CreatorError('Bad URL: %s' % url)
-                print "adding HTTP auth: %s, %s" %(user, password)
+
+                msger.verbose("adding HTTP auth: %s, %s" %(user, password))
                 auth_handler.add_password(None, host, user, password)
                 tmphandlers.append(auth_handler)
                 url = scheme + "://" + host + path + parm + query + frag
@@ -385,27 +385,18 @@ class Yum(BackendPlugin, yum.YumBase):
             return True
 
         # show the license file
-        print 'For the software packages in this yum repo:'
-        print '    %s: %s' % (name, baseurl)
-        print 'There is an "End User License Agreement" file that need to be checked.'
-        print 'Please read the terms and conditions outlined in it and answer the followed qustions.'
-        raw_input('press <ENTER> to continue...')
+        msger.info('For the software packages in this yum repo:')
+        msger.info('    %s: %s' % (name, baseurl))
+        msger.info('There is an "End User License Agreement" file that need to be checked.')
+        msger.info('Please read the terms and conditions outlined in it and answer the followed qustions.')
+        msger.pause()
 
         self.__pagerFile(repo_eula_path)
 
         # Asking for the "Accept/Decline"
-        accept = True
-        while accept:
-            input_accept = raw_input('Would you agree to the terms and conditions outlined in the above End User License Agreement? (Yes/No): ')
-            if input_accept.upper() in ('YES', 'Y'):
-                break
-            elif input_accept.upper() in ('NO', 'N'):
-                accept = None
-                print 'Will not install pkgs from this repo.'
-
-        if not accept:
-            #cleanup
-            shutil.rmtree(repo_lic_dir)
+        if not msger.ask('Would you agree to the terms and conditions outlined in the above End User License Agreement?'):
+            msger.warning('Will not install pkgs from this repo.')
+            shutil.rmtree(repo_lic_dir) #cleanup
             return None
 
         # try to find support_info.html for extra infomation
@@ -415,8 +406,8 @@ class Yum(BackendPlugin, yum.YumBase):
                                 repo_info_url,
                                 os.path.join(repo_lic_dir, repo.id + '_support_info.html'))
         if repo_info_path:
-            print 'There is one more file in the repo for additional support information, please read it'
-            raw_input('press <ENTER> to continue...')
+            msger.info('There is one more file in the repo for additional support information, please read it')
+            msger.pause()
             self.__pagerFile(repo_info_path)
 
         #cleanup
@@ -497,16 +488,16 @@ class Yum(BackendPlugin, yum.YumBase):
 
         total_count = len(dlpkgs)
         cached_count = 0
-        print "Checking packages cache and packages integrity..."
+        msger.info("\nChecking packages cache and packages integrity...")
         for po in dlpkgs:
             local = po.localPkg()
             if not os.path.exists(local):
                 continue
             if not self.verifyPkg(local, po, False):
-                print "Package %s is damaged: %s" % (os.path.basename(local), local)
+                msger.warning("Package %s is damaged: %s" % (os.path.basename(local), local))
             else:
                 cached_count +=1
-        print "%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, total_count - cached_count)
+        msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, total_count - cached_count))
         try:
             self.downloadPkgs(dlpkgs)
             # FIXME: sigcheck?
@@ -516,7 +507,7 @@ class Yum(BackendPlugin, yum.YumBase):
             deps = self.ts.check()
             if len(deps) != 0:
                 """ This isn't fatal, Ubuntu has this issue but it is ok. """
-                print deps
+                msger.debug(deps)
                 msger.warning("Dependency check failed!")
             rc = self.ts.order()
             if rc != 0:
@@ -527,7 +518,6 @@ class Yum(BackendPlugin, yum.YumBase):
             cb.tsInfo = self.tsInfo
             cb.filelog = False
             ret = self.runTransaction(cb)
-            print ""
             self._cleanupRpmdbLocks(self.conf.installroot)
             return ret
         except yum.Errors.RepoError, e:

@@ -1,23 +1,38 @@
-#!/usr/bin/python
+#!/usr/bin/python -tt
+#
+# Copyright 2010, 2011 Intel, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  Any Red Hat
+# trademarks that are incorporated in the source code or documentation are not
+# subject to the GNU General Public License and may only be used or replicated
+# with the express permission of Red Hat, Inc.
+#
 
 import os
-import sys
-import glob
-import re
 import zypp
 import rpm
 import shutil
 import tempfile
 import urlparse
 import urllib2 as u2
-import pykickstart.parser
+
+from pykickstart import parser as ksparser
+
+from mic.imager.baseimager import BaseImageCreator
+
 from mic.utils.errors import *
-from mic.imager.baseimager import BaseImageCreator as ImageCreator
 from mic.utils.fs_related import *
 from mic.utils.misc import *
 from mic.utils.rpmmisc import *
-
-from mic.pluginbase import BackendPlugin
 
 class RepositoryStub:
     def __init__(self):
@@ -41,11 +56,12 @@ class RepoError(CreatorError):
 class RpmError(CreatorError):
     pass
 
+from mic.pluginbase import BackendPlugin
 class Zypp(BackendPlugin):
     name = 'zypp'
 
     def __init__(self, creator = None, recording_pkgs=None):
-        if not isinstance(creator, ImageCreator):
+        if not isinstance(creator, BaseImageCreator):
             raise CreatorError("Invalid argument: creator")
 
         self.__recording_pkgs = recording_pkgs
@@ -109,6 +125,7 @@ class Zypp(BackendPlugin):
     def _cleanupRpmdbLocks(self, installroot):
         # cleans up temporary files left by bdb so that differing
         # versions of rpm don't cause problems
+        import glob
         for f in glob.glob(installroot + "/var/lib/rpm/__db*"):
             os.unlink(f)
 
@@ -248,7 +265,7 @@ class Zypp(BackendPlugin):
         if not found:
             raise CreatorError("Unable to find package: %s" % (pkg,))
 
-    def selectGroup(self, grp, include = pykickstart.parser.GROUP_DEFAULT):
+    def selectGroup(self, grp, include = ksparser.GROUP_DEFAULT):
         if not self.Z:
             self.__initialize_zypp()
         found = False
@@ -265,9 +282,9 @@ class Zypp(BackendPlugin):
                     break
 
         if found:
-            if include == pykickstart.parser.GROUP_REQUIRED:
+            if include == ksparser.GROUP_REQUIRED:
                 map(lambda p: self.deselectPackage(p), grp.default_packages.keys())
-            elif include == pykickstart.parser.GROUP_ALL:
+            elif include == ksparser.GROUP_ALL:
                 map(lambda p: self.selectPackage(p), grp.optional_packages.keys())
             return None
         else:
