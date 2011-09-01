@@ -22,14 +22,11 @@ import glob
 import shutil
 import subprocess
 
-import mic.utils.fs_related as fs_related
-import mic.utils.rpmmisc as rpmmisc
-import mic.utils.misc as misc
-from mic.utils.errors import *
-from loop import LoopImageCreator
-from mic import kickstart
-from mic import msger
+from mic import kickstart, msger
+from mic.utils import fs_related, rpmmisc
+from mic.utils.errors import CreatorError
 
+from loop import LoopImageCreator
 class LiveImageCreatorBase(LoopImageCreator):
     """A base class for LiveCD image creators.
 
@@ -659,194 +656,11 @@ hiddenmenu
         self._configure_syslinux_bootloader(isodir)
         self._configure_efi_bootloader(isodir)
 
-class ppcLiveImageCreator(LiveImageCreatorBase):
-    def _get_mkisofs_options(self, isodir):
-        return [ "-hfs", "-nodesktop", "-part"
-                 "-map", isodir + "/ppc/mapping",
-                 "-hfs-bless", isodir + "/ppc/mac",
-                 "-hfs-volid", self.fslabel ]
-
-    def _get_required_packages(self):
-        return ["yaboot"] + \
-               LiveImageCreatorBase._get_required_packages(self)
-
-    def _get_excluded_packages(self):
-        # kind of hacky, but exclude memtest86+ on ppc so it can stay in cfg
-        return ["memtest86+"] + \
-               LiveImageCreatorBase._get_excluded_packages(self)
-
-    def __copy_boot_file(self, destdir, file):
-        for dir in ["/usr/share/ppc64-utils",
-                    "/usr/lib/moblin-installer-runtime/boot"]:
-            path = self._instroot + dir + "/" + file
-            if not os.path.exists(path):
-                continue
-
-            fs_related.makedirs(destdir)
-            shutil.copy(path, destdir)
-            return
-
-        raise CreatorError("Unable to find boot file " + file)
-
-    def __kernel_bits(self, kernel):
-        testpath = (self._instroot + "/lib/modules/" +
-                    kernel + "/kernel/arch/powerpc/platforms")
-
-        if not os.path.exists(testpath):
-            return { "32" : True, "64" : False }
-        else:
-            return { "32" : False, "64" : True }
-
-    def __copy_kernel_and_initramfs(self, destdir, version):
-        bootdir = self._instroot + "/boot"
-
-        fs_related.makedirs(destdir)
-
-        shutil.copyfile(bootdir + "/vmlinuz-" + version,
-                        destdir + "/vmlinuz")
-
-        shutil.copyfile(bootdir + "/initrd-" + version + ".img",
-                        destdir + "/initrd.img")
-
-    def __get_basic_yaboot_config(self, **args):
-        return """
-init-message = "Welcome to %(distroname)s!"
-timeout=%(timeout)d
-""" % args
-
-    def __get_image_stanza(self, **args):
-        return """
-
-image=/ppc/ppc%(bit)s/vmlinuz
-  label=%(short)s
-  initrd=/ppc/ppc%(bit)s/initrd.img
-  read-only
-  append="root=CDLABEL=%(fslabel)s rootfstype=iso9660 %(liveargs)s %(extra)s"
-""" % args
-
-
-    def __write_yaboot_config(isodir, bit):
-        cfg = self.__get_basic_yaboot_config(name = self.name,
-                                             timeout = self._timeout * 100,
-                                             distroname = self.distro_name)
-
-        kernel_options = self._get_kernel_options()
-
-        cfg += self.__get_image_stanza(fslabel = self.fslabel,
-                                       short = "linux",
-                                       long = "Run from image",
-                                       extra = "",
-                                       bit = bit,
-                                       liveargs = kernel_options)
-
-        if self._has_checkisomd5():
-            cfg += self.__get_image_stanza(fslabel = self.fslabel,
-                                           short = "check",
-                                           long = "Verify and run from image",
-                                           extra = "check",
-                                           bit = bit,
-                                           liveargs = kernel_options)
-
-        f = open(isodir + "/ppc/ppc" + bit + "/yaboot.conf", "w")
-        f.write(cfg)
-        f.close()
-
-    def __write_not_supported(isodir, bit):
-        fs_related.makedirs(isodir + "/ppc/ppc" + bit)
-
-        message = "Sorry, this LiveCD does not support your hardware"
-
-        f = open(isodir + "/ppc/ppc" + bit + "/yaboot.conf", "w")
-        f.write('init-message = "' + message + '"')
-        f.close()
-
-
-    def __write_dualbits_yaboot_config(isodir, **args):
-        cfg = """
-init-message = "\nWelcome to %(name)s!\nUse 'linux32' for 32-bit kernel.\n\n"
-timeout=%(timeout)d
-default=linux
-
-image=/ppc/ppc64/vmlinuz
-	label=linux64
-	alias=linux
-	initrd=/ppc/ppc64/initrd.img
-	read-only
-
-image=/ppc/ppc32/vmlinuz
-	label=linux32
-	initrd=/ppc/ppc32/initrd.img
-	read-only
-""" % args
-
-        f = open(isodir + "/etc/yaboot.conf", "w")
-        f.write(cfg)
-        f.close()
-
-    def _configure_bootloader(self, isodir):
-        """configure the boot loader"""
-        havekernel = { 32: False, 64: False }
-
-        self.__copy_boot_file("mapping", isodir + "/ppc")
-        self.__copy_boot_file("bootinfo.txt", isodir + "/ppc")
-        self.__copy_boot_file("ofboot.b", isodir + "/ppc/mac")
-
-        shutil.copyfile(self._instroot + "/usr/lib/yaboot/yaboot",
-                        isodir + "/ppc/mac/yaboot")
-
-        fs_related.makedirs(isodir + "/ppc/chrp")
-        shutil.copyfile(self._instroot + "/usr/lib/yaboot/yaboot",
-                        isodir + "/ppc/chrp/yaboot")
-
-        subprocess.call(["/usr/sbin/addnote", isodir + "/ppc/chrp/yaboot"])
-
-        #
-        # FIXME: ppc should support multiple kernels too...
-        #
-        kernel = self._get_kernel_versions().values()[0][0]
-
-        kernel_bits = self.__kernel_bits(kernel)
-
-        for (bit, present) in kernel_bits.items():
-            if not present:
-                self.__write_not_supported(isodir, bit)
-                continue
-
-            self.__copy_kernel_and_initramfs(isodir + "/ppc/ppc" + bit, kernel)
-            self.__write_yaboot_config(isodir, bit)
-
-        fs_related.makedirs(isodir + "/etc")
-        if kernel_bits["32"] and not kernel_bits["64"]:
-            shutil.copyfile(isodir + "/ppc/ppc32/yaboot.conf",
-                            isodir + "/etc/yaboot.conf")
-        elif kernel_bits["64"] and not kernel_bits["32"]:
-            shutil.copyfile(isodir + "/ppc/ppc64/yaboot.conf",
-                            isodir + "/etc/yaboot.conf")
-        else:
-            self.__write_dualbits_yaboot_config(isodir,
-                                                name = self.name,
-                                                timeout = self._timeout * 100)
-
-        #
-        # FIXME: build 'netboot' images with kernel+initrd, like mk-images.ppc
-        #
-
-class ppc64LiveImageCreator(ppcLiveImageCreator):
-    def _get_excluded_packages(self):
-        # FIXME:
-        #   while kernel.ppc and kernel.ppc64 co-exist,
-        #   we can't have both
-        return ["kernel.ppc"] + \
-               ppcLiveImageCreator._get_excluded_packages(self)
-
 arch = rpmmisc.getBaseArch()
 if arch in ("i386", "x86_64"):
     LiveCDImageCreator = x86LiveImageCreator
-elif arch in ("ppc",):
-    LiveCDImageCreator = ppcLiveImageCreator
-elif arch in ("ppc64",):
-    LiveCDImageCreator = ppc64LiveImageCreator
 elif arch.startswith("arm"):
     LiveCDImageCreator = LiveImageCreatorBase
+
 else:
     raise CreatorError("Architecture not supported!")
