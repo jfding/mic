@@ -21,18 +21,13 @@ import os
 import zypp
 import rpm
 import shutil
-import tempfile
-import urlparse
-import urllib2 as u2
 
 from pykickstart import parser as ksparser
 
+from mic import msger
 from mic.imager.baseimager import BaseImageCreator
-
-from mic.utils.errors import *
-from mic.utils.fs_related import *
-from mic.utils.misc import *
-from mic.utils.rpmmisc import *
+from mic.utils import misc, rpmmisc, fs_related as fs
+from mic.utils.errors import CreatorError
 
 class RepositoryStub:
     def __init__(self):
@@ -76,7 +71,6 @@ class Zypp(BackendPlugin):
         self.Z = None
         self.ts = None
         self.probFilterFlags = []
-        self.bin_rpm = find_binary_path("rpm")
         self.incpkgs = []
         self.excpkgs = []
 
@@ -291,161 +285,6 @@ class Zypp(BackendPlugin):
             e = CreatorError("Unable to find pattern: %s" % (grp,))
             return e
 
-    def __checkAndDownloadURL(self, u2opener, url, savepath):
-        try:
-            if u2opener:
-                f = u2opener.open(url)
-            else:
-                f = u2.urlopen(url)
-        except u2.HTTPError, httperror:
-            if httperror.code in (404, 503):
-                return None
-            else:
-                raise CreatorError(httperror)
-        except OSError, oserr:
-            if oserr.errno == 2:
-                return None
-            else:
-                raise CreatorError(oserr)
-        except IOError, oserr:
-            if hasattr(oserr, "reason") and oserr.reason.errno == 2:
-                return None
-            else:
-                raise CreatorError(oserr)
-        except u2.URLError, err:
-            raise CreatorError(err)
-
-        # save to file
-        licf = open(savepath, "w")
-        licf.write(f.read())
-        licf.close()
-        f.close()
-
-        return savepath
-
-    def __pagerFile(self, savepath):
-        if os.path.splitext(savepath)[1].upper() in ('.HTM', '.HTML'):
-            pagers = ('w3m', 'links', 'lynx', 'less', 'more')
-        else:
-            pagers = ('less', 'more')
-
-        file_showed = None
-        for pager in pagers:
-            try:
-                subprocess.call([pager, savepath])
-            except OSError:
-                continue
-            else:
-                file_showed = True
-                break
-        if not file_showed:
-            f = open(savepath)
-            print f.read()
-            f.close()
-            raw_input('press <ENTER> to continue...')
-
-    def checkRepositoryEULA(self, name, repo):
-        """ This function is to check the LICENSE file if provided. """
-
-        # when proxy needed, make urllib2 follow it
-        proxy = repo.proxy
-        proxy_username = repo.proxy_username
-        proxy_password = repo.proxy_password
-
-        handlers = []
-        auth_handler = u2.HTTPBasicAuthHandler(u2.HTTPPasswordMgrWithDefaultRealm())
-        u2opener = None
-        if proxy:
-            if proxy_username:
-                proxy_netloc = urlparse.urlsplit(proxy).netloc
-                if proxy_password:
-                    proxy_url = 'http://%s:%s@%s' % (proxy_username, proxy_password, proxy_netloc)
-                else:
-                    proxy_url = 'http://%s@%s' % (proxy_username, proxy_netloc)
-            else:
-                proxy_url = proxy
-
-            proxy_support = u2.ProxyHandler({'http': proxy_url,
-                                             'ftp': proxy_url})
-            handlers.append(proxy_support)
-
-        # download all remote files to one temp dir
-        baseurl = None
-        repo_lic_dir = tempfile.mkdtemp(prefix = 'repolic')
-
-        for url in repo.baseurl:
-            if not url.endswith('/'):
-                url += '/'
-            tmphandlers = handlers
-            (scheme, host, path, parm, query, frag) = urlparse.urlparse(url)
-            if scheme not in ("http", "https", "ftp", "ftps", "file"):
-                raise CreatorError("Error: invalid url %s" % url)
-            if '@' in host:
-                try:
-                    user_pass, host = host.split('@', 1)
-                    if ':' in user_pass:
-                        user, password = user_pass.split(':', 1)
-                except ValueError, e:
-                    raise CreatorError('Bad URL: %s' % url)
-                print "adding HTTP auth: %s, %s" %(user, password)
-                auth_handler.add_password(None, host, user, password)
-                tmphandlers.append(auth_handler)
-                url = scheme + "://" + host + path + parm + query + frag
-            if len(tmphandlers) != 0:
-                u2opener = u2.build_opener(*tmphandlers)
-            # try to download
-            repo_eula_url = urlparse.urljoin(url, "LICENSE.txt")
-            repo_eula_path = self.__checkAndDownloadURL(
-                                    u2opener,
-                                    repo_eula_url,
-                                    os.path.join(repo_lic_dir, repo.id + '_LICENSE.txt'))
-            if repo_eula_path:
-                # found
-                baseurl = url
-                break
-
-        if not baseurl:
-            return True
-
-        # show the license file
-        print 'For the software packages in this yum repo:'
-        print '    %s: %s' % (name, baseurl)
-        print 'There is an "End User License Agreement" file that need to be checked.'
-        print 'Please read the terms and conditions outlined in it and answer the followed qustions.'
-        raw_input('press <ENTER> to continue...')
-
-        self.__pagerFile(repo_eula_path)
-
-        # Asking for the "Accept/Decline"
-        accept = True
-        while accept:
-            input_accept = raw_input('Would you agree to the terms and conditions outlined in the above End User License Agreement? (Yes/No): ')
-            if input_accept.upper() in ('YES', 'Y'):
-                break
-            elif input_accept.upper() in ('NO', 'N'):
-                accept = None
-                print 'Will not install pkgs from this repo.'
-
-        if not accept:
-            #cleanup
-            shutil.rmtree(repo_lic_dir)
-            return None
-
-        # try to find support_info.html for extra infomation
-        repo_info_url = urlparse.urljoin(baseurl, "support_info.html")
-        repo_info_path = self.__checkAndDownloadURL(
-                                u2opener,
-                                repo_info_url,
-                                os.path.join(repo_lic_dir, repo.id + '_support_info.html'))
-        if repo_info_path:
-            print 'There is one more file in the repo for additional support information, please read it'
-            raw_input('press <ENTER> to continue...')
-            self.__pagerFile(repo_info_path)
-
-        #cleanup
-        shutil.rmtree(repo_lic_dir)
-        return True
-
     def addRepository(self, name, url = None, mirrorlist = None, proxy = None, proxy_username = None, proxy_password = None, inc = None, exc = None):
         if not self.repo_manager:
             self.__initialize_repo_manager()
@@ -466,7 +305,8 @@ class Zypp(BackendPlugin):
             self.excpkgs = exc
 
         # check LICENSE files
-        if not self.checkRepositoryEULA(name, repo):
+        if not rpmmisc.checkRepositoryEULA(name, repo):
+            msger.warning('skip repo:%s for failed EULA confirmation' % name)
             return None
 
         if mirrorlist:
@@ -475,7 +315,6 @@ class Zypp(BackendPlugin):
         # Enable gpg check for verifying corrupt packages
         repo.gpgcheck = 1
         self.repos.append(repo)
-
 
         try:
             repo_info = zypp.RepoInfo()
@@ -490,6 +329,7 @@ class Zypp(BackendPlugin):
         except RuntimeError, e:
             raise CreatorError("%s" % (e,))
 
+        msger.verbose('repo: %s was added' % name)
         return repo
 
     def installHasFile(self, file):
@@ -527,7 +367,7 @@ class Zypp(BackendPlugin):
         total_count = len(dlpkgs)
         cached_count = 0
         localpkgs = self.localpkgs.keys()
-        print "Checking packages cache and packages integrity..."
+        msger.info("Checking packages cache and packages integrity...")
         for po in dlpkgs:
             """ Check if it is cached locally """
             if po.name() in localpkgs:
@@ -540,10 +380,10 @@ class Zypp(BackendPlugin):
                     else:
                         cached_count += 1
         download_count =  total_count - cached_count
-        print "%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, download_count)
+        msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, download_count))
         try:
             if download_count > 0:
-                print "Downloading packages..."
+                msger.info("Downloading packages...")
             self.downloadPkgs(dlpkgs, download_count)
             self.installPkgs(dlpkgs)
 
@@ -566,9 +406,9 @@ class Zypp(BackendPlugin):
         shutil.rmtree(self.creator.cachedir + "/solv", ignore_errors = True)
 
         zypp.KeyRing.setDefaultAccept( zypp.KeyRing.ACCEPT_UNSIGNED_FILE
-                                       | zypp.KeyRing.ACCEPT_VERIFICATION_FAILED
-                                       | zypp.KeyRing.ACCEPT_UNKNOWNKEY
-                                       | zypp.KeyRing.TRUST_KEY_TEMPORARILY
+                                     | zypp.KeyRing.ACCEPT_VERIFICATION_FAILED
+                                     | zypp.KeyRing.ACCEPT_UNKNOWNKEY
+                                     | zypp.KeyRing.TRUST_KEY_TEMPORARILY
                                      )
         self.repo_manager_options = zypp.RepoManagerOptions(zypp.Pathname(self.creator._instroot))
         self.repo_manager_options.knownReposPath = zypp.Pathname(self.creator.cachedir + "/etc/zypp/repos.d")
@@ -578,7 +418,6 @@ class Zypp(BackendPlugin):
         self.repo_manager_options.repoPackagesCachePath = zypp.Pathname(self.creator.cachedir + "/packages")
 
         self.repo_manager = zypp.RepoManager(self.repo_manager_options)
-
 
     def __build_repo_cache(self, name):
         repos = self.repo_manager.knownRepositories()
@@ -590,9 +429,8 @@ class Zypp(BackendPlugin):
                 continue
             if self.repo_manager.isCached( repo ):
                 return
-            #print "Retrieving repo metadata from %s ..." % repo.url()
-            self.repo_manager.buildCache( repo, zypp.RepoManager.BuildIfNeeded )
 
+            self.repo_manager.buildCache(repo, zypp.RepoManager.BuildIfNeeded)
 
     def __initialize_zypp(self):
         if self.Z:
@@ -616,7 +454,7 @@ class Zypp(BackendPlugin):
                 arch_map["armv5tel"] = zypp.Arch_armv5tel()
             zconfig.setSystemArchitecture(arch_map[self.creator.target_arch])
 
-        print "zypp architecture: %s" % zconfig.systemArchitecture()
+        msger.info("zypp architecture is <%s>" % zconfig.systemArchitecture())
 
         """ repoPackagesCachePath is corrected by this """
         self.repo_manager = zypp.RepoManager(self.repo_manager_options)
@@ -625,7 +463,7 @@ class Zypp(BackendPlugin):
             if not repo.enabled():
                 continue
             if not self.repo_manager.isCached( repo ):
-                print "Retrieving repo metadata from %s ..." % repo.url()
+                msger.info("Retrieving repo metadata from %s ..." % repo.url())
                 self.repo_manager.buildCache( repo, zypp.RepoManager.BuildIfNeeded )
             else:
                 self.repo_manager.refreshMetadata(repo, zypp.RepoManager.BuildIfNeeded)
@@ -638,9 +476,9 @@ class Zypp(BackendPlugin):
 
     def buildTransaction(self):
         if not self.Z.resolver().resolvePool():
-            print "Problem count: %d" % len(self.Z.resolver().problems())
+            msger.warning("Problem count: %d" % len(self.Z.resolver().problems()))
             for problem in self.Z.resolver().problems():
-                print "Problem: %s, %s" % (problem.description().decode("utf-8"), problem.details().decode("utf-8"))
+                msger.warning("Problem: %s, %s" % (problem.description().decode("utf-8"), problem.details().decode("utf-8")))
 
     def getLocalPkgPath(self, po):
         repoinfo = po.repoInfo()
@@ -660,12 +498,12 @@ class Zypp(BackendPlugin):
         self.selectPackage(pkgname)
 
     def __get_pkg_name(self, pkgpath):
-        h = readRpmHeader(self.ts, pkgpath)
+        h = rpmmisc.readRpmHeader(self.ts, pkgpath)
         return h["name"]
 
     def downloadPkgs(self, package_objects, count):
         localpkgs = self.localpkgs.keys()
-        progress_obj = TextProgress(count)
+        progress_obj = fs.TextProgress(count)
         for po in package_objects:
             if po.name() in localpkgs:
                 continue
@@ -673,9 +511,9 @@ class Zypp(BackendPlugin):
             if os.path.exists(filename):
                 if self.checkPkg(filename) == 0:
                     continue
-            dir = os.path.dirname(filename)
-            if not os.path.exists(dir):
-                makedirs(dir)
+            dirn = os.path.dirname(filename)
+            if not os.path.exists(dirn):
+                os.makedirs(dirn)
             baseurl = po.repoInfo().baseUrls()[0].__str__()
             proxy = self.get_proxy(po.repoInfo())
             proxies = {}
@@ -688,7 +526,7 @@ class Zypp(BackendPlugin):
                 location = location[2:]
             url = baseurl + "/%s" % location
             try:
-                filename = myurlgrab(url, filename, proxies, progress_obj)
+                filename = fs.myurlgrab(url, filename, proxies, progress_obj)
             except CreatorError, e:
                 self.close()
                 raise CreatorError("%s" % e)
@@ -718,19 +556,19 @@ class Zypp(BackendPlugin):
                     rpmpath = baseurl[5:] + "/%s/%s" % (po.arch(), os.path.basename(rpmpath))
             if not os.path.exists(rpmpath):
                 raise RpmError("Error: %s doesn't exist" % rpmpath)
-            h = readRpmHeader(self.ts, rpmpath)
+            h = rpmmisc.readRpmHeader(self.ts, rpmpath)
             self.ts.addInstall(h, rpmpath, 'u')
 
         unresolved_dependencies = self.ts.check()
         if not unresolved_dependencies:
             self.ts.order()
-            cb = RPMInstallCallback(self.ts)
+            cb = rpmmisc.RPMInstallCallback(self.ts)
             self.ts.run(cb.callback, '')
             self.ts.closeDB()
             self.ts = None
         else:
-            print unresolved_dependencies
-            raise RepoError("Error: Unresolved dependencies, transaction failed.")
+            msger.warning(unresolved_dependencies)
+            raise RepoError("Unresolved dependencies, transaction failed.")
 
     def __initialize_transaction(self):
         if not self.ts:
@@ -742,9 +580,10 @@ class Zypp(BackendPlugin):
         ret = 1
         if not os.path.exists(pkg):
             return ret
-        ret = checkRpmIntegrity(self.bin_rpm, pkg)
+        ret = rpmmisc.checkRpmIntegrity('rpm', pkg)
         if ret != 0:
-            print "Package %s is damaged: %s" % (os.path.basename(pkg), pkg)
+            msger.warning("package %s is damaged: %s" % (os.path.basename(pkg), pkg))
+
         return ret
 
     def zypp_install(self):
@@ -753,7 +592,7 @@ class Zypp(BackendPlugin):
         policy.dryRun( False )
         policy.syncPoolAfterCommit( False )
         result = self.Z.commit( policy )
-        print result
+        msger.info(result)
 
     def _add_prob_flags(self, *flags):
         for flag in flags:
@@ -767,9 +606,9 @@ class Zypp(BackendPlugin):
             if repo.name == reponame:
                 proxy = repo.proxy
                 break
+
         if proxy:
             return proxy
         else:
             repourl = repoinfo.baseUrls()[0].__str__()
-            return get_proxy(repourl)
-
+            return misc.get_proxy(repourl)

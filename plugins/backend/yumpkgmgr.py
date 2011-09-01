@@ -286,10 +286,12 @@ class Yum(BackendPlugin, yum.YumBase):
 
         if mirrorlist:
             repo.mirrorlist = _varSubstitute(mirrorlist)
+
         conf = yum.config.RepoConf()
         for k, v in conf.iteritems():
             if v or not hasattr(repo, k):
                 repo.setAttribute(k, v)
+
         repo.basecachedir = self.conf.cachedir
         repo.failovermethod = "priority"
         repo.metadata_expire = 0
