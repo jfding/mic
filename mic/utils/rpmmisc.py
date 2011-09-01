@@ -431,3 +431,164 @@ def getSigInfo(hdr):
 
     infotuple = (sigtype, sigdate, sigid)
     return error, infotuple
+
+def checkRepositoryEULA(name, repo):
+    """ This function is to check the EULA file if provided. 
+        return True: no EULA or accepted
+        return False: user declined the EULA
+    """
+
+    import tempfile
+    import shutil
+    import urlparse
+    import urllib2 as u2
+    from errors import CreatorError
+
+    def _check_and_download_url(u2opener, url, savepath):
+        try:
+            if u2opener:
+                f = u2opener.open(url)
+            else:
+                f = u2.urlopen(url)
+        except u2.HTTPError, httperror:
+            if httperror.code in (404, 503):
+                return None
+            else:
+                raise CreatorError(httperror)
+        except OSError, oserr:
+            if oserr.errno == 2:
+                return None
+            else:
+                raise CreatorError(oserr)
+        except IOError, oserr:
+            if hasattr(oserr, "reason") and oserr.reason.errno == 2:
+                return None
+            else:
+                raise CreatorError(oserr)
+        except u2.URLError, err:
+            raise CreatorError(err)
+
+        # save to file
+        licf = open(savepath, "w")
+        licf.write(f.read())
+        licf.close()
+        f.close()
+
+        return savepath
+
+    def _pager_file(savepath):
+        import subprocess
+
+        if os.path.splitext(savepath)[1].upper() in ('.HTM', '.HTML'):
+            pagers = ('w3m', 'links', 'lynx', 'less', 'more')
+        else:
+            pagers = ('less', 'more')
+
+        file_showed = False
+        for pager in pagers:
+            try:
+                subprocess.call([pager, savepath])
+            except OSError:
+                continue
+            else:
+                file_showed = True
+                break
+
+        if not file_showed:
+            f = open(savepath)
+            msger.raw(f.read())
+            f.close()
+            msger.pause()
+
+    # when proxy needed, make urllib2 follow it
+    proxy = repo.proxy
+    proxy_username = repo.proxy_username
+    proxy_password = repo.proxy_password
+
+    handlers = []
+    auth_handler = u2.HTTPBasicAuthHandler(u2.HTTPPasswordMgrWithDefaultRealm())
+    u2opener = None
+    if proxy:
+        if proxy_username:
+            proxy_netloc = urlparse.urlsplit(proxy).netloc
+            if proxy_password:
+                proxy_url = 'http://%s:%s@%s' % (proxy_username, proxy_password, proxy_netloc)
+            else:
+                proxy_url = 'http://%s@%s' % (proxy_username, proxy_netloc)
+        else:
+            proxy_url = proxy
+
+        proxy_support = u2.ProxyHandler({'http': proxy_url,
+                                         'ftp': proxy_url})
+        handlers.append(proxy_support)
+
+    # download all remote files to one temp dir
+    baseurl = None
+    repo_lic_dir = tempfile.mkdtemp(prefix = 'repolic')
+
+    for url in repo.baseurl:
+        tmphandlers = handlers[:]
+
+        (scheme, host, path, parm, query, frag) = urlparse.urlparse(url.rstrip('/') + '/')
+        if scheme not in ("http", "https", "ftp", "ftps", "file"):
+            raise CreatorError("Error: invalid url %s" % url)
+
+        if '@' in host:
+            try:
+                user_pass, host = host.split('@', 1)
+                if ':' in user_pass:
+                    user, password = user_pass.split(':', 1)
+            except ValueError, e:
+                raise CreatorError('Bad URL: %s' % url)
+
+            msger.verbose("adding HTTP auth: %s, %s" %(user, password))
+            auth_handler.add_password(None, host, user, password)
+            tmphandlers.append(auth_handler)
+            url = scheme + "://" + host + path + parm + query + frag
+
+        if tmphandlers:
+            u2opener = u2.build_opener(*tmphandlers)
+
+        # try to download
+        repo_eula_url = urlparse.urljoin(url, "LICENSE.txt")
+        repo_eula_path = _check_and_download_url(
+                                u2opener,
+                                repo_eula_url,
+                                os.path.join(repo_lic_dir, repo.id + '_LICENSE.txt'))
+        if repo_eula_path:
+            # found
+            baseurl = url
+            break
+
+    if not baseurl:
+        return True
+
+    # show the license file
+    msger.info('For the software packages in this yum repo:')
+    msger.info('    %s: %s' % (name, baseurl))
+    msger.info('There is an "End User License Agreement" file that need to be checked.')
+    msger.info('Please read the terms and conditions outlined in it and answer the followed qustions.')
+    msger.pause()
+
+    _pager_file(repo_eula_path)
+
+    # Asking for the "Accept/Decline"
+    if not msger.ask('Would you agree to the terms and conditions outlined in the above End User License Agreement?'):
+        msger.warning('Will not install pkgs from this repo.')
+        shutil.rmtree(repo_lic_dir) #cleanup
+        return False
+
+    # try to find support_info.html for extra infomation
+    repo_info_url = urlparse.urljoin(baseurl, "support_info.html")
+    repo_info_path = _check_and_download_url(
+                            u2opener,
+                            repo_info_url,
+                            os.path.join(repo_lic_dir, repo.id + '_support_info.html'))
+    if repo_info_path:
+        msger.info('There is one more file in the repo for additional support information, please read it')
+        msger.pause()
+        _pager_file(repo_info_path)
+
+    #cleanup
+    shutil.rmtree(repo_lic_dir)
+    return True

@@ -19,20 +19,14 @@
 #
 
 import os, sys
-import urlparse
-import urllib2 as u2
-import tempfile
-import shutil
-import subprocess
-
 import yum
 import rpmUtils
 from pykickstart import parser as ksparser
 
 from mic import msger
+from mic.utils import rpmmisc, fs_related as fs
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
-from mic.utils.fs_related import TextProgress
 
 def getRPMCallback():
     sys.path.append('/usr/share/yum-cli')
@@ -267,153 +261,6 @@ class Yum(BackendPlugin, yum.YumBase):
         except yum.Errors.YumBaseError, e:
             raise CreatorError("Unable to install: %s" % (e,))
 
-    def __checkAndDownloadURL(self, u2opener, url, savepath):
-        try:
-            if u2opener:
-                f = u2opener.open(url)
-            else:
-                f = u2.urlopen(url)
-        except u2.HTTPError, httperror:
-            if httperror.code in (404, 503):
-                return None
-            else:
-                raise CreatorError(httperror)
-        except OSError, oserr:
-            if oserr.errno == 2:
-                return None
-            else:
-                raise CreatorError(oserr)
-        except IOError, oserr:
-            if hasattr(oserr, "reason") and oserr.reason.errno == 2:
-                return None
-            else:
-                raise CreatorError(oserr)
-        except u2.URLError, err:
-            raise CreatorError(err)
-
-        # save to file
-        licf = open(savepath, "w")
-        licf.write(f.read())
-        licf.close()
-        f.close()
-
-        return savepath
-
-    def __pagerFile(self, savepath):
-        if os.path.splitext(savepath)[1].upper() in ('.HTM', '.HTML'):
-            pagers = ('w3m', 'links', 'lynx', 'less', 'more')
-        else:
-            pagers = ('less', 'more')
-
-        file_showed = None
-        for pager in pagers:
-            try:
-                subprocess.call([pager, savepath])
-            except OSError:
-                continue
-            else:
-                file_showed = True
-                break
-        if not file_showed:
-            f = open(savepath)
-            msger.raw(f.read())
-            f.close()
-            msger.pause()
-
-    def checkRepositoryEULA(self, name, repo):
-        """ This function is to check the LICENSE file if provided. """
-
-        # when proxy needed, make urllib2 follow it
-        proxy = repo.proxy
-        proxy_username = repo.proxy_username
-        proxy_password = repo.proxy_password
-
-        handlers = []
-        auth_handler = u2.HTTPBasicAuthHandler(u2.HTTPPasswordMgrWithDefaultRealm())
-        u2opener = None
-        if proxy:
-            if proxy_username:
-                proxy_netloc = urlparse.urlsplit(proxy).netloc
-                if proxy_password:
-                    proxy_url = 'http://%s:%s@%s' % (proxy_username, proxy_password, proxy_netloc)
-                else:
-                    proxy_url = 'http://%s@%s' % (proxy_username, proxy_netloc)
-            else:
-                proxy_url = proxy
-
-            proxy_support = u2.ProxyHandler({'http': proxy_url,
-                                             'ftp': proxy_url})
-            handlers.append(proxy_support)
-
-        # download all remote files to one temp dir
-        baseurl = None
-        repo_lic_dir = tempfile.mkdtemp(prefix = 'repolic')
-
-        for url in repo.baseurl:
-            if not url.endswith('/'):
-                url += '/'
-            tmphandlers = handlers
-            (scheme, host, path, parm, query, frag) = urlparse.urlparse(url)
-            if scheme not in ("http", "https", "ftp", "ftps", "file"):
-                raise CreatorError("Error: invalid url %s" % url)
-            if '@' in host:
-                try:
-                    user_pass, host = host.split('@', 1)
-                    if ':' in user_pass:
-                        user, password = user_pass.split(':', 1)
-                except ValueError, e:
-                    raise CreatorError('Bad URL: %s' % url)
-
-                msger.verbose("adding HTTP auth: %s, %s" %(user, password))
-                auth_handler.add_password(None, host, user, password)
-                tmphandlers.append(auth_handler)
-                url = scheme + "://" + host + path + parm + query + frag
-            if len(tmphandlers) != 0:
-                u2opener = u2.build_opener(*tmphandlers)
-            # try to download
-            repo_eula_url = urlparse.urljoin(url, "LICENSE.txt")
-            repo_eula_path = self.__checkAndDownloadURL(
-                                    u2opener,
-                                    repo_eula_url,
-                                    os.path.join(repo_lic_dir, repo.id + '_LICENSE.txt'))
-            if repo_eula_path:
-                # found
-                baseurl = url
-                break
-
-        if not baseurl:
-            return True
-
-        # show the license file
-        msger.info('For the software packages in this yum repo:')
-        msger.info('    %s: %s' % (name, baseurl))
-        msger.info('There is an "End User License Agreement" file that need to be checked.')
-        msger.info('Please read the terms and conditions outlined in it and answer the followed qustions.')
-        msger.pause()
-
-        self.__pagerFile(repo_eula_path)
-
-        # Asking for the "Accept/Decline"
-        if not msger.ask('Would you agree to the terms and conditions outlined in the above End User License Agreement?'):
-            msger.warning('Will not install pkgs from this repo.')
-            shutil.rmtree(repo_lic_dir) #cleanup
-            return None
-
-        # try to find support_info.html for extra infomation
-        repo_info_url = urlparse.urljoin(baseurl, "support_info.html")
-        repo_info_path = self.__checkAndDownloadURL(
-                                u2opener,
-                                repo_info_url,
-                                os.path.join(repo_lic_dir, repo.id + '_support_info.html'))
-        if repo_info_path:
-            msger.info('There is one more file in the repo for additional support information, please read it')
-            msger.pause()
-            self.__pagerFile(repo_info_path)
-
-        #cleanup
-        shutil.rmtree(repo_lic_dir)
-        return True
-
     def addRepository(self, name, url = None, mirrorlist = None, proxy = None, proxy_username = None, proxy_password = None, inc = None, exc = None):
         def _varSubstitute(option):
             # takes a variable and substitutes like yum configs do
@@ -433,7 +280,8 @@ class Yum(BackendPlugin, yum.YumBase):
             repo.baseurl.append(_varSubstitute(url))
 
         # check LICENSE files
-        if not self.checkRepositoryEULA(name, repo):
+        if not rpmmisc.checkRepositoryEULA(name, repo):
+            msger.warning('skip repo:%s for failed EULA confirmation' % name)
             return None
 
         if mirrorlist:
@@ -449,8 +297,10 @@ class Yum(BackendPlugin, yum.YumBase):
         repo.gpgcheck = 1
         repo.enable()
         repo.setup(0)
-        repo.setCallback(TextProgress())
+        repo.setCallback(fs.TextProgress())
         self.repos.add(repo)
+
+        msger.verbose('repo: %s was added' % name)
         return repo
 
     def installHasFile(self, file):
