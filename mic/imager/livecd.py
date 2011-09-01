@@ -248,7 +248,7 @@ class LiveImageCreatorBase(LoopImageCreator):
         elif os.path.exists("/usr/lib/anaconda-runtime/implantisomd5"):
             implantisomd5 = "/usr/lib/anaconda-runtime/implantisomd5"
         else:
-            msger.warn("isomd5sum not installed; not setting up mediacheck")
+            msger.warning("isomd5sum not installed; not setting up mediacheck")
             implantisomd5 = ""
             return
 

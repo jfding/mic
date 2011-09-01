@@ -1,16 +1,27 @@
-#!/usr/bin/python
-import sys
-import subprocess
+#!/usr/bin/python -tt
+#
+# Copyright 2011 Intel, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  Any Red Hat
+# trademarks that are incorporated in the source code or documentation are not
+# subject to the GNU General Public License and may only be used or replicated
+# with the express permission of Red Hat, Inc.
+#
 
-import mic.utils.cmdln as cmdln
-import mic.utils.errors as errors
-import mic.configmgr as configmgr
-import mic.pluginmgr as pluginmgr
-import mic.imager.fs as fs
-import mic.chroot as chroot
+from mic import configmgr, pluginmgr, chroot, msger
+from mic.utils import cmdln, errors
+from mic.imager import fs
 
 from mic.pluginbase import ImagerPlugin
-
 class FsPlugin(ImagerPlugin):
     name = 'fs'
 
@@ -22,8 +33,10 @@ class FsPlugin(ImagerPlugin):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        if len(args) == 0:
-            return
+
+        if not args:
+            raise errors.Usage("More arguments needed")
+
         if len(args) == 1:
             ksconf = args[0]
         else:
@@ -52,10 +65,10 @@ class FsPlugin(ImagerPlugin):
             #Download the source packages ###private options
             if opts.include_src:
                 installed_pkgs =  creator.get_installed_packages()
-                print '--------------------------------------------------'
-                print 'Generating the image with source rpms included, The number of source packages is %d.' %(len(installed_pkgs))
+                msger.info('--------------------------------------------------')
+                msger.info('Generating the image with source rpms included, The number of source packages is %d.' %(len(installed_pkgs)))
                 if not misc.SrcpkgsDownload(installed_pkgs, createopts["repomd"], creator._instroot, createopts["cachedir"]):
-                    print "Source packages can't be downloaded"
+                    msger.warning("Source packages can't be downloaded")
 
             creator.configure(createopts["repomd"])
             creator.unmount()
@@ -66,7 +79,7 @@ class FsPlugin(ImagerPlugin):
             raise errors.CreatorError("failed to create image : %s" % e)
         finally:
             creator.cleanup()
-            print "Finished."
+            msger.info("Finished.")
 
         return 0
 
@@ -75,7 +88,7 @@ class FsPlugin(ImagerPlugin):
             try:
                 chroot.chroot(target, None, "/bin/env HOME=/root /bin/bash")
             except:
-                print >> sys.stderr, "Failed to chroot to %s." % target
+                msger.warning("Failed to chroot to %s." % target)
             finally:
                 chroot.cleanup_after_chroot("dir", None, None, None)
                 return 1

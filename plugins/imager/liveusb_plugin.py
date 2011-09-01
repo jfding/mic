@@ -43,7 +43,7 @@ class LiveUSBPlugin(ImagerPlugin):
         pkgmgr = None
         plgmgr = pluginmgr.PluginMgr()
         for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
-            if key == createopts['pkgmgr']:
+            if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 

@@ -173,10 +173,10 @@ if __name__ == "__main__":
         sys.exit(mic.main())
 
     except errors.Usage, msg:
-        msger.error("Usage error: %s\n" % msg)
+        msger.error("<usage> %s\n" % msg)
 
     except errors.ConfigError, msg:
-        msger.error("Config error: %s\n" % msg)
+        msger.error("<config> %s\n" % msg)
 
     except errors.CreatorError, msg:
-        msger.error("Creator error: %s\n" % msg)
+        msger.error("<creator> %s\n" % msg)

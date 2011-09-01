@@ -21,7 +21,6 @@ import os, sys
 import subprocess
 
 from baseimager import BaseImageCreator
-from mic.utils.fs_related import makedirs
 from mic import msger
 
 class FsImageCreator(BaseImageCreator):
@@ -30,21 +29,16 @@ class FsImageCreator(BaseImageCreator):
         self._fstype = None
         self._fsopts = None
 
-    def _stage_final_image(self):
-        """ nothing to do"""
-        pass
-
     def package(self, destdir = "."):
-        self._stage_final_image()
-
-        if not os.path.exists(destdir):
-            makedirs(destdir)
 
         destdir = os.path.abspath(os.path.expanduser(destdir))
+        if not os.path.exists(destdir):
+            os.makedirs(destdir)
+
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
 
-        msger.info("Copying %s to %s, please be patient to wait" % (self._instroot, destdir + "/" + self.name))
+        msger.info("Copying %s to %s ..." % (self._instroot, destdir + "/" + self.name))
 
         args = ['cp', "-af", self._instroot, destdir + "/" + self.name ]
         subprocess.call(args)

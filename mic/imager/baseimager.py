@@ -1021,20 +1021,6 @@ class BaseImageCreator(object):
             self.outimage.append(os.path.join(destdir, f))
             self.do_genchecksum(os.path.join(destdir, f))
 
-    def create(self):
-        """Install, configure and package an image.
-
-        This method is a utility method which creates and image by calling some
-        of the other methods in the following order - mount(), install(),
-        configure(), unmount and package().
-
-        """
-        self.mount(None, self.cachedir)
-        self.install()
-        self.configure(self.repometadata)
-        self.unmount()
-        self.package(self.destdir)
-
     def print_outimage_info(self):
         msger.info("Your new image can be found here:")
         self.outimage.sort()
