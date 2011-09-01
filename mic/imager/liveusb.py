@@ -22,18 +22,18 @@ import shutil
 import subprocess
 import re
 
-import mic.utils.fs_related as fs_related
-import mic.utils.misc as misc
-from livecd import LiveCDImageCreator
+from mic import msger
+from mic.utils import misc, fs_related
 from mic.utils.errors import CreatorError
 from mic.utils.partitionedfs import PartitionedMount
-from mic import msger
 
+from livecd import LiveCDImageCreator
 class LiveUSBImageCreator(LiveCDImageCreator):
     def __init__(self, *args):
         LiveCDImageCreator.__init__(self, *args)
 
         self._dep_checks.extend(["kpartx", "parted"])
+
         # remove dependency of genisoimage in parent class
         if "genisoimage" in self._dep_checks:
             self._dep_checks.remove("genisoimage")
@@ -56,18 +56,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             raise CreatorError("Can't have an swap overlay of 2048MB or greater on VFAT")
 
         livesize = misc.get_file_size(isodir + "/LiveOS")
-        mountcmd = fs_related.find_binary_path("mount")
-        umountcmd = fs_related.find_binary_path("umount")
-        ddcmd = fs_related.find_binary_path("dd")
-        #if skipcompress:
-        #    tmpmnt = self._mkdtemp("squashfs-mnt")
-        #    rc = subprocess.call([mountcmd, "-o", "loop", isodir + "/LiveOS/squashfs.img", tmpmnt]);
-        #    if rc:
-        #        raise CreatorError("Can't mount %s" % (isodir + "/LiveOS/squashfs.img"))
-        #    livesize = misc.get_file_size(tmpmnt + "/LiveOS/ext3fs.img")
-        #    rc = subprocess.call([umountcmd, tmpmnt]);
-        #    if rc:
-        #        raise CreatorError("Can't umount %s" % (tmpmnt))
+
         usbimgsize = (overlaysizemb + homesizemb + swapsizemb + livesize + plussize) * 1024L * 1024L
         disk = fs_related.SparseLoopbackDisk("%s/%s.usbimg" % (self._outdir, self.name), usbimgsize)
         usbmnt = self._mkdtemp("usb-mnt")
@@ -82,18 +71,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
 
         try:
             fs_related.makedirs(usbmnt + "/LiveOS")
-            #if skipcompress:
-            #    if os.path.exists(isodir + "/LiveOS/squashfs.img"):
-            #        rc = subprocess.call([mountcmd, "-o", "loop", isodir + "/LiveOS/squashfs.img", tmpmnt]);
-            #        if rc:
-            #            raise CreatorError("Can't mount %s" % (isodir + "/LiveOS/squashfs.img"))
-            #        shutil.copyfile(tmpmnt + "/LiveOS/ext3fs.img", usbmnt + "/LiveOS/ext3fs.img")
-            #        rc = subprocess.call([umountcmd, tmpmnt]);
-            #        if rc:
-            #            raise CreatorError("Can't umount %s" % (tmpmnt))
-            #    else:
-            #        shutil.copyfile(isodir + "/LiveOS/ext3fs.img", usbmnt + "/LiveOS/ext3fs.img")
-            #else:
+
             if os.path.exists(isodir + "/LiveOS/squashfs.img"):
                 shutil.copyfile(isodir + "/LiveOS/squashfs.img", usbmnt + "/LiveOS/squashfs.img")
             else:
@@ -112,8 +90,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 usblabel = "UUID=%s" % diskmount.uuid
                 overlaysuffix = "-%s-%s" % (diskmount.fslabel, diskmount.uuid)
 
-            copycmd = fs_related.find_binary_path("cp")
-            args = [copycmd, "-Rf", isodir + "/isolinux", usbmnt + "/syslinux"]
+            args = ['cp', "-Rf", isodir + "/isolinux", usbmnt + "/syslinux"]
             rc = subprocess.call(args)
             if rc:
                 raise CreatorError("Can't copy isolinux directory %s" % (isodir + "/isolinux/*"))
@@ -129,7 +106,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             for f in ("isolinux.bin", "vesamenu.c32"):
                 path = os.path.join(syslinux_path, f)
                 if os.path.isfile(path):
-                    args = [copycmd, path, usbmnt + "/syslinux/"]
+                    args = ['cp', path, usbmnt + "/syslinux/"]
                     rc = subprocess.call(args)
                     if rc:
                         raise CreatorError("Can't copy syslinux file %s" % (path))
@@ -151,9 +128,9 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 msger.info("Initializing persistent overlay file")
                 overfile = "overlay" + overlaysuffix
                 if fstype == "vfat":
-                    args = [ddcmd, "if=/dev/zero", "of=" + usbmnt + "/LiveOS/" + overfile, "count=%d" % overlaysizemb, "bs=1M"]
+                    args = ['dd', "if=/dev/zero", "of=" + usbmnt + "/LiveOS/" + overfile, "count=%d" % overlaysizemb, "bs=1M"]
                 else:
-                    args = [ddcmd, "if=/dev/null", "of=" + usbmnt + "/LiveOS/" + overfile, "count=1", "bs=1M", "seek=%d" % overlaysizemb]
+                    args = ['dd', "if=/dev/null", "of=" + usbmnt + "/LiveOS/" + overfile, "count=1", "bs=1M", "seek=%d" % overlaysizemb]
                 rc = subprocess.call(args)
                 if rc:
                     raise CreatorError("Can't create overlay file")
@@ -163,7 +140,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             if swapsizemb > 0:
                 msger.info("Initializing swap file")
                 swapfile = usbmnt + "/LiveOS/" + "swap.img"
-                args = [ddcmd, "if=/dev/zero", "of=" + swapfile, "count=%d" % swapsizemb, "bs=1M"]
+                args = ['dd', "if=/dev/zero", "of=" + swapfile, "count=%d" % swapsizemb, "bs=1M"]
                 rc = subprocess.call(args)
                 if rc:
                     raise CreatorError("Can't create swap file")
@@ -176,9 +153,9 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 msger.info("Initializing persistent /home")
                 homefile = usbmnt + "/LiveOS/" + homefile
                 if fstype == "vfat":
-                    args = [ddcmd, "if=/dev/zero", "of=" + homefile, "count=%d" % homesizemb, "bs=1M"]
+                    args = ['dd', "if=/dev/zero", "of=" + homefile, "count=%d" % homesizemb, "bs=1M"]
                 else:
-                    args = [ddcmd, "if=/dev/null", "of=" + homefile, "count=1", "bs=1M", "seek=%d" % homesizemb]
+                    args = ['dd', "if=/dev/null", "of=" + homefile, "count=1", "bs=1M", "seek=%d" % homesizemb]
                 rc = subprocess.call(args)
                 if rc:
                     raise CreatorError("Can't create home file")
@@ -230,7 +207,8 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 raise CreatorError("mbr.bin file didn't exist.")
         mbrsize = os.path.getsize(mbrfile)
         outimg = "%s/%s.usbimg" % (self._outdir, self.name)
-        args = [ddcmd, "if=" + mbrfile, "of=" + outimg, "seek=0", "conv=notrunc", "bs=1", "count=%d" % (mbrsize)]
+
+        args = ['dd', "if=" + mbrfile, "of=" + outimg, "seek=0", "conv=notrunc", "bs=1", "count=%d" % (mbrsize)]
         rc = subprocess.call(args)
         if rc:
             raise CreatorError("Can't set MBR.")

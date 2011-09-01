@@ -92,6 +92,7 @@ class LiveCDPlugin(ImagerPlugin):
         extmnt = misc.mkdtemp()
         tfstype = "ext3"
         tlabel = "ext3 label"
+
         MyDiskMount = fs_related.ExtDiskMount
         extloop = MyDiskMount(fs_related.SparseLoopbackDisk(os_image, imgsize),
                               extmnt,
@@ -109,10 +110,8 @@ class LiveCDPlugin(ImagerPlugin):
 
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
-
         except:
             raise errors.CreatorError("Failed to chroot to %s." %target)
-
         finally:
             chroot.cleanup_after_chroot("img", extloop, os_image_dir, extmnt)
 
@@ -129,6 +128,7 @@ class LiveCDPlugin(ImagerPlugin):
         def __run_post_cleanups(instance):
             kernelver = instance._get_kernel_versions().values()[0][0]
             args = ["rm", "-f", "/boot/initrd-%s.img" % kernelver]
+
             try:
                 subprocess.call(args, preexec_fn = instance._chroot)
             except OSError, (err, msg):

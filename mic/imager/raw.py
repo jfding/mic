@@ -415,4 +415,3 @@ class RawImageCreator(BaseImageCreator):
         cfg = open("%s/%s.xml" % (self._outdir, self.name), "w")
         cfg.write(xml)
         cfg.close()
-        #print "Wrote: %s.xml" % self.name
