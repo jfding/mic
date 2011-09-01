@@ -38,11 +38,14 @@ class LiveUSBPlugin(ImagerPlugin):
         cfgmgr = configmgr.getConfigMgr()
         creatoropts = cfgmgr.create
         cfgmgr.setProperty("ksconf", args[0])
-        plgmgr = pluginmgr.PluginMgr()
 
+        # try to find the pkgmgr
+        pkgmgr = None
+        plgmgr = pluginmgr.PluginMgr()
         for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
-            if key == creatoropts['pkgmgr']:
+            if key == createopts['pkgmgr']:
                 pkgmgr = pcls
+                break
 
         creator = liveusb.LiveUSBImageCreator(creatoropts, pkgmgr)
         try:

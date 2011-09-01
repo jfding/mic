@@ -1,6 +1,6 @@
 #!/usr/bin/python -tt
 #
-# Copyright 2008, 2009, 2010 Intel, Inc.
+# Copyright 2011 Intel, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU

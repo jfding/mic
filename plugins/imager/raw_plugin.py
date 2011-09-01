@@ -37,11 +37,14 @@ class RawPlugin(ImagerPlugin):
         cfgmgr = configmgr.getConfigMgr()
         creatoropts = cfgmgr.create
         cfgmgr.setProperty("ksconf", ksconf)
-        plgmgr = pluginmgr.PluginMgr()
 
+        # try to find the pkgmgr
+        pkgmgr = None
+        plgmgr = pluginmgr.PluginMgr()
         for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
-            if key == creatoropts['pkgmgr']:
+            if key == createopts['pkgmgr']:
                 pkgmgr = pcls
+                break
 
         if not pkgmgr:
             raise CreatorError("Can't find backend %s" % pkgmgr)
