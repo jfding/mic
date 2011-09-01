@@ -68,7 +68,7 @@ class LoopPlugin(ImagerPlugin):
             creator.configure(creatoropts["repomd"])
             creator.unmount()
             creator.package(creatoropts["outdir"])
-        except CreatorError, e:
+        except errors.CreatorError, e:
             raise errors.CreatorError("failed to create image : %s" % e)
         finally:
             creator.cleanup()
@@ -89,7 +89,7 @@ class LoopPlugin(ImagerPlugin):
         try:
             extloop.mount()
 
-        except MountError, e:
+        except errors.MountError, e:
             extloop.cleanup()
             shutil.rmtree(extmnt, ignore_errors = True)
             raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(img, e))

@@ -21,7 +21,7 @@ import os
 import shutil
 
 from mic import kickstart, msger
-from mic.utils.errors import CreatorError
+from mic.utils.errors import CreatorError, MountError
 from mic.utils.fs_related import ExtDiskMount, BtrfsDiskMount, SparseLoopbackDisk
 
 from baseimager import BaseImageCreator

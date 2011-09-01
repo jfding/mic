@@ -50,6 +50,10 @@ class LiveCDPlugin(ImagerPlugin):
         cfgmgr.setProperty("ksconf", ksconf)
         creatoropts = cfgmgr.create
 
+        if creatoropts['arch'].startswith('arm'):
+            msger.warning('livecd cannot support arm images, Quit')
+            return
+
         # try to find the pkgmgr
         pkgmgr = None
         plgmgr = pluginmgr.PluginMgr()
@@ -73,7 +77,7 @@ class LiveCDPlugin(ImagerPlugin):
             creator.print_outimage_info()
             outimage = creator.outimage
 
-        except CreatorError, e:
+        except errors.CreatorError, e:
             raise errors.CreatorError("failed to create image : %s" % e)
 
         finally:
@@ -102,7 +106,7 @@ class LiveCDPlugin(ImagerPlugin):
         try:
             extloop.mount()
 
-        except MountError, e:
+        except errors.MountError, e:
             extloop.cleanup()
             shutil.rmtree(extmnt, ignore_errors = True)
             shutil.rmtree(os_image_dir, ignore_errors = True)
@@ -156,7 +160,7 @@ class LiveCDPlugin(ImagerPlugin):
         imgloop = fs_related.DiskMount(fs_related.LoopbackDisk(img, 0), imgmnt)
         try:
             imgloop.mount()
-        except MountError, e:
+        except errors.MountError, e:
             imgloop.cleanup()
             raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
 

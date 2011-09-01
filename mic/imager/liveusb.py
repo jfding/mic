@@ -24,7 +24,7 @@ import re
 
 from mic import msger
 from mic.utils import misc, fs_related
-from mic.utils.errors import CreatorError
+from mic.utils.errors import CreatorError, MountError
 from mic.utils.partitionedfs import PartitionedMount
 
 from livecd import LiveCDImageCreator

@@ -53,6 +53,10 @@ class LiveUSBPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         cfgmgr.setProperty("ksconf", args[0])
 
+        if creatoropts['arch'].startswith('arm'):
+            msger.warning('liveusb cannot support arm images, Quit')
+            return
+
         # try to find the pkgmgr
         pkgmgr = None
         plgmgr = pluginmgr.PluginMgr()
@@ -73,7 +77,7 @@ class LiveUSBPlugin(ImagerPlugin):
             creator.print_outimage_info()
             outimage = creator.outimage
 
-        except CreatorError, e:
+        except errors.CreatorError, e:
             raise errors.CreatorError("failed to create image : %s" % e)
         finally:
             creator.cleanup()
@@ -101,7 +105,7 @@ class LiveUSBPlugin(ImagerPlugin):
         try:
             extloop.mount()
 
-        except MountError, e:
+        except errors.MountError, e:
             extloop.cleanup()
             shutil.rmtree(extmnt, ignore_errors = True)
             raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(os_image, e))
@@ -158,7 +162,7 @@ class LiveUSBPlugin(ImagerPlugin):
         imgloop.add_partition(imgsize/1024/1024, "/dev/sdb", "/", "vfat", boot=False)
         try:
             imgloop.mount()
-        except MountError, e:
+        except errors.MountError, e:
             imgloop.cleanup()
             raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
 

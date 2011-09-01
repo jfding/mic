@@ -76,7 +76,7 @@ class RawPlugin(ImagerPlugin):
             creator.print_outimage_info()
             outimage = creator.outimage
 
-        except CreatorError, e:
+        except errors.CreatorError, e:
             raise errors.CreatorError("failed to create image : %s" % e)
 
         finally:
@@ -162,7 +162,7 @@ class RawPlugin(ImagerPlugin):
         try:
             imgloop.mount()
 
-        except MountError, e:
+        except errors.MountError, e:
             imgloop.cleanup()
             raise errors.CreatorError("Failed to loopback mount '%s' : %s" % (img, e))
 
@@ -184,7 +184,7 @@ class RawPlugin(ImagerPlugin):
         try:
             srcloop.mount()
 
-        except MountError, e:
+        except errors.MountError, e:
             srcloop.cleanup()
             raise errors.CreatorError("Failed to loopback mount '%s' : %s" %
                                (srcimg, e))
