@@ -21,7 +21,7 @@
 import os,sys
 import re
 
-__ALL__ = ['set_mode', 'set_loglevel', 'raw' 'debug', 'verbose', 'info', 'warning', 'error', 'ask']
+__ALL__ = ['set_mode', 'set_loglevel', 'raw' 'debug', 'verbose', 'info', 'warning', 'error', 'ask', 'pause']
 
 # COLORs in ANSI
 INFO_COLOR = 32 # green
@@ -153,14 +153,17 @@ def ask(msg, default=True):
         else:
             msg += '(y/N) '
         if INTERACTIVE:
-            repl = raw_input(msg)
-            if repl.lower() == 'y':
-                return True
-            elif repl.lower() == 'n':
-                return False
-            else:
-                return default
+            while True:
+                repl = raw_input(msg)
+                if repl.lower() == 'y':
+                    return True
+                elif repl.lower() == 'n':
+                    return False
+                elif not repl.strip():
+                    # <Enter>
+                    return default
 
+                # else loop
         else:
             sys.stdout.write('%s ' % msg)
             if default:
@@ -171,3 +174,10 @@ def ask(msg, default=True):
     except KeyboardInterrupt:
         sys.stdout.write('\n')
         sys.exit(2)
+
+def pause(msg=None):
+    if INTERACTIVE:
+        _color_print('Q', ASK_COLOR, '')
+        if not msg:
+            msg = 'press <ENTER> to continue ...'
+        raw_input(msg)
