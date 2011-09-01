@@ -22,14 +22,14 @@ import stat
 import shutil
 import subprocess
 
-import mic.utils.fs_related as fs_related
 import urlgrabber.progress as progress
-from baseimager import BaseImageCreator
+
+from mic import kickstart, msger
+from mic.utils import fs_related
 from mic.utils.partitionedfs import PartitionedMount
 from mic.utils.errors import CreatorError, MountError
-from mic import kickstart
-from mic import msger
 
+from baseimager import BaseImageCreator
 class RawImageCreator(BaseImageCreator):
     """Installs a system into a file containing a partitioned disk image.
 

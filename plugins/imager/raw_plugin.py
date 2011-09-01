@@ -1,22 +1,35 @@
 #!/usr/bin/python -tt
+#
+# Copyright 2011 Intel, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  Any Red Hat
+# trademarks that are incorporated in the source code or documentation are not
+# subject to the GNU General Public License and may only be used or replicated
+# with the express permission of Red Hat, Inc.
+#
 
-import os, sys
+import os
 import subprocess
 import shutil
 import re
 import tempfile
 
-from mic.pluginbase import ImagerPlugin
-import mic.utils.misc as misc
-import mic.utils.fs_related as fs_related
-import mic.utils.cmdln as cmdln
-from mic.utils.errors import *
+from mic import configmgr, pluginmgr, chroot, msger
+from mic.utils import misc, fs_related, errors
 from mic.utils.partitionedfs import PartitionedMount
-import mic.configmgr as configmgr
-import mic.pluginmgr as pluginmgr
-import mic.imager.raw as raw
-import mic.chroot as chroot
 
+import mic.imager.raw as raw
+
+from mic.pluginbase import ImagerPlugin
 class RawPlugin(ImagerPlugin):
     name = 'raw'
 
@@ -27,8 +40,10 @@ class RawPlugin(ImagerPlugin):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        if len(args) == 0:
-            return
+
+        if not args:
+            raise errors.Usage("More arguments needed")
+
         if len(args) == 1:
             ksconf = args[0]
         else:
@@ -47,7 +62,7 @@ class RawPlugin(ImagerPlugin):
                 break
 
         if not pkgmgr:
-            raise CreatorError("Can't find backend %s" % pkgmgr)
+            raise errors.CreatorError("Can't find backend %s" % pkgmgr)
 
         creator = raw.RawImageCreator(creatoropts, pkgmgr)
         try:
@@ -60,11 +75,14 @@ class RawPlugin(ImagerPlugin):
             outimage = creator.outimage
             creator.print_outimage_info()
             outimage = creator.outimage
+
         except CreatorError, e:
-            raise CreatorError("failed to create image : %s" % e)
+            raise errors.CreatorError("failed to create image : %s" % e)
+
         finally:
             creator.cleanup()
-            print "Finished."
+
+        msger.info("Finished.")
         return 0
 
     @classmethod
@@ -78,16 +96,16 @@ class RawPlugin(ImagerPlugin):
         img_fstype = "ext3"
 
         # Check the partitions from raw disk.
-        p1 = subprocess.Popen([partedcmd,"-s",img,"unit","B","print"],
-                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out,err = p1.communicate()
-        lines = out.strip().split("\n")
-
         root_mounted = False
         partition_mounts = 0
+        for line in subprocess.Popen([partedcmd,"-s",img,"unit","B","print"],
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)\
+                                             .communicate()[0]\
+                                             .strip()\
+                                             .splitlines():
 
-        for line in lines:
             line = line.strip()
+
             # Lines that start with number are the partitions,
             # because parted can be translated we can't refer to any text lines.
             if not line or not line[0].isdigit():
@@ -119,7 +137,7 @@ class RawPlugin(ImagerPlugin):
             elif "swap" in partition_info[5]:
                 fstype = "swap"
             else:
-                raise CreatorError("Could not recognize partition fs type '%s'." % partition_info[5])
+                raise errors.CreatorError("Could not recognize partition fs type '%s'." % partition_info[5])
 
             if not root_mounted and fstype in ["ext2","ext3","ext4","btrfs"]:
                 # TODO: Check that this is actually the valid root partition from /etc/fstab
@@ -137,21 +155,21 @@ class RawPlugin(ImagerPlugin):
             else:
                 boot = False
 
-            print "Size: %s Bytes, fstype: %s, mountpoint: %s, boot: %s" % ( size, fstype, mountpoint, boot )
+            msger.verbose("Size: %s Bytes, fstype: %s, mountpoint: %s, boot: %s" % (size, fstype, mountpoint, boot))
             # TODO: add_partition should take bytes as size parameter.
             imgloop.add_partition((int)(size)/1024/1024, "/dev/sdb", mountpoint, fstype = fstype, boot = boot)
 
         try:
             imgloop.mount()
+
         except MountError, e:
             imgloop.cleanup()
-            raise CreatorError("Failed to loopback mount '%s' : %s" %
-                               (img, e))
+            raise errors.CreatorError("Failed to loopback mount '%s' : %s" % (img, e))
 
         try:
             chroot.chroot(imgmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            raise CreatorError("Failed to chroot to %s." %img)
+            raise errors.CreatorError("Failed to chroot to %s." %img)
         finally:
             chroot.cleanup_after_chroot("img", imgloop, None, imgmnt)
 
@@ -165,18 +183,21 @@ class RawPlugin(ImagerPlugin):
         srcloop.add_partition(srcimgsize/1024/1024, "/dev/sdb", "/", "ext3", boot=False)
         try:
             srcloop.mount()
+
         except MountError, e:
             srcloop.cleanup()
-            raise CreatorError("Failed to loopback mount '%s' : %s" %
+            raise errors.CreatorError("Failed to loopback mount '%s' : %s" %
                                (srcimg, e))
 
         image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "target.img")
-        ddcmd = misc.find_binary_path("dd")
-        args = [ ddcmd, "if=%s" % srcloop.partitions[0]['device'], "of=%s" % image ]
-        print "dd image..."
+        args = ['dd', "if=%s" % srcloop.partitions[0]['device'], "of=%s" % image]
+
+        msger.info("`dd` image ...")
         rc = subprocess.call(args)
-        if rc != 0:
-            raise CreatorError("Failed to dd")
         srcloop.cleanup()
         shutil.rmtree(srcmnt, ignore_errors = True)
-        return image
+
+        if rc != 0:
+            raise errors.CreatorError("Failed to dd")
+        else:
+            return image
