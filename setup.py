@@ -3,11 +3,11 @@
 import os, sys
 import glob
 from distutils.core import setup
-#try:
-#    import setuptools
-#    # enable "setup.py develop", optional
-#except ImportError:
-#    pass
+try:
+    import setuptools
+    # enable "setup.py develop", optional
+except ImportError:
+    pass
 
 MOD_NAME = 'mic'
 
@@ -29,6 +29,22 @@ try:
 except IOError:
     print 'WARNING: Cannot write version number file'
     pass
+
+if sys.version_info[:2] > (2, 5):
+    if len(sys.argv) > 1 and 'install' in sys.argv:
+        lsbcmd = None
+        if os.path.exists('/usr/bin/lsb_release'):
+            lsbcmd = '/usr/bin/lsb_release'
+        elif os.path.exists('/bin/lsb_release'):
+            lsbcmd = '/bin/lsb_release'
+
+        if lsbcmd:
+            import subprocess
+            res = subprocess.Popen([lsbcmd, '-i'],
+                                   stdout=subprocess.PIPE
+                                  ).communicate()[0]
+            if 'Debian' in res or 'Ubuntu' in res:
+                sys.argv.append('--install-layout=deb')
 
 PACKAGES = [MOD_NAME,
             MOD_NAME + '/utils',
