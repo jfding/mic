@@ -1,21 +1,31 @@
 #!/usr/bin/python -tt
+#
+# Copyright 2011 Intel, Inc.
+#
+# This copyrighted material is made available to anyone wishing to use, modify,
+# copy, or redistribute it subject to the terms and conditions of the GNU
+# General Public License v.2.  This program is distributed in the hope that it
+# will be useful, but WITHOUT ANY WARRANTY expressed or implied, including the
+# implied warranties of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.  Any Red Hat
+# trademarks that are incorporated in the source code or documentation are not
+# subject to the GNU General Public License and may only be used or replicated
+# with the express permission of Red Hat, Inc.
+#
 
 import os
-import sys
-import subprocess
 import shutil
 import tempfile
 
-from mic.pluginbase import ImagerPlugin
-import mic.utils.misc as misc
-import mic.utils.cmdln as cmdln
-import mic.utils.fs_related as fs_related
-from mic.utils.errors import *
-import mic.configmgr as configmgr
-import mic.pluginmgr as pluginmgr
+from mic import configmgr, pluginmgr, chroot, msger
+from mic.utils import misc, fs_related, errors
 import mic.imager.loop as loop
-import mic.chroot as chroot
 
+from mic.pluginbase import ImagerPlugin
 class LoopPlugin(ImagerPlugin):
     name = 'loop'
 
@@ -26,8 +36,10 @@ class LoopPlugin(ImagerPlugin):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        if len(args) == 0:
-            return
+
+        if not args:
+            raise errors.Usage("More arguments needed")
+
         if len(args) == 1:
             ksconf = args[0]
         else:
@@ -46,7 +58,7 @@ class LoopPlugin(ImagerPlugin):
                 break
 
         if not pkgmgr:
-            raise CreatorError("Can't find backend %s" % pkgmgr)
+            raise errors.CreatorError("Can't find backend %s" % pkgmgr)
 
         creator = loop.LoopImageCreator(creatoropts, pkgmgr)
         try:
@@ -57,16 +69,15 @@ class LoopPlugin(ImagerPlugin):
             creator.unmount()
             creator.package(creatoropts["outdir"])
         except CreatorError, e:
-            raise CreatorError("failed to create image : %s" % e)
+            raise errors.CreatorError("failed to create image : %s" % e)
         finally:
             creator.cleanup()
-        print "Finished."
+
+        msger.info("Finished.")
         return 0
 
     @classmethod
     def do_chroot(cls, target):#chroot.py parse opts&args
-        #import pdb
-        #pdb.set_trace()
         img = target
         imgsize = misc.get_file_size(img)
         extmnt = misc.mkdtemp()
@@ -77,21 +88,22 @@ class LoopPlugin(ImagerPlugin):
                                                          "ext3 label")
         try:
             extloop.mount()
-            #os_image = img
+
         except MountError, e:
             extloop.cleanup()
             shutil.rmtree(extmnt, ignore_errors = True)
-            raise CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
+            raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
+
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            raise CreatorError("Failed to chroot to %s." %img)
+            raise errors.CreatorError("Failed to chroot to %s." %img)
         finally:
             chroot.cleanup_after_chroot("img", extloop, None, extmnt)
 
     @classmethod
     def do_unpack(cls, srcimg):
         image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "target.img")
-        print "Copying file system..."
+        msger.info("Copying file system ...")
         shutil.copyfile(srcimg, image)
         return image

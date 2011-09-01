@@ -79,8 +79,8 @@ class FsPlugin(ImagerPlugin):
             raise errors.CreatorError("failed to create image : %s" % e)
         finally:
             creator.cleanup()
-            msger.info("Finished.")
 
+        msger.info("Finished.")
         return 0
 
     @classmethod
