@@ -17,6 +17,8 @@
 # with the express permission of Red Hat, Inc.
 #
 
+import os
+
 from mic import configmgr, pluginmgr, chroot, msger
 from mic.utils import cmdln, errors
 from mic.imager import fs
@@ -48,8 +50,7 @@ class FsPlugin(ImagerPlugin):
 
         # try to find the pkgmgr
         pkgmgr = None
-        plgmgr = pluginmgr.PluginMgr()
-        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
+        for (key, pcls) in pluginmgr.PluginMgr().get_plugins('backend').iteritems():
             if key == createopts['pkgmgr']:
                 pkgmgr = pcls
                 break
@@ -58,6 +59,17 @@ class FsPlugin(ImagerPlugin):
             raise CreatorError("Can't find backend plugin: %s" % createopts['pkgmgr'])
 
         creator = fs.FsImageCreator(createopts, pkgmgr)
+
+        destdir = os.path.abspath(os.path.expanduser(createopts["outdir"]))
+        fsdir = os.path.join(destdir, creator.name)
+
+        if not os.path.exists(destdir):
+            os.makedirs(destdir)
+        elif os.path.exists(fsdir):
+            if msger.ask('The target dir: %s already exists, need to delete it?' % fsdir):
+                import shutil
+                shutil.rmtree(fsdir)
+
         try:
             creator.check_depend_tools()
             creator.mount(None, createopts["cachedir"])
@@ -72,7 +84,7 @@ class FsPlugin(ImagerPlugin):
 
             creator.configure(createopts["repomd"])
             creator.unmount()
-            creator.package(createopts["outdir"])
+            creator.package(destdir)
             outimage = creator.outimage
             creator.print_outimage_info()
         except errors.CreatorError, e:

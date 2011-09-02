@@ -29,22 +29,16 @@ class FsImageCreator(BaseImageCreator):
         self._fsopts = None
 
     def package(self, destdir = "."):
-
-        destdir = os.path.abspath(os.path.expanduser(destdir))
-        if not os.path.exists(destdir):
-            os.makedirs(destdir)
+        fsdir = os.path.join(destdir, self.name)
 
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
 
-        msger.info("Copying %s to %s ..." % (self._instroot, destdir + "/" + self.name))
+        msger.info("Copying %s to %s ..." % (self._instroot, fsdir))
+        msger.run(['cp', "-af", self._instroot, fsdir])
 
-        args = ['cp', "-af", self._instroot, destdir + "/" + self.name ]
-        msger.run(args)
+        for exclude in ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]:
+            if os.path.exists(fsdir + exclude):
+                os.unlink(fsdir + exclude)
 
-        ignores = ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]
-        for exclude in ignores:
-            if os.path.exists(destdir + "/" + self.name + exclude):
-                os.unlink(destdir + "/" + self.name + exclude)
-
-        self.outimage.append(destdir + "/" + self.name)
+        self.outimage.append(fsdir)

@@ -39,6 +39,7 @@ LOG_LEVELS = {
                 'normal': 1,
                 'verbose': 2,
                 'debug': 3,
+                'never': 4,
              }
 LOG_LEVEL = 1
 
@@ -72,7 +73,7 @@ def _color_print(head, color, msg = None, stream = sys.stdout, level = 'normal')
                 head = head.lstrip()
                 newline = True
 
-    if msg:
+    if msg is not None:
         stream.write('%s%s' % (head, msg))
         if newline:
             stream.write('\n')
@@ -149,7 +150,7 @@ def error(msg):
     sys.exit(1)
 
 def ask(msg, default=True):
-    _color_print('Q', ASK_COLOR, '')
+    _color_print('\rQ', ASK_COLOR, '')
     try:
         if default:
             msg += '(Y/n) '
@@ -180,8 +181,8 @@ def ask(msg, default=True):
 
 def pause(msg=None):
     if INTERACTIVE:
-        _color_print('Q', ASK_COLOR, '')
-        if not msg:
+        _color_print('\rQ', ASK_COLOR, '')
+        if msg is None:
             msg = 'press <ENTER> to continue ...'
         raw_input(msg)
 
