@@ -19,7 +19,6 @@
 
 import os, sys, re
 import rpm
-import subprocess
 from mic import msger
 
 class RPMInstallCallback:
@@ -361,13 +360,7 @@ def getBaseArch():
 
 def checkRpmIntegrity(bin_rpm, package):
     argv = [bin_rpm, "--checksig", "--nogpg", package]
-    dev_null = os.open("/dev/null", os.O_WRONLY)
-    try:
-        ret = subprocess.call(argv, stdout = dev_null, stderr = dev_null)
-    finally:
-        os.close(dev_null)
-
-    return ret
+    return msger.run(argv, True)
 
 def checkSig(ts, package):
     """ Takes a transaction set and a package, check it's sigs,
@@ -477,7 +470,6 @@ def checkRepositoryEULA(name, repo):
         return savepath
 
     def _pager_file(savepath):
-        import subprocess
 
         if os.path.splitext(savepath)[1].upper() in ('.HTM', '.HTML'):
             pagers = ('w3m', 'links', 'lynx', 'less', 'more')
@@ -486,8 +478,9 @@ def checkRepositoryEULA(name, repo):
 
         file_showed = False
         for pager in pagers:
+            cmd = "%s %s" % (pager, savepath)
             try:
-                subprocess.call([pager, savepath])
+                os.system(cmd)
             except OSError:
                 continue
             else:

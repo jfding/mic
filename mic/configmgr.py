@@ -111,18 +111,16 @@ class ConfigMgr(object):
         if not ksconf:
             return
 
-        try:
-            ks = kickstart.read_kickstart(ksconf)
-            ksrepos = misc.get_repostrs_from_ks(ks)
-            msger.info("Retrieving repo metadata:")
-            repometadata = misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
-            msger.raw(" DONE")
+        ks = kickstart.read_kickstart(ksconf)
+        ksrepos = misc.get_repostrs_from_ks(ks)
 
-            self.create['ks'] = ks
-            self.create['repomd'] = repometadata
-            self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
-        except Exception, e:
-            raise errors.KsError("Unable to load kickstart file '%s': %s" % (ksconf, e))
+        msger.info("Retrieving repo metadata:")
+        repometadata = misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
+        msger.raw(" DONE")
+
+        self.create['ks'] = ks
+        self.create['repomd'] = repometadata
+        self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
 
     def setProperty(self, key, value):
         if not hasattr(self, key):

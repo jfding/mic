@@ -862,7 +862,7 @@ class BaseImageCreator(object):
                 pass
 
     def __run_post_scripts(self):
-        msger.info("Running scripts")
+        msger.info("Running scripts ...")
         for s in kickstart.get_post_scripts(self.ks):
             (fd, path) = tempfile.mkstemp(prefix = "ks-script-",
                                           dir = self._instroot + "/tmp")
@@ -993,12 +993,12 @@ class BaseImageCreator(object):
             if self.__img_compression_method == "bz2":
                 bzip2 = find_binary_path('bzip2')
                 msger.info("Compressing %s with bzip2. Please wait..." % img_location)
-                rc = subprocess.call([bzip2, "-f", img_location])
+                rc = msger.run([bzip2, "-f", img_location])
                 if rc:
                     raise CreatorError("Failed to compress image %s with %s." % (img_location, self.__img_compression_method))
                 for bootimg in glob.glob(os.path.dirname(img_location) + "/*-boot.bin"):
                     msger.info("Compressing %s with bzip2. Please wait..." % bootimg)
-                    rc = subprocess.call([bzip2, "-f", bootimg])
+                    rc = msger.run([bzip2, "-f", bootimg])
                     if rc:
                         raise CreatorError("Failed to compress image %s with %s." % (bootimg, self.__img_compression_method))
 
@@ -1012,8 +1012,7 @@ class BaseImageCreator(object):
             makedirs(destdir)
 
         # Ensure all data is flushed to _outdir
-        synccmd = find_binary_path("sync")
-        subprocess.call([synccmd])
+        msger.run('sync', True)
 
         for f in os.listdir(self._outdir):
             shutil.move(os.path.join(self._outdir, f),

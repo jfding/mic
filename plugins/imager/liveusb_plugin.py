@@ -18,7 +18,6 @@
 #
 
 import os
-import subprocess
 import shutil
 import tempfile
 
@@ -119,6 +118,8 @@ class LiveUSBPlugin(ImagerPlugin):
 
     @classmethod
     def do_pack(cls, base_on):
+        import subprocess
+
         def __mkinitrd(instance):
             kernelver = instance._get_kernel_versions().values()[0][0]
             args = [ "/usr/libexec/mkliveinitrd", "/boot/initrd-%s.img" % kernelver, "%s" % kernelver ]

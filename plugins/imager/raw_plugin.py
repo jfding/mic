@@ -18,7 +18,6 @@
 #
 
 import os
-import subprocess
 import shutil
 import re
 import tempfile
@@ -86,6 +85,8 @@ class RawPlugin(ImagerPlugin):
 
     @classmethod
     def do_chroot(cls, target):
+        import subprocess
+
         img = target
         imgsize = misc.get_file_size(img) * 1024L * 1024L
         partedcmd = fs_related.find_binary_path("parted")
@@ -192,7 +193,7 @@ class RawPlugin(ImagerPlugin):
         args = ['dd', "if=%s" % srcloop.partitions[0]['device'], "of=%s" % image]
 
         msger.info("`dd` image ...")
-        rc = subprocess.call(args)
+        rc = msger.run(args)
         srcloop.cleanup()
         shutil.rmtree(srcmnt, ignore_errors = True)
 

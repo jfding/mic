@@ -18,7 +18,6 @@
 #
 
 import os, sys
-import subprocess
 
 from baseimager import BaseImageCreator
 from mic import msger
@@ -41,7 +40,7 @@ class FsImageCreator(BaseImageCreator):
         msger.info("Copying %s to %s ..." % (self._instroot, destdir + "/" + self.name))
 
         args = ['cp', "-af", self._instroot, destdir + "/" + self.name ]
-        subprocess.call(args)
+        msger.run(args)
 
         ignores = ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]
         for exclude in ignores:

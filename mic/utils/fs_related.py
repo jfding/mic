@@ -100,27 +100,23 @@ def mksquashfs(in_img, out_img):
     if not sys.stdout.isatty():
         args.append("-no-progress")
 
-    ret = subprocess.call(args, stdout=sys.stdout, stderr=sys.stderr)
+    ret = msger.run(args)
     if ret != 0:
         raise SquashfsError("'%s' exited with error (%d)" %
                             (string.join(args, " "), ret))
 
 def resize2fs(fs, size):
-    dev_null = os.open("/dev/null", os.O_WRONLY)
-    try:
-        resize2fs = find_binary_path("resize2fs")
-        return subprocess.call([resize2fs, fs, "%sK" % (size / 1024,)],
-                               stdout = dev_null, stderr = dev_null)
-    finally:
-        os.close(dev_null)
+    resize2fs = find_binary_path("resize2fs")
+    return msger.run([resize2fs, fs, "%sK" % (size / 1024,)], True)
 
 def my_fuser(file):
     ret = False
     fuser = find_binary_path("fuser")
     if not os.path.exists(file):
         return ret
+
     dev_null = os.open("/dev/null", os.O_WRONLY)
-    rc = subprocess.call([fuser, "-s", file], stderr=dev_null)
+    rc = msger.run([fuser, "-s", file], True)
     if rc == 0:
         fuser_proc = subprocess.Popen([fuser, file], stdout=subprocess.PIPE, stderr=dev_null)
         pids = fuser_proc.communicate()[0].strip().split()
@@ -172,12 +168,12 @@ class BindChrootMount:
             return
 
         makedirs(self.dest)
-        rc = subprocess.call([self.mountcmd, "--bind", self.src, self.dest])
+        rc = msger.run([self.mountcmd, "--bind", self.src, self.dest])
         if rc != 0:
             raise MountError("Bind-mounting '%s' to '%s' failed" %
                              (self.src, self.dest))
         if self.option:
-            rc = subprocess.call([self.mountcmd, "--bind", "-o", "remount,%s" % self.option, self.dest])
+            rc = msger.run([self.mountcmd, "--bind", "-o", "remount,%s" % self.option, self.dest])
             if rc != 0:
                 raise MountError("Bind-remounting '%s' failed" % self.dest)
         self.mounted = True
@@ -187,7 +183,7 @@ class BindChrootMount:
             return
 
         if self.ismounted():
-            subprocess.call([self.umountcmd, "-l", self.dest])
+            msger.run([self.umountcmd, "-l", self.dest])
         self.mounted = False
 
 class LoopbackMount:
@@ -205,7 +201,7 @@ class LoopbackMount:
 
     def lounsetup(self):
         if self.losetup:
-            rc = subprocess.call([self.losetupcmd, "-d", self.loopdev])
+            rc = msger.run([self.losetupcmd, "-d", self.loopdev])
             self.losetup = False
             self.loopdev = None
 
@@ -223,7 +219,7 @@ class LoopbackMount:
 
         self.loopdev = losetupOutput.split()[0]
 
-        rc = subprocess.call([self.losetupcmd, self.loopdev, self.lofile])
+        rc = msger.run([self.losetupcmd, self.loopdev, self.lofile])
         if rc != 0:
             raise MountError("Failed to allocate loop device for '%s'" %
                              self.lofile)
@@ -346,7 +342,7 @@ class LoopbackDisk(Disk):
         device = losetupOutput.split()[0]
 
         msger.debug("Losetup add %s mapping to %s"  % (device, self.lofile))
-        rc = subprocess.call([self.losetupcmd, device, self.lofile])
+        rc = msger.run([self.losetupcmd, device, self.lofile])
         if rc != 0:
             raise MountError("Failed to allocate loop device for '%s'" %
                              self.lofile)
@@ -356,7 +352,7 @@ class LoopbackDisk(Disk):
         if self.device is None:
             return
         msger.debug("Losetup remove %s" % self.device)
-        rc = subprocess.call([self.losetupcmd, "-d", self.device])
+        rc = msger.run([self.losetupcmd, "-d", self.device])
         self.device = None
 
 
@@ -438,9 +434,8 @@ class DiskMount(Mount):
     def unmount(self):
         if self.mounted:
             msger.debug("Unmounting directory %s" % self.mountdir)
-            synccmd = find_binary_path("sync")
-            subprocess.call([synccmd]) # sync the data on this mount point
-            rc = subprocess.call([self.umountcmd, "-l", self.mountdir])
+            msger.run('sync', True) # sync the data on this mount point
+            rc = msger.run([self.umountcmd, "-l", self.mountdir])
             if rc == 0:
                 self.mounted = False
             else:
@@ -476,7 +471,7 @@ class DiskMount(Mount):
         if self.fstype:
             args.extend(["-t", self.fstype])
 
-        rc = subprocess.call(args)
+        rc = msger.run(args)
         if rc != 0:
             raise MountError("Failed to mount '%s' to '%s' with command '%s'. Retval: %s" %
                              (self.disk.device, self.mountdir, " ".join(args), rc))
@@ -506,13 +501,12 @@ class ExtDiskMount(DiskMount):
         if self.skipformat:
             msger.debug("Skip filesystem format.")
             return
-        msger.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
-        rc = subprocess.call([self.mkfscmd,
-                              "-F", "-L", self.fslabel,
-                              "-m", "1", "-b", str(self.blocksize),
-                              self.disk.device], stdout=sys.stdout,
-                              stderr=sys.stderr)
-        #                      str(self.disk.size / self.blocksize)])
+
+        msger.info("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
+        rc = msger.run([self.mkfscmd,
+                        "-F", "-L", self.fslabel,
+                        "-m", "1", "-b", str(self.blocksize),
+                        self.disk.device]) # str(self.disk.size / self.blocksize)])
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))
 
@@ -526,9 +520,7 @@ class ExtDiskMount(DiskMount):
 
         self.uuid = self.__parse_field(out, "Filesystem UUID")
         msger.debug("Tuning filesystem on %s" % self.disk.device)
-        subprocess.call([self.tune2fs, "-c0", "-i0", "-Odir_index",
-                         "-ouser_xattr,acl", self.disk.device],
-                         stdout=sys.stdout, stderr=sys.stderr)
+        msger.run([self.tune2fs, "-c0", "-i0", "-Odir_index", "-ouser_xattr,acl", self.disk.device])
 
     def __resize_filesystem(self, size = None):
         current_size = os.stat(self.disk.lofile)[stat.ST_SIZE]
@@ -564,8 +556,8 @@ class ExtDiskMount(DiskMount):
         DiskMount.mount(self, options)
 
     def __fsck(self):
-        msger.debug("Checking filesystem %s" % self.disk.lofile)
-        subprocess.call(["/sbin/e2fsck", "-f", "-y", self.disk.lofile], stdout=sys.stdout, stderr=sys.stderr)
+        msger.info("Checking filesystem %s" % self.disk.lofile)
+        msger.run(["/sbin/e2fsck", "-f", "-y", self.disk.lofile])
 
     def __get_size_from_filesystem(self):
         dev_null = os.open("/dev/null", os.O_WRONLY)
@@ -619,8 +611,7 @@ class VfatDiskMount(DiskMount):
             msger.debug("Skip filesystem format.")
             return
         msger.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
-        blah = [self.mkfscmd, "-n", self.fslabel, "-i", self.uuid, self.disk.device]
-        rc = subprocess.call(blah)
+        rc = msger.run([self.mkfscmd, "-n", self.fslabel, "-i", self.uuid, self.disk.device])
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))
         msger.debug("Tuning filesystem on %s" % self.disk.device)
@@ -660,7 +651,7 @@ class VfatDiskMount(DiskMount):
 
     def __fsck(self):
         msger.debug("Checking filesystem %s" % self.disk.lofile)
-        subprocess.call([self.fsckcmd, "-y", self.disk.lofile])
+        msger.run([self.fsckcmd, "-y", self.disk.lofile])
 
     def __get_size_from_filesystem(self):
         return self.disk.size
@@ -709,7 +700,7 @@ class BtrfsDiskMount(DiskMount):
 
         # disable selinux, selinux will block write
         if os.path.exists("/usr/sbin/setenforce"):
-            subprocess.call(["/usr/sbin/setenforce", "0"])
+            msger.run(["/usr/sbin/setenforce", "0"])
 
     def __parse_field(self, output, field):
         for line in output.split(" "):
@@ -723,7 +714,7 @@ class BtrfsDiskMount(DiskMount):
             msger.debug("Skip filesystem format.")
             return
         msger.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
-        rc = subprocess.call([self.mkfscmd, "-L", self.fslabel, self.disk.device])
+        rc = msger.run([self.mkfscmd, "-L", self.fslabel, self.disk.device])
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))
 
@@ -770,7 +761,7 @@ class BtrfsDiskMount(DiskMount):
 
     def __fsck(self):
         msger.debug("Checking filesystem %s" % self.disk.lofile)
-        subprocess.call([self.btrfsckcmd, self.disk.lofile])
+        msger.run([self.btrfsckcmd, self.disk.lofile])
 
     def __get_size_from_filesystem(self):
         return self.disk.size
@@ -822,7 +813,7 @@ class DeviceMapperSnapshot(object):
                                              self.cowloop.device)
 
         args = [self.dmsetupcmd, "create", self.__name, "--table", table]
-        if subprocess.call(args) != 0:
+        if msger.run(args) != 0:
             self.cowloop.cleanup()
             self.imgloop.cleanup()
             raise SnapshotError("Could not create snapshot device using: " +
@@ -835,7 +826,7 @@ class DeviceMapperSnapshot(object):
             return
 
         time.sleep(2)
-        rc = subprocess.call([self.dmsetupcmd, "remove", self.__name])
+        rc = msger.run([self.dmsetupcmd, "remove", self.__name])
         if not ignore_errors and rc != 0:
             raise SnapshotError("Could not remove snapshot device")
 
@@ -916,30 +907,24 @@ def load_module(module):
             break
     if not found:
         msger.info("Loading %s..." % module)
-        dev_null = os.open("/dev/null", os.O_WRONLY)
-        modprobecmd = find_binary_path("modprobe")
-        modprobe = subprocess.Popen([modprobecmd, module],
-                     stdout=dev_null, stderr=dev_null)
-        os.waitpid(modprobe.pid, 0)
-        os.close(dev_null)
+        msger.run(['modprobe', module], True)
 
 def myurlgrab(url, filename, proxies, progress_obj = None):
     g = URLGrabber()
     if progress_obj is None:
         progress_obj = TextProgress()
+
     if url.startswith("file:///"):
         file = url.replace("file://", "")
         if not os.path.exists(file):
             raise CreatorError("URLGrabber error: can't find file %s" % file)
-        copycmd = find_binary_path("cp")
-        subprocess.call([copycmd, "-f", file, filename])
+        msger.run(['cp', "-f", file, filename])
     else:
         try:
             filename = g.urlgrab(url = url, filename = filename,
                 ssl_verify_host = False, ssl_verify_peer = False,
                 proxies = proxies, http_headers = (('Pragma', 'no-cache'),), progress_obj = progress_obj)
         except URLGrabError, e:
-            raise CreatorError("URLGrabber error: %s: %s" % (e, url))
-        except:
             raise CreatorError("URLGrabber error: %s" % url)
+
     return filename

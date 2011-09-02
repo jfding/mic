@@ -367,7 +367,7 @@ class Zypp(BackendPlugin):
         total_count = len(dlpkgs)
         cached_count = 0
         localpkgs = self.localpkgs.keys()
-        msger.info("Checking packages cache and packages integrity...")
+        msger.info("Checking packages cache and packages integrity ...")
         for po in dlpkgs:
             """ Check if it is cached locally """
             if po.name() in localpkgs:
@@ -383,7 +383,7 @@ class Zypp(BackendPlugin):
         msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, download_count))
         try:
             if download_count > 0:
-                msger.info("Downloading packages...")
+                msger.info("Downloading packages ...")
             self.downloadPkgs(dlpkgs, download_count)
             self.installPkgs(dlpkgs)
 

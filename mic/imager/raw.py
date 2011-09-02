@@ -20,7 +20,6 @@
 import os
 import stat
 import shutil
-import subprocess
 
 import urlgrabber.progress as progress
 
@@ -61,13 +60,14 @@ class RawImageCreator(BaseImageCreator):
         self._dep_checks.extend(["sync", "kpartx", "parted", "extlinux"])
 
     def configure(self, repodata = None):
+        import subprocess
         def chroot():
-
             os.chroot(self._instroot)
             os.chdir("/")
 
         if os.path.exists(self._instroot + "/usr/bin/Xorg"):
             subprocess.call(["/bin/chmod", "u+s", "/usr/bin/Xorg"], preexec_fn = chroot)
+
         BaseImageCreator.configure(self, repodata)
 
     def _get_fstab(self):
@@ -275,17 +275,13 @@ class RawImageCreator(BaseImageCreator):
 
         #Set MBR
         mbrsize = os.stat("%s/usr/share/syslinux/mbr.bin" % self._instroot)[stat.ST_SIZE]
-        ddcmd = fs_related.find_binary_path("dd")
-        rc = subprocess.call([ddcmd, "if=%s/usr/share/syslinux/mbr.bin" % self._instroot, "of=" + loopdev])
+        rc = msger.run(['dd', "if=%s/usr/share/syslinux/mbr.bin" % self._instroot, "of=" + loopdev])
         if rc != 0:
             raise MountError("Unable to set MBR to %s" % loopdev)
 
         #Set Bootable flag
         parted = fs_related.find_binary_path("parted")
-        dev_null = os.open("/dev/null", os.O_WRONLY)
-        rc = subprocess.call([parted, "-s", loopdev, "set", "%d" % (bootdevnum + 1), "boot", "on"],
-                             stdout = dev_null, stderr = dev_null)
-        os.close(dev_null)
+        rc = msger.run([parted, "-s", loopdev, "set", "%d" % (bootdevnum + 1), "boot", "on"], True)
         #XXX disabled return code check because parted always fails to
         #reload part table with loop devices. Annoying because we can't
         #distinguish this failure from real partition failures :-(
@@ -294,10 +290,10 @@ class RawImageCreator(BaseImageCreator):
 
 
         #Ensure all data is flushed to disk before doing syslinux install
-        subprocess.call(["sync"])
+        msger.run('sync', True)
 
         fullpathsyslinux = fs_related.find_binary_path("extlinux")
-        rc = subprocess.call([fullpathsyslinux, "-i", "%s/boot/extlinux" % self._instroot])
+        rc = msger.run([fullpathsyslinux, "-i", "%s/boot/extlinux" % self._instroot])
         if rc != 0:
             raise MountError("Unable to install syslinux bootloader to %sp%d" % (loopdev, (bootdevnum + 1)))
 

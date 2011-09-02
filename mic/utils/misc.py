@@ -417,9 +417,6 @@ def get_metadata_from_repo(baseurl, proxies, cachedir, reponame, filename):
     return get_uncompressed_data_from_url(url,filename_tmp,proxies)
 
 def get_metadata_from_repos(repostrs, cachedir):
-    if not cachedir:
-        CreatorError("No cache dir defined.")
-
     my_repo_metadata = []
     for repostr in repostrs:
         reponame = None

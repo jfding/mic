@@ -340,7 +340,7 @@ class Yum(BackendPlugin, yum.YumBase):
 
         total_count = len(dlpkgs)
         cached_count = 0
-        msger.info("\nChecking packages cache and packages integrity...")
+        msger.info("\nChecking packages cache and packages integrity ...")
         for po in dlpkgs:
             local = po.localPkg()
             if not os.path.exists(local):

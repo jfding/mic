@@ -2,6 +2,7 @@
 # kickstart.py : Apply kickstart configuration to a system
 #
 # Copyright 2007, Red Hat  Inc.
+# Copyright 2009, 2010, 2011  Intel, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -400,8 +401,7 @@ class MoblinRepoConfig(KickstartConfig):
         fd.write("\n")
 
     def __create_repo_file(self, repo, repodir):
-        if not os.path.exists(self.path(repodir)):
-            fs.makedirs(self.path(repodir))
+        fs.makedirs(self.path(repodir))
         f = open(self.path(repodir + "/" + repo.name + ".repo"), "w")
         self.__create_repo_section(repo, "base", f)
         if repo.debuginfo:
@@ -417,12 +417,9 @@ class MoblinRepoConfig(KickstartConfig):
                 self.__create_repo_file(repo, "/etc/zypp/repos.d")
         """ Import repo gpg keys """
         if repodata:
-            dev_null = os.open("/dev/null", os.O_WRONLY)
             for repo in repodata:
                 if repo['repokey']:
-                    subprocess.call([fs.find_binary_path("rpm"), "--root=%s" % self.instroot, "--import", repo['repokey']],
-                                    stdout = dev_null, stderr = dev_null)
-            os.close(dev_null)
+                    msger.run(['rpm', "--root=%s" % self.instroot, "--import", repo['repokey']], True)
 
 class RPMMacroConfig(KickstartConfig):
     """A class to apply the specified rpm macros to the filesystem"""

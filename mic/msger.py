@@ -21,7 +21,7 @@
 import os,sys
 import re
 
-__ALL__ = ['set_mode', 'get_loglevel', 'set_loglevel', 'raw' 'debug', 'verbose', 'info', 'warning', 'error', 'ask', 'pause']
+__ALL__ = ['set_mode', 'get_loglevel', 'set_loglevel', 'raw' 'debug', 'verbose', 'info', 'warning', 'error', 'ask', 'pause', 'run']
 
 # COLORs in ANSI
 INFO_COLOR = 32 # green
@@ -184,3 +184,24 @@ def pause(msg=None):
         if not msg:
             msg = 'press <ENTER> to continue ...'
         raw_input(msg)
+
+def run(cmdln_or_args, q=False):
+    """ q: quiet? """
+
+    from subprocess import *
+    if isinstance(cmdln_or_args, list):
+        cmdln = ' '.join(cmdln_or_args)
+    else:
+        cmdln = cmdln_or_args
+
+    p = Popen(cmdln, stdout=PIPE, stderr=PIPE, shell=True)
+    out = p.communicate()[0].strip()
+    if out and not q:
+        msg =  'running command: "%s"\n' % cmdln
+        msg += '  +----------------\n'
+        for line in out.splitlines():
+            msg += '  | %s\n' % line
+        msg += '  +----------------'
+        verbose(msg)
+
+    return p.returncode

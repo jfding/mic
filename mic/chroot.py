@@ -83,11 +83,10 @@ def check_bind_mounts(chrootdir, bindmounts):
     return True
 
 def cleanup_mounts(chrootdir):
-    dev_null = os.open("/dev/null", os.O_WRONLY)
     umountcmd = misc.find_binary_path("umount")
     for point in BIND_MOUNTS:
         args = [ umountcmd, "-l", chrootdir + point ]
-        subprocess.call(args, stdout=dev_null, stderr=dev_null)
+        msger.run(args, True)
 
     abs_chrootdir = os.path.abspath(chrootdir)
     with open('/proc/mounts') as f:
@@ -99,13 +98,11 @@ def cleanup_mounts(chrootdir):
                     continue
 
                 args = [ umountcmd, "-l", point ]
-                ret = subprocess.call(args, stdout=dev_null, stderr=dev_null)
+                ret = msger.run(args, True)
                 if ret != 0:
                     msger.warning("failed to unmount %s" % point)
-                    os.close(dev_null)
                     return ret
 
-    os.close(dev_null)
     return 0
 
 def setup_chrootenv(chrootdir, bindmounts = None):
