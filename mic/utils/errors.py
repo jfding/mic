@@ -16,27 +16,30 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-class Usage(Exception):
-    def __init__(self, msg=None):
-        Exception.__init__(self, msg)
-
-class ConfigError(Exception):
-    def __init__(self, msg=None):
-        Exception.__init__(self, msg)
-
 class CreatorError(Exception):
     """An exception base class for all imgcreate errors."""
+    keyword = '<creator>'
+
     def __init__(self, msg):
-        Exception.__init__(self, msg)
+        self.msg = msg
+
+    def __str__(self):
+        return self.keyword + repr(self.msg)
+
+class ConfigError(CreatorError):
+    keyword = '<config>'
+
+class Usage(CreatorError):
+    keyword = '<usage>'
 
 class KsError(CreatorError):
-    pass
+    keyword = '<kickstart>'
 
 class MountError(CreatorError):
-    pass
+    keyword = '<mount>'
 
 class SnapshotError(CreatorError):
-    pass
+    keyword = '<snapshot>'
 
 class SquashfsError(CreatorError):
-    pass
+    keyword = '<squashfs>'

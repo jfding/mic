@@ -327,7 +327,7 @@ class Zypp(BackendPlugin):
             self.repo_manager.addRepository(repo_info)
             self.__build_repo_cache(name)
         except RuntimeError, e:
-            raise CreatorError("%s" % (e,))
+            raise CreatorError(str(e))
 
         msger.verbose('repo: %s was added' % name)
         return repo

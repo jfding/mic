@@ -21,7 +21,7 @@
 import os,sys
 import re
 
-__ALL__ = ['set_mode', 'set_loglevel', 'raw' 'debug', 'verbose', 'info', 'warning', 'error', 'ask', 'pause']
+__ALL__ = ['set_mode', 'get_loglevel', 'set_loglevel', 'raw' 'debug', 'verbose', 'info', 'warning', 'error', 'ask', 'pause']
 
 # COLORs in ANSI
 INFO_COLOR = 32 # green
@@ -102,6 +102,9 @@ def _split_msg(head, msg):
         msg = m.group(2)
 
     return head, msg
+
+def get_loglevel():
+    return (k for k,v in LOG_LEVELS.items() if v==LOG_LEVEL).next()
 
 def set_loglevel(level):
     global LOG_LEVEL

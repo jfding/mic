@@ -19,9 +19,7 @@
 
 import os, sys
 
-from mic import configmgr
-from mic import pluginmgr
-from mic import msger
+from mic import configmgr, pluginmgr, msger
 from mic.utils import cmdln
 
 class Creator(cmdln.Cmdln):
@@ -99,7 +97,7 @@ class Creator(cmdln.Cmdln):
             return self.emptyline()
             
         if os.geteuid() != 0:
-            msger.error('Need root permission to run this command')
+            msger.error('Root permission is required to continue, abort')
 
         return self.cmd(args)
 

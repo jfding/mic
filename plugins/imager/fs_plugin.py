@@ -76,7 +76,7 @@ class FsPlugin(ImagerPlugin):
             outimage = creator.outimage
             creator.print_outimage_info()
         except errors.CreatorError, e:
-            raise errors.CreatorError("failed to create image : %s" % e)
+            raise
         finally:
             creator.cleanup()
 

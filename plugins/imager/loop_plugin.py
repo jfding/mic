@@ -69,7 +69,7 @@ class LoopPlugin(ImagerPlugin):
             creator.unmount()
             creator.package(creatoropts["outdir"])
         except errors.CreatorError, e:
-            raise errors.CreatorError("failed to create image : %s" % e)
+            raise
         finally:
             creator.cleanup()
 

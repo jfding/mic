@@ -1,6 +1,6 @@
 #!/usr/bin/python -tt
 #
-# Copyright 2008, 2009, 2010 Intel, Inc.
+# Copyright 2008, 2009, 2010, 2011 Intel, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use, modify,
 # copy, or redistribute it subject to the terms and conditions of the GNU
@@ -18,18 +18,9 @@
 #
 
 import os, sys
-
-import mic.utils.misc as misc
-import mic.utils.errors as errors
-import mic.configmgr as configmgr
-import mic.pluginmgr as pluginmgr
-import mic.creator as creator
-from mic import msger
-from mic.utils import cmdln
-try:
-    from mic.__version__ import VERSION
-except:
-    VERSION = 'Unknown'
+from mic import msger, creator, configmgr, pluginmgr
+from mic.utils import cmdln, misc, errors
+from mic.__version__ import VERSION
 
 class Mic(cmdln.Cmdln):
     """
@@ -54,9 +45,9 @@ class Mic(cmdln.Cmdln):
 
     def postoptparse(self):
         if self.options.verbose:
-           msger.set_loglevel('verbose')
+            msger.set_loglevel('verbose')
         if self.options.debug:
-           msger.set_loglevel('debug')
+            msger.set_loglevel('debug')
 
     @cmdln.alias("cr")
     def do_create(self, argv):
@@ -76,6 +67,10 @@ class Mic(cmdln.Cmdln):
         doc = doc.rstrip() + '\n'
         return doc
 
+    def _root_confirm(self):
+        if os.geteuid() != 0:
+            msger.error('Root permission is required to continue, abort')
+
     @cmdln.alias("cv")
     def do_convert(self, subcmd, opts, *args):
         """${cmd_name}: convert image format
@@ -85,22 +80,22 @@ class Mic(cmdln.Cmdln):
 
         ${cmd_option_list}
         """
-        if len(args) == 0:
+
+        if not args:
             # print help
             handler = self._get_cmd_handler('convert')
             if hasattr(handler, "optparser"):
                 handler.optparser.print_help()
             return
+
         if len(args) == 1:
-            raise errors.Usage("It takes 2 arguments (1 given)")
+            raise errors.Usage("It need 2 arguments (1 given)")
         elif len(args) == 2:
-            srcimg = args[0]
-            destformat = args[1]
+            (srcimg, destformat) = args
         else:
             raise errors.Usage("Extra argument given")
 
-        if os.geteuid() != 0:
-            raise errors.Usage("You must run as root")
+        self._root_confirm()
 
         srcformat = misc.get_image_type(srcimg)
         if srcformat == "ext3fsimg":
@@ -133,19 +128,20 @@ class Mic(cmdln.Cmdln):
 
         ${cmd_option_list}
         """
-        if len(args) == 0:
+
+        if not args:
             # print help
             handler = self._get_cmd_handler('chroot')
             if hasattr(handler, "optparser"):
                 handler.optparser.print_help()
             return
+
         if len(args) == 1:
             targetimage = args[0]
         else:
             raise errors.Usage("Extra argument given")
 
-        if os.geteuid() != 0:
-            raise errors.Usage("You must run as root")
+        self._root_confirm()
 
         imagetype = misc.get_image_type(targetimage)
         if not imagetype:
@@ -163,7 +159,7 @@ class Mic(cmdln.Cmdln):
                 break
 
         if not chrootclass:
-            raise errors.CreatorError("Don't support image type: %s" % imagetype)
+            raise errors.CreatorError("Cannot support image type: %s" % imagetype)
 
         chrootclass.do_chroot(targetimage)
 
@@ -172,11 +168,9 @@ if __name__ == "__main__":
         mic = Mic()
         sys.exit(mic.main())
 
-    except errors.Usage, msg:
-        msger.error("<usage> %s\n" % msg)
-
-    except errors.ConfigError, msg:
-        msger.error("<config> %s\n" % msg)
-
-    except errors.CreatorError, msg:
-        msger.error("<creator> %s\n" % msg)
+    except (errors.Usage, errors.ConfigError, errors.CreatorError) as err:
+        if msger.get_loglevel() == 'debug':
+            import traceback
+            msger.error(traceback.format_exc())
+        else:
+            msger.error(str(err))
