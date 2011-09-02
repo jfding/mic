@@ -167,8 +167,10 @@ if __name__ == "__main__":
     try:
         mic = Mic()
         sys.exit(mic.main())
+    except errors.Usage, usage:
+        msger.error(str(usage))
 
-    except (errors.Usage, errors.ConfigError, errors.CreatorError) as err:
+    except errors.ConfigError, err:
         if msger.get_loglevel() == 'debug':
             import traceback
             msger.error(traceback.format_exc())

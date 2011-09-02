@@ -24,13 +24,16 @@ class CreatorError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return self.keyword + repr(self.msg)
-
-class ConfigError(CreatorError):
-    keyword = '<config>'
+        return self.keyword + str(self.msg)
 
 class Usage(CreatorError):
     keyword = '<usage>'
+
+    def __str__(self):
+        return self.keyword + str(self.msg) + ', please use "--help" for more info'
+
+class ConfigError(CreatorError):
+    keyword = '<config>'
 
 class KsError(CreatorError):
     keyword = '<kickstart>'
