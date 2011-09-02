@@ -142,11 +142,10 @@ class KickstartConfig(object):
 class LanguageConfig(KickstartConfig):
     """A class to apply a kickstart language configuration to a system."""
     def apply(self, kslang):
-        lang = kslang.lang or "en_US.UTF-8"
-
-        f = open(self.path("/etc/sysconfig/i18n"), "w+")
-        f.write("LANG=\"" + lang + "\"\n")
-        f.close()
+        if kslang.lang:
+            f = open(self.path("/etc/sysconfig/i18n"), "w+")
+            f.write("LANG=\"" + kslang.lang + "\"\n")
+            f.close()
 
 class KeyboardConfig(KickstartConfig):
     """A class to apply a kickstart keyboard configuration to a system."""
