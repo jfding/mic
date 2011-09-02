@@ -173,6 +173,10 @@ if __name__ == "__main__":
     try:
         mic = Mic()
         sys.exit(mic.main())
+
+    except KeyboardInterrupt:
+        msger.error('\n^C catched, program aborted.')
+
     except errors.Usage, usage:
         msger.error(str(usage))
 

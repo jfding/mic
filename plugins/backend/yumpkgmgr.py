@@ -349,6 +349,7 @@ class Yum(BackendPlugin, yum.YumBase):
                 msger.warning("Package %s is damaged: %s" % (os.path.basename(local), local))
             else:
                 cached_count +=1
+
         msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, total_count - cached_count))
         try:
             self.downloadPkgs(dlpkgs)
@@ -361,6 +362,7 @@ class Yum(BackendPlugin, yum.YumBase):
                 """ This isn't fatal, Ubuntu has this issue but it is ok. """
                 msger.debug(deps)
                 msger.warning("Dependency check failed!")
+
             rc = self.ts.order()
             if rc != 0:
                 raise CreatorError("ordering packages for installation failed!")
@@ -369,9 +371,11 @@ class Yum(BackendPlugin, yum.YumBase):
             cb = getRPMCallback()
             cb.tsInfo = self.tsInfo
             cb.filelog = False
+
             ret = self.runTransaction(cb)
             self._cleanupRpmdbLocks(self.conf.installroot)
             return ret
+
         except yum.Errors.RepoError, e:
             raise CreatorError("Unable to download from repo : %s" % (e,))
         except yum.Errors.YumBaseError, e:
