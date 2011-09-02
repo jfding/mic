@@ -47,6 +47,12 @@ class Mic(cmdln.Cmdln):
         if self.options.verbose:
             msger.set_loglevel('verbose')
         if self.options.debug:
+            try:
+                import rpm
+                rpm.setVerbosity(rpm.RPMLOG_NOTICE)
+            except ImportError:
+                pass
+
             msger.set_loglevel('debug')
 
     @cmdln.alias("cr")

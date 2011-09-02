@@ -57,6 +57,11 @@ class ImagerPlugin(_Plugin):
 class BackendPlugin(_Plugin):
     mic_plugin_type="backend"
 
+    # suppress the verbose rpm warnings
+    if msger.get_loglevel() != 'debug':
+        import rpm
+        rpm.setVerbosity(rpm.RPMLOG_ERR)
+
     def addRepository(self):
         pass
 
