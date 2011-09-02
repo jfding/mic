@@ -46,6 +46,7 @@ class Mic(cmdln.Cmdln):
     def postoptparse(self):
         if self.options.verbose:
             msger.set_loglevel('verbose')
+
         if self.options.debug:
             try:
                 import rpm
@@ -62,16 +63,6 @@ class Mic(cmdln.Cmdln):
             cr.main(argv[1:])
         except:
             raise
-
-    def help_create(self):
-        cr = creator.Creator()
-        cr.optparser = cr.get_optparser()
-        doc = cr.__doc__
-        doc = cr._help_reindent(doc)
-        doc = cr._help_preprocess(doc, None)
-        doc = doc.replace(cr.name, "${cmd_name}", 1)
-        doc = doc.rstrip() + '\n'
-        return doc
 
     def _root_confirm(self):
         if os.geteuid() != 0:
@@ -92,7 +83,7 @@ class Mic(cmdln.Cmdln):
             handler = self._get_cmd_handler('convert')
             if hasattr(handler, "optparser"):
                 handler.optparser.print_help()
-            return
+            return 1
 
         if len(args) == 1:
             raise errors.Usage("It need 2 arguments (1 given)")
@@ -107,13 +98,9 @@ class Mic(cmdln.Cmdln):
         if srcformat == "ext3fsimg":
             srcformat = "loop"
 
-        pkgmgr = pluginmgr.PluginMgr()
-        pkgmgr.loadPlugins()
-        imagers = pkgmgr.getImagerPlugins()
-
         srcimager = None
         destimager = None
-        for iname, icls in imagers:
+        for iname, icls in pluginmgr.PluginMgr().get_plugins('imager').iteritems():
            if iname == srcformat and hasattr(icls, "do_unpack"):
                srcimager = icls
            if iname == destformat and hasattr(icls, "do_pack"):
@@ -140,7 +127,7 @@ class Mic(cmdln.Cmdln):
             handler = self._get_cmd_handler('chroot')
             if hasattr(handler, "optparser"):
                 handler.optparser.print_help()
-            return
+            return 1
 
         if len(args) == 1:
             targetimage = args[0]
@@ -155,11 +142,8 @@ class Mic(cmdln.Cmdln):
         if imagetype == "ext3fsimg":
             imagetype = "loop"
 
-        pkgmgr = pluginmgr.PluginMgr()
-        pkgmgr.loadPlugins()
-
         chrootclass = None
-        for (pname, pcls) in pkgmgr.getImagerPlugins():
+        for pname, pcls in pluginmgr.PluginMgr().get_plugins('imager').iteritems():
             if pname == imagetype and hasattr(pcls, "do_chroot"):
                 chrootclass = pcls
                 break
@@ -180,7 +164,7 @@ if __name__ == "__main__":
     except errors.Usage, usage:
         msger.error(str(usage))
 
-    except errors.ConfigError, err:
+    except errors.CreatorError, err:
         if msger.get_loglevel() == 'debug':
             import traceback
             msger.error(traceback.format_exc())

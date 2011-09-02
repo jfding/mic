@@ -843,7 +843,7 @@ class BaseImageCreator(object):
                     pkg_manager._add_prob_flags(rpm.RPMPROB_FILTER_IGNOREARCH)
                 pkg_manager.runInstall(checksize)
             except CreatorError, e:
-                raise CreatorError("%s" % (e,))
+                raise
         finally:
             if keep_record:
                 self._pkgs_content = pkg_manager.getAllContent()
