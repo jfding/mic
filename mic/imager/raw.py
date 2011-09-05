@@ -21,7 +21,7 @@ import os
 import stat
 import shutil
 
-import urlgrabber.progress as progress
+from urlgrabber import progress
 
 from mic import kickstart, msger
 from mic.utils import fs_related
@@ -169,11 +169,7 @@ class RawImageCreator(BaseImageCreator):
         for p in parts:
             self.__instloop.add_partition(int(p.size), p.disk, p.mountpoint, p.fstype, fsopts = p.fsopts, boot = p.active)
 
-        try:
-            self.__instloop.mount()
-        except MountError, e:
-            raise CreatorError("Failed mount disks : %s" % e)
-
+        self.__instloop.mount()
         self._create_mkinitrd_config()
 
     def _get_required_packages(self):
@@ -287,7 +283,6 @@ class RawImageCreator(BaseImageCreator):
         #distinguish this failure from real partition failures :-(
         if rc != 0 and 1 == 0:
             raise MountError("Unable to set bootable flag to %sp%d" % (loopdev, (bootdevnum + 1)))
-
 
         #Ensure all data is flushed to disk before doing syslinux install
         msger.run('sync', True)

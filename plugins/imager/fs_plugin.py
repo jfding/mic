@@ -87,7 +87,7 @@ class FsPlugin(ImagerPlugin):
             creator.package(destdir)
             outimage = creator.outimage
             creator.print_outimage_info()
-        except errors.CreatorError, e:
+        except errors.CreatorError:
             raise
         finally:
             creator.cleanup()

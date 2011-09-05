@@ -54,14 +54,13 @@ class RawPlugin(ImagerPlugin):
 
         # try to find the pkgmgr
         pkgmgr = None
-        plgmgr = pluginmgr.PluginMgr()
-        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
+        for (key, pcls) in pluginmgr.PluginMgr().get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
         if not pkgmgr:
-            raise errors.CreatorError("Can't find backend %s" % pkgmgr)
+            raise errors.CreatorError("Can't find package manager: %s" % creatoropts['pkgmgr'])
 
         creator = raw.RawImageCreator(creatoropts, pkgmgr)
         try:
@@ -75,7 +74,7 @@ class RawPlugin(ImagerPlugin):
             creator.print_outimage_info()
             outimage = creator.outimage
 
-        except errors.CreatorError, e:
+        except errors.CreatorError:
             raise
         finally:
             creator.cleanup()
@@ -162,9 +161,9 @@ class RawPlugin(ImagerPlugin):
         try:
             imgloop.mount()
 
-        except errors.MountError, e:
+        except errors.MountError:
             imgloop.cleanup()
-            raise errors.CreatorError("Failed to loopback mount '%s' : %s" % (img, e))
+            raise
 
         try:
             chroot.chroot(imgmnt, None,  "/bin/env HOME=/root /bin/bash")
@@ -184,10 +183,9 @@ class RawPlugin(ImagerPlugin):
         try:
             srcloop.mount()
 
-        except errors.MountError, e:
+        except errors.MountError:
             srcloop.cleanup()
-            raise errors.CreatorError("Failed to loopback mount '%s' : %s" %
-                               (srcimg, e))
+            raise
 
         image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "target.img")
         args = ['dd', "if=%s" % srcloop.partitions[0]['device'], "of=%s" % image]

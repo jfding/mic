@@ -52,17 +52,19 @@ class LiveUSBPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         cfgmgr.setProperty("ksconf", args[0])
 
-        if creatoropts['arch'].startswith('arm'):
+        if creatoropts['arch'] and creatoropts['arch'].startswith('arm'):
             msger.warning('liveusb cannot support arm images, Quit')
             return
 
         # try to find the pkgmgr
         pkgmgr = None
-        plgmgr = pluginmgr.PluginMgr()
-        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
+        for (key, pcls) in pluginmgr.PluginMgr().get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
+
+        if not pkgmgr:
+            raise errors.CreatorError("Can't find package manager: %s" % creatoropts['pkgmgr'])
 
         creator = liveusb.LiveUSBImageCreator(creatoropts, pkgmgr)
         try:
@@ -76,7 +78,7 @@ class LiveUSBPlugin(ImagerPlugin):
             creator.print_outimage_info()
             outimage = creator.outimage
 
-        except errors.CreatorError, e:
+        except errors.CreatorError:
             raise
         finally:
             creator.cleanup()
@@ -104,10 +106,10 @@ class LiveUSBPlugin(ImagerPlugin):
         try:
             extloop.mount()
 
-        except errors.MountError, e:
+        except errors.MountError:
             extloop.cleanup()
             shutil.rmtree(extmnt, ignore_errors = True)
-            raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(os_image, e))
+            raise
 
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
@@ -163,9 +165,9 @@ class LiveUSBPlugin(ImagerPlugin):
         imgloop.add_partition(imgsize/1024/1024, "/dev/sdb", "/", "vfat", boot=False)
         try:
             imgloop.mount()
-        except errors.MountError, e:
+        except errors.MountError:
             imgloop.cleanup()
-            raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
+            raise
 
         # legacy LiveOS filesystem layout support, remove for F9 or F10
         if os.path.exists(imgmnt + "/squashfs.img"):

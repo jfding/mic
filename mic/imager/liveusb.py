@@ -63,10 +63,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
 
         usbloop.add_partition(usbimgsize/1024/1024, "/dev/sdb", "/", fstype, boot=True)
 
-        try:
-            usbloop.mount()
-        except MountError, e:
-            raise CreatorError("Failed mount disks : %s" % e)
+        usbloop.mount()
 
         try:
             fs_related.makedirs(usbmnt + "/LiveOS")
@@ -100,7 +97,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 syslinux_path = "/usr/lib/syslinux"
             else:
                 raise CreatorError("syslinux not installed : "
-                               "cannot find syslinux installation path")
+                                   "cannot find syslinux installation path")
 
             for f in ("isolinux.bin", "vesamenu.c32"):
                 path = os.path.join(syslinux_path, f)

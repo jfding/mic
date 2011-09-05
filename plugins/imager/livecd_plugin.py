@@ -49,20 +49,19 @@ class LiveCDPlugin(ImagerPlugin):
         cfgmgr.setProperty("ksconf", ksconf)
         creatoropts = cfgmgr.create
 
-        if creatoropts['arch'].startswith('arm'):
+        if creatoropts['arch'] and creatoropts['arch'].startswith('arm'):
             msger.warning('livecd cannot support arm images, Quit')
             return
 
         # try to find the pkgmgr
         pkgmgr = None
-        plgmgr = pluginmgr.PluginMgr()
-        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
+        for (key, pcls) in pluginmgr.PluginMgr().get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
         if not pkgmgr:
-            raise errors.CreatorError("Can't find backend %s" % pkgmgr)
+            raise errors.CreatorError("Can't find package manager: %s" % creatoropts['pkgmgr'])
 
         creator = livecd.LiveCDImageCreator(creatoropts, pkgmgr)
         try:
@@ -76,7 +75,7 @@ class LiveCDPlugin(ImagerPlugin):
             creator.print_outimage_info()
             outimage = creator.outimage
 
-        except errors.CreatorError, e:
+        except errors.CreatorError:
             raise
         finally:
             creator.cleanup()
@@ -104,11 +103,11 @@ class LiveCDPlugin(ImagerPlugin):
         try:
             extloop.mount()
 
-        except errors.MountError, e:
+        except errors.MountError:
             extloop.cleanup()
             shutil.rmtree(extmnt, ignore_errors = True)
             shutil.rmtree(os_image_dir, ignore_errors = True)
-            raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(os_image, e))
+            raise
 
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
@@ -160,9 +159,9 @@ class LiveCDPlugin(ImagerPlugin):
         imgloop = fs_related.DiskMount(fs_related.LoopbackDisk(img, 0), imgmnt)
         try:
             imgloop.mount()
-        except errors.MountError, e:
+        except errors.MountError:
             imgloop.cleanup()
-            raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
+            raise
 
         # legacy LiveOS filesystem layout support, remove for F9 or F10
         if os.path.exists(imgmnt + "/squashfs.img"):

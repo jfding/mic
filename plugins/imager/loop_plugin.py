@@ -51,14 +51,13 @@ class LoopPlugin(ImagerPlugin):
 
         # try to find the pkgmgr
         pkgmgr = None
-        plgmgr = pluginmgr.PluginMgr()
-        for (key, pcls) in plgmgr.get_plugins('backend').iteritems():
+        for (key, pcls) in pluginmgr.PluginMgr().get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
         if not pkgmgr:
-            raise errors.CreatorError("Can't find backend %s" % pkgmgr)
+            raise errors.CreatorError("Can't find package manager: %s" % creatoropts['pkgmgr'])
 
         creator = loop.LoopImageCreator(creatoropts, pkgmgr)
         try:
@@ -68,7 +67,7 @@ class LoopPlugin(ImagerPlugin):
             creator.configure(creatoropts["repomd"])
             creator.unmount()
             creator.package(creatoropts["outdir"])
-        except errors.CreatorError, e:
+        except errors.CreatorError:
             raise
         finally:
             creator.cleanup()
@@ -89,10 +88,10 @@ class LoopPlugin(ImagerPlugin):
         try:
             extloop.mount()
 
-        except errors.MountError, e:
+        except errors.MountError:
             extloop.cleanup()
             shutil.rmtree(extmnt, ignore_errors = True)
-            raise errors.CreatorError("Failed to loopback mount '%s' : %s" %(img, e))
+            raise
 
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")

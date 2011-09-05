@@ -102,8 +102,7 @@ def mksquashfs(in_img, out_img):
 
     ret = msger.run(args)
     if ret != 0:
-        raise SquashfsError("'%s' exited with error (%d)" %
-                            (string.join(args, " "), ret))
+        raise SquashfsError("'%s' exited with error (%d)" % (' '.join(args), ret))
 
 def resize2fs(fs, size):
     resize2fs = find_binary_path("resize2fs")
@@ -201,7 +200,7 @@ class LoopbackMount:
 
     def lounsetup(self):
         if self.losetup:
-            rc = msger.run([self.losetupcmd, "-d", self.loopdev])
+            msger.run([self.losetupcmd, "-d", self.loopdev])
             self.losetup = False
             self.loopdev = None
 
@@ -355,8 +354,6 @@ class LoopbackDisk(Disk):
         rc = msger.run([self.losetupcmd, "-d", self.device])
         self.device = None
 
-
-
 class SparseLoopbackDisk(LoopbackDisk):
     """A Disk backed by a sparse file via the loop module."""
     def __init__(self, lofile, size):
@@ -508,7 +505,7 @@ class ExtDiskMount(DiskMount):
                         "-m", "1", "-b", str(self.blocksize),
                         self.disk.device]) # str(self.disk.size / self.blocksize)])
         if rc != 0:
-            raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))
+            raise MountError("Error creating %s filesystem on disk %s" % (self.fstype, self.disk.device))
 
         dev_null = os.open("/dev/null", os.O_WRONLY)
         try:
@@ -816,8 +813,7 @@ class DeviceMapperSnapshot(object):
         if msger.run(args) != 0:
             self.cowloop.cleanup()
             self.imgloop.cleanup()
-            raise SnapshotError("Could not create snapshot device using: " +
-                                string.join(args, " "))
+            raise SnapshotError("Could not create snapshot device using: " + ' '.join(args))
 
         self.__created = True
 

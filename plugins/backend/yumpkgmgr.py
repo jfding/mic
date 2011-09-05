@@ -91,11 +91,10 @@ def getRPMCallback():
                         fmt = self._makefmt(percent)
                         msg = fmt % ("Installing")
                         if msg != self.lastmsg:
-                            sys.stdout.write(msg)
-                            sys.stdout.flush()
+                            msger.info(msg)
                             self.lastmsg = msg
                             if self.total_installed == self.total_actions:
-                                 sys.stdout.write("\n")
+                                msger.raw()
 
             elif what == rpm.RPMCALLBACK_UNINST_START:
                 pass
@@ -372,6 +371,7 @@ class Yum(BackendPlugin, yum.YumBase):
             cb.tsInfo = self.tsInfo
             cb.filelog = False
 
+            msger.warning('\nCaution, do NOT interrupt the installation, else mic cannot finish the cleanup.')
             ret = self.runTransaction(cb)
             self._cleanupRpmdbLocks(self.conf.installroot)
             return ret
