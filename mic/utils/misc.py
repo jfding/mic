@@ -16,7 +16,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-
 import os
 import sys
 import subprocess
@@ -25,7 +24,6 @@ import re
 import shutil
 import glob
 import hashlib
-import urlparse
 
 try:
     import sqlite3 as sqlite
@@ -40,36 +38,44 @@ xmlparse = cElementTree.parse
 
 from errors import *
 from fs_related import *
+from proxy import get_proxy_for
 
 from mic import msger
 
-def setlocale():
-    import locale
-    import codecs
-
-    try:
-        locale.setlocale(locale.LC_ALL,'')
-    except locale.Error:
-        os.environ['LC_ALL'] = 'C'
-        locale.setlocale(locale.LC_ALL,'C')
-    sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout)
-    sys.stdout.errors = 'replace'
-
-def get_extension_name(path):
-    match = re.search("(?<=\.)\w+$", path)
-    if match:
-        return match.group(0)
-    else:
-        return None
-
 def get_image_type(path):
+
+    def _get_extension_name(path):
+        match = re.search("(?<=\.)\w+$", path)
+        if match:
+            return match.group(0)
+        else:
+            return None
+
+    def _ismeego(rootdir):
+        if (os.path.exists(rootdir + "/etc/moblin-release") \
+            or os.path.exists(rootdir + "/etc/meego-release")) \
+            and os.path.exists(rootdir + "/etc/inittab") \
+            and os.path.exists(rootdir + "/etc/rc.sysinit") \
+            and glob.glob(rootdir + "/boot/vmlinuz-*"):
+            return True
+        else:
+            return False
+
     if os.path.isdir(path):
-        if ismeego(path):
+        if _ismeego(path):
             return "fs"
         return None
-    maptab = {"raw":"raw", "vmdk":"vmdk", "vdi":"vdi", "iso":"livecd", "usbimg":"liveusb"}
-    extension = get_extension_name(path)
-    if extension in ("raw", "vmdk", "vdi", "iso", "usbimg"):
+
+    maptab = {
+              "raw":"raw",
+              "vmdk":"vmdk",
+              "vdi":"vdi",
+              "iso":"livecd",
+              "usbimg":"liveusb",
+             }
+
+    extension = _get_extension_name(path)
+    if extension in maptab:
         return maptab[extension]
 
     fd = open(path, "rb")
@@ -151,19 +157,6 @@ def convert_image(srcimg, srcfmt, dstimg, dstfmt):
     if rc != 0:
         raise CreatorError("Unable to convert disk to %s" % dstfmt)
 
-def myxcopytree(src, dst):
-    dev_null = os.open("/dev/null", os.O_WRONLY)
-    dirnames = os.listdir(src)
-    copycmd = find_binary_path("cp")
-    for dir in dirnames:
-        args = [ copycmd, "-af", src + "/" + dir, dst ]
-        subprocess.call(args, stdout=dev_null, stderr=dev_null)
-    os.close(dev_null)
-    ignores = ["dev/fd", "dev/stdin", "dev/stdout", "dev/stderr", "etc/mtab"]
-    for exclude in ignores:
-        if os.path.exists(dst + "/" + exclude):
-            os.unlink(dst + "/" + exclude)
-
 def uncompress_squashfs(squashfsimg, outdir):
     """Uncompress file system from squshfs image"""
     unsquashfs = find_binary_path("unsquashfs")
@@ -175,186 +168,6 @@ def uncompress_squashfs(squashfsimg, outdir):
 def mkdtemp(dir = "/var/tmp", prefix = "mic-tmp-"):
     makedirs(dir)
     return tempfile.mkdtemp(dir = dir, prefix = prefix)
-
-def ismeego(rootdir):
-    ret = False
-    if (os.path.exists(rootdir + "/etc/moblin-release") \
-       or os.path.exists(rootdir + "/etc/meego-release")) \
-       and os.path.exists(rootdir + "/etc/inittab") \
-       and os.path.exists(rootdir + "/etc/rc.sysinit") \
-       and glob.glob(rootdir + "/boot/vmlinuz-*"):
-        ret = True
-
-    return ret
-
-
-def is_meego_bootstrap(rootdir):
-    ret = False
-    if (os.path.exists(rootdir + "/etc/moblin-release") \
-       or os.path.exists(rootdir + "/etc/meego-release")) \
-       and os.path.exists(rootdir + "/usr/bin/python") \
-       and os.path.exists(rootdir + "/usr/bin/mic-image-creator"):
-        ret = True
-
-    return ret
-
-_my_proxies = {}
-_my_noproxy = None
-_my_noproxy_list = []
-
-def set_proxy_environ():
-    global _my_noproxy, _my_proxies
-    if not _my_proxies:
-        return
-    for key in _my_proxies.keys():
-        os.environ[key + "_proxy"] = _my_proxies[key]
-    if not _my_noproxy:
-        return
-    os.environ["no_proxy"] = _my_noproxy
-
-def unset_proxy_environ():
-   if os.environ.has_key("http_proxy"):
-       del os.environ["http_proxy"]
-   if os.environ.has_key("https_proxy"):
-       del os.environ["https_proxy"]
-   if os.environ.has_key("ftp_proxy"):
-       del os.environ["ftp_proxy"]
-   if os.environ.has_key("all_proxy"):
-       del os.environ["all_proxy"]
-   if os.environ.has_key("no_proxy"):
-       del os.environ["no_proxy"]
-   if os.environ.has_key("HTTP_PROXY"):
-       del os.environ["HTTP_PROXY"]
-   if os.environ.has_key("HTTPS_PROXY"):
-       del os.environ["HTTPS_PROXY"]
-   if os.environ.has_key("FTP_PROXY"):
-       del os.environ["FTP_PROXY"]
-   if os.environ.has_key("ALL_PROXY"):
-       del os.environ["ALL_PROXY"]
-   if os.environ.has_key("NO_PROXY"):
-       del os.environ["NO_PROXY"]
-
-def _set_proxies(proxy = None, no_proxy = None):
-    """Return a dictionary of scheme -> proxy server URL mappings."""
-    global _my_noproxy, _my_proxies
-    _my_proxies = {}
-    _my_noproxy = None
-    proxies = []
-    if proxy:
-       proxies.append(("http_proxy", proxy))
-    if no_proxy:
-       proxies.append(("no_proxy", no_proxy))
-
-    """Get proxy settings from environment variables if not provided"""
-    if not proxy and not no_proxy:
-       proxies = os.environ.items()
-
-       """ Remove proxy env variables, urllib2 can't handle them correctly """
-       unset_proxy_environ()
-
-    for name, value in proxies:
-        name = name.lower()
-        if value and name[-6:] == '_proxy':
-            if name[0:2] != "no":
-                _my_proxies[name[:-6]] = value
-            else:
-                _my_noproxy = value
-
-def ip_to_int(ip):
-    ipint=0
-    shift=24
-    for dec in ip.split("."):
-        ipint |= int(dec) << shift
-        shift -= 8
-    return ipint
-
-def int_to_ip(val):
-    ipaddr=""
-    shift=0
-    for i in range(4):
-        dec = val >> shift
-        dec &= 0xff
-        ipaddr = ".%d%s" % (dec, ipaddr)
-        shift += 8
-    return ipaddr[1:]
-
-def isip(host):
-    if host.replace(".", "").isdigit():
-        return True
-    return False
-
-def set_noproxy_list():
-    global _my_noproxy, _my_noproxy_list
-    _my_noproxy_list = []
-    if not _my_noproxy:
-        return
-    for item in _my_noproxy.split(","):
-        item = item.strip()
-        if not item:
-            continue
-        if item[0] != '.' and item.find("/") == -1:
-            """ Need to match it """
-            _my_noproxy_list.append({"match":0,"needle":item})
-        elif item[0] == '.':
-            """ Need to match at tail """
-            _my_noproxy_list.append({"match":1,"needle":item})
-        elif item.find("/") > 3:
-            """ IP/MASK, need to match at head """
-            needle = item[0:item.find("/")].strip()
-            ip = ip_to_int(needle)
-            netmask = 0
-            mask = item[item.find("/")+1:].strip()
-
-            if mask.isdigit():
-                netmask = int(mask)
-                netmask = ~((1<<(32-netmask)) - 1)
-                ip &= netmask
-            else:
-                shift=24
-                netmask=0
-                for dec in mask.split("."):
-                    netmask |= int(dec) << shift
-                    shift -= 8
-                ip &= netmask
-            _my_noproxy_list.append({"match":2,"needle":ip,"netmask":netmask})
-
-def isnoproxy(url):
-    (scheme, host, path, parm, query, frag) = urlparse.urlparse(url)
-    if '@' in host:
-        user_pass, host = host.split('@', 1)
-    if ':' in host:
-        host, port = host.split(':', 1)
-    hostisip = isip(host)
-    for item in _my_noproxy_list:
-        if hostisip and item["match"] <= 1:
-            continue
-        if item["match"] == 2 and hostisip:
-            if (ip_to_int(host) & item["netmask"]) == item["needle"]:
-                return True
-        if item["match"] == 0:
-            if host == item["needle"]:
-                return True
-        if item["match"] == 1:
-            if host.rfind(item["needle"]) > 0:
-                return True
-    return False
-
-def set_proxies(proxy = None, no_proxy = None):
-    _set_proxies(proxy, no_proxy)
-    set_noproxy_list()
-
-def get_proxy(url):
-    if url[0:4] == "file" or isnoproxy(url):
-        return None
-    type = url[0:url.index(":")]
-    proxy = None
-    if _my_proxies.has_key(type):
-        proxy = _my_proxies[type]
-    elif _my_proxies.has_key("http"):
-        proxy = _my_proxies["http"]
-    else:
-        proxy = None
-    return proxy
 
 def get_temp_reponame(baseurl):
     md5obj = hashlib.md5(baseurl)
@@ -434,7 +247,7 @@ def get_metadata_from_repos(repostrs, cachedir):
             if subitems[0] in ("http", "https", "ftp", "ftps", "file"):
                 baseurl = item
         if not proxy:
-            proxy = get_proxy(baseurl)
+            proxy = get_proxy_for(baseurl)
         proxies = None
         if proxy:
            proxies = {str(proxy.split(":")[0]):str(proxy)}
@@ -501,27 +314,6 @@ def get_metadata_from_repos(repostrs, cachedir):
         my_repo_metadata.append({"name":reponame, "baseurl":baseurl, "repomd":repomd, "primary":primary, "cachedir":cachedir, "proxies":proxies, "patterns":patterns, "comps":comps, "repokey":repokey})
 
     return my_repo_metadata
-
-def get_arch(repometadata):
-    archlist = []
-    for repo in repometadata:
-        if repo["primary"].endswith(".xml"):
-            root = xmlparse(repo["primary"])
-            ns = root.getroot().tag
-            ns = ns[0:ns.rindex("}")+1]
-            for elm in root.getiterator("%spackage" % ns):
-                if elm.find("%sarch" % ns).text not in ("noarch", "src"):
-                    arch = elm.find("%sarch" % ns).text
-                    if arch not in archlist:
-                        archlist.append(arch)
-        elif repo["primary"].endswith(".sqlite"):
-            con = sqlite.connect(repo["primary"])
-            for row in con.execute("select arch from packages where arch not in (\"src\", \"noarch\")"):
-                if row[0] not in archlist:
-                    archlist.append(row[0])
-
-            con.close()
-    return archlist
 
 def get_package(pkg, repometadata, arch = None):
     ver = ""
@@ -892,27 +684,6 @@ def create_release(config, destdir, name, outimages, release):
             updated_list.append(file)
 
     return updated_list
-
-def get_local_distro():
-    msger.info("Local linux distribution:")
-    for file in glob.glob("/etc/*-release"):
-        fd = open(file, "r")
-        content = fd.read()
-        fd.close()
-        msger.info(content)
-    if os.path.exists("/etc/issue"):
-        fd = open("/etc/issue", "r")
-        content = fd.read()
-        fd.close()
-        msger.info(content)
-
-    msger.info("Local Kernel version: " + os.uname()[2])
-
-def check_mic_installation(argv):
-    creator_name = os.path.basename(argv[0])
-    if os.path.exists("/usr/local/bin/" + creator_name) \
-        and os.path.exists("/usr/bin/" + creator_name):
-        raise CreatorError("There are two mic2 installations existing, this will result in some unpredictable errors, the reason is installation path of mic2 binary is different from  installation path of mic2 source on debian-based distros, please remove one of them to ensure it can work normally.")
 
 def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
 

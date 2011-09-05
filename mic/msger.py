@@ -185,9 +185,7 @@ def pause(msg=None):
             msg = 'press <ENTER> to continue ...'
         raw_input(msg)
 
-def run(cmdln_or_args, q=False):
-    """ q: quiet? """
-
+def run(cmdln_or_args, quiet=False):
     from subprocess import *
     if isinstance(cmdln_or_args, list):
         args = cmdln_or_args
@@ -198,7 +196,7 @@ def run(cmdln_or_args, q=False):
     p = Popen(args, stdout=PIPE, stderr=PIPE)
     out = p.communicate()[0].strip()
 
-    if not q:
+    if not quiet:
         msg =  'running command: "%s"' % ' '.join(args)
         if out:
             msg += ', with output::'
