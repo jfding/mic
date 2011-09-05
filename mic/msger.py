@@ -44,7 +44,6 @@ LOG_LEVELS = {
 LOG_LEVEL = 1
 
 def _color_print(head, color, msg = None, stream = sys.stdout, level = 'normal'):
-
     if LOG_LEVELS[level] > LOG_LEVEL:
         # skip
         return
@@ -123,10 +122,10 @@ def set_mode(interactive):
         INTERACTIVE = False
 
 def raw(msg=None):
-    if msg is None:
-        msg = ''
-    sys.stdout.write(msg)
+    if msg:
+        sys.stdout.write(msg)
     sys.stdout.write('\n')
+    sys.stdout.flush()
 
 def info(msg):
     head, msg = _split_msg('Info', msg)
@@ -197,12 +196,15 @@ def run(cmdln_or_args, q=False):
 
     p = Popen(cmdln, stdout=PIPE, stderr=PIPE, shell=True)
     out = p.communicate()[0].strip()
-    if out and not q:
-        msg =  'running command: "%s"\n' % cmdln
-        msg += '  +----------------\n'
-        for line in out.splitlines():
-            msg += '  | %s\n' % line
-        msg += '  +----------------'
+
+    if not q:
+        msg =  'running command: "%s"' % cmdln
+        if out:
+            msg += '\n  +----------------'
+            for line in out.splitlines():
+                msg += '\n  | %s' % line
+            msg += '\n  +----------------'
+
         verbose(msg)
 
     return p.returncode
