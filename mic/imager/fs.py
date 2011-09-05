@@ -21,6 +21,7 @@ import os, sys
 
 from baseimager import BaseImageCreator
 from mic import msger
+from mic.utils import runner
 
 class FsImageCreator(BaseImageCreator):
     def __init__(self, cfgmgr = None, pkgmgr = None):
@@ -35,7 +36,7 @@ class FsImageCreator(BaseImageCreator):
             self._save_recording_pkgs(destdir)
 
         msger.info("Copying %s to %s ..." % (self._instroot, fsdir))
-        msger.run(['cp', "-af", self._instroot, fsdir])
+        runner.show(['cp', "-af", self._instroot, fsdir])
 
         for exclude in ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]:
             if os.path.exists(fsdir + exclude):

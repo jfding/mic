@@ -30,7 +30,7 @@ import rpm
 from mic.utils.errors import CreatorError
 from mic.utils.misc import get_filesystem_avail, is_statically_linked,setup_qemu_emulator, create_release
 from mic.utils.fs_related import find_binary_path, makedirs, BindChrootMount
-from mic.utils import rpmmisc
+from mic.utils import rpmmisc, runner
 from mic import kickstart
 from mic import msger
 
@@ -993,12 +993,12 @@ class BaseImageCreator(object):
             if self.__img_compression_method == "bz2":
                 bzip2 = find_binary_path('bzip2')
                 msger.info("Compressing %s with bzip2. Please wait..." % img_location)
-                rc = msger.run([bzip2, "-f", img_location])
+                rc = runner.show([bzip2, "-f", img_location])
                 if rc:
                     raise CreatorError("Failed to compress image %s with %s." % (img_location, self.__img_compression_method))
                 for bootimg in glob.glob(os.path.dirname(img_location) + "/*-boot.bin"):
                     msger.info("Compressing %s with bzip2. Please wait..." % bootimg)
-                    rc = msger.run([bzip2, "-f", bootimg])
+                    rc = runner.show([bzip2, "-f", bootimg])
                     if rc:
                         raise CreatorError("Failed to compress image %s with %s." % (bootimg, self.__img_compression_method))
 
@@ -1012,7 +1012,7 @@ class BaseImageCreator(object):
             makedirs(destdir)
 
         # Ensure all data is flushed to _outdir
-        msger.run('sync', True)
+        runner.quiet('sync')
 
         for f in os.listdir(self._outdir):
             shutil.move(os.path.join(self._outdir, f),

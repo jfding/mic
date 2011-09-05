@@ -23,10 +23,8 @@ import subprocess
 import time
 import string
 
-from mic.utils import errors
-from mic.utils import misc
-from mic.utils import fs_related as fs
 from mic import msger
+from mic.utils import errors, misc, runner, fs_related as fs
 
 import pykickstart.commands as kscommands
 import pykickstart.constants as ksconstants
@@ -418,7 +416,7 @@ class MoblinRepoConfig(KickstartConfig):
         if repodata:
             for repo in repodata:
                 if repo['repokey']:
-                    msger.run(['rpm', "--root=%s" % self.instroot, "--import", repo['repokey']], True)
+                    runner.quiet(['rpm', "--root=%s" % self.instroot, "--import", repo['repokey']])
 
 class RPMMacroConfig(KickstartConfig):
     """A class to apply the specified rpm macros to the filesystem"""

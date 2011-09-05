@@ -24,7 +24,7 @@ import shutil
 from urlgrabber import progress
 
 from mic import kickstart, msger
-from mic.utils import fs_related
+from mic.utils import fs_related, runner
 from mic.utils.partitionedfs import PartitionedMount
 from mic.utils.errors import CreatorError, MountError
 
@@ -271,13 +271,13 @@ class RawImageCreator(BaseImageCreator):
 
         #Set MBR
         mbrsize = os.stat("%s/usr/share/syslinux/mbr.bin" % self._instroot)[stat.ST_SIZE]
-        rc = msger.run(['dd', "if=%s/usr/share/syslinux/mbr.bin" % self._instroot, "of=" + loopdev])
+        rc = runner.show(['dd', "if=%s/usr/share/syslinux/mbr.bin" % self._instroot, "of=" + loopdev])
         if rc != 0:
             raise MountError("Unable to set MBR to %s" % loopdev)
 
         #Set Bootable flag
         parted = fs_related.find_binary_path("parted")
-        rc = msger.run([parted, "-s", loopdev, "set", "%d" % (bootdevnum + 1), "boot", "on"], True)
+        rc = runner.quiet([parted, "-s", loopdev, "set", "%d" % (bootdevnum + 1), "boot", "on"])
         #XXX disabled return code check because parted always fails to
         #reload part table with loop devices. Annoying because we can't
         #distinguish this failure from real partition failures :-(
@@ -285,10 +285,10 @@ class RawImageCreator(BaseImageCreator):
             raise MountError("Unable to set bootable flag to %sp%d" % (loopdev, (bootdevnum + 1)))
 
         #Ensure all data is flushed to disk before doing syslinux install
-        msger.run('sync', True)
+        runner.quiet('sync')
 
         fullpathsyslinux = fs_related.find_binary_path("extlinux")
-        rc = msger.run([fullpathsyslinux, "-i", "%s/boot/extlinux" % self._instroot])
+        rc = runner.show([fullpathsyslinux, "-i", "%s/boot/extlinux" % self._instroot])
         if rc != 0:
             raise MountError("Unable to install syslinux bootloader to %sp%d" % (loopdev, (bootdevnum + 1)))
 

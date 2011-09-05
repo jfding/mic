@@ -56,6 +56,16 @@ class Mic(cmdln.Cmdln):
 
             msger.set_loglevel('debug')
 
+    def help_create(self):
+        cr = creator.Creator()
+        cr.optparser = cr.get_optparser()
+        doc = cr.__doc__
+        doc = cr._help_reindent(doc)
+        doc = cr._help_preprocess(doc, None)
+        doc = doc.replace(cr.name, "${cmd_name}", 1)
+        doc = doc.rstrip() + '\n'
+        return doc
+
     @cmdln.alias("cr")
     def do_create(self, argv):
         try:

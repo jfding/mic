@@ -23,7 +23,7 @@ import re
 import tempfile
 
 from mic import configmgr, pluginmgr, chroot, msger
-from mic.utils import misc, fs_related, errors
+from mic.utils import misc, fs_related, errors, runner
 from mic.utils.partitionedfs import PartitionedMount
 
 import mic.imager.raw as raw
@@ -191,7 +191,7 @@ class RawPlugin(ImagerPlugin):
         args = ['dd', "if=%s" % srcloop.partitions[0]['device'], "of=%s" % image]
 
         msger.info("`dd` image ...")
-        rc = msger.run(args)
+        rc = runner.show(args)
         srcloop.cleanup()
         shutil.rmtree(srcmnt, ignore_errors = True)
 

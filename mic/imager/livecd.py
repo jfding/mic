@@ -22,7 +22,7 @@ import glob
 import shutil
 
 from mic import kickstart, msger
-from mic.utils import fs_related, rpmmisc
+from mic.utils import fs_related, rpmmisc, runner
 from mic.utils.errors import CreatorError
 
 from loop import LoopImageCreator
@@ -220,7 +220,7 @@ class LiveImageCreatorBase(LoopImageCreator):
 
         args.append(isodir)
 
-        if msger.run(args) != 0:
+        if runner.show(args) != 0:
             raise CreatorError("ISO creation failed!")
 
         """ It should be ok still even if you haven't isohybrid """
@@ -232,7 +232,7 @@ class LiveImageCreatorBase(LoopImageCreator):
 
         if isohybrid:
             args = [isohybrid, "-partok", iso ]
-            if msger.run(args) != 0:
+            if runner.show(args) != 0:
              	raise CreatorError("Hybrid ISO creation failed!")
 
         self.__implant_md5sum(iso)
@@ -248,7 +248,7 @@ class LiveImageCreatorBase(LoopImageCreator):
             implantisomd5 = ""
             return
 
-        msger.run([implantisomd5, iso])
+        runner.show([implantisomd5, iso])
 
     def _stage_final_image(self):
         try:

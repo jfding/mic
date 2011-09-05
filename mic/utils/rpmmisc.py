@@ -20,6 +20,7 @@
 import os, sys, re
 import rpm
 from mic import msger
+import runner
 
 class RPMInstallCallback:
     """ Command line callback class for callbacks from the RPM library.
@@ -359,8 +360,7 @@ def getBaseArch():
         return basearch
 
 def checkRpmIntegrity(bin_rpm, package):
-    argv = [bin_rpm, "--checksig", "--nogpg", package]
-    return msger.run(argv, True)
+    return runner.quiet([bin_rpm, "--checksig", "--nogpg", package])
 
 def checkSig(ts, package):
     """ Takes a transaction set and a package, check it's sigs,

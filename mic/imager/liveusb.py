@@ -22,7 +22,7 @@ import shutil
 import re
 
 from mic import msger
-from mic.utils import misc, fs_related
+from mic.utils import misc, fs_related, runner
 from mic.utils.errors import CreatorError, MountError
 from mic.utils.partitionedfs import PartitionedMount
 
@@ -87,7 +87,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 overlaysuffix = "-%s-%s" % (diskmount.fslabel, diskmount.uuid)
 
             args = ['cp', "-Rf", isodir + "/isolinux", usbmnt + "/syslinux"]
-            rc = msger.run(args)
+            rc = runner.show(args)
             if rc:
                 raise CreatorError("Can't copy isolinux directory %s" % (isodir + "/isolinux/*"))
 
@@ -103,7 +103,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 path = os.path.join(syslinux_path, f)
                 if os.path.isfile(path):
                     args = ['cp', path, usbmnt + "/syslinux/"]
-                    rc = msger.run(args)
+                    rc = runner.show(args)
                     if rc:
                         raise CreatorError("Can't copy syslinux file %s" % (path))
                 else:
@@ -127,7 +127,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                     args = ['dd', "if=/dev/zero", "of=" + usbmnt + "/LiveOS/" + overfile, "count=%d" % overlaysizemb, "bs=1M"]
                 else:
                     args = ['dd', "if=/dev/null", "of=" + usbmnt + "/LiveOS/" + overfile, "count=1", "bs=1M", "seek=%d" % overlaysizemb]
-                rc = msger.run(args)
+                rc = runner.show(args)
                 if rc:
                     raise CreatorError("Can't create overlay file")
                 text = text.replace("liveimg", "liveimg overlay=" + usblabel)
@@ -137,11 +137,11 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 msger.info("Initializing swap file")
                 swapfile = usbmnt + "/LiveOS/" + "swap.img"
                 args = ['dd', "if=/dev/zero", "of=" + swapfile, "count=%d" % swapsizemb, "bs=1M"]
-                rc = msger.run(args)
+                rc = runner.show(args)
                 if rc:
                     raise CreatorError("Can't create swap file")
                 args = ["mkswap", "-f", swapfile]
-                rc = msger.run(args)
+                rc = runner.show(args)
                 if rc:
                     raise CreatorError("Can't mkswap on swap file")
 
@@ -152,7 +152,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                     args = ['dd', "if=/dev/zero", "of=" + homefile, "count=%d" % homesizemb, "bs=1M"]
                 else:
                     args = ['dd', "if=/dev/null", "of=" + homefile, "count=1", "bs=1M", "seek=%d" % homesizemb]
-                rc = msger.run(args)
+                rc = runner.show(args)
                 if rc:
                     raise CreatorError("Can't create home file")
 
@@ -161,13 +161,13 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                     args = [mkfscmd, "-F", "-j", homefile]
                 else:
                     args = [mkfscmd, homefile]
-                rc = msger.run(args)
+                rc = runner.show(args)
                 if rc:
                     raise CreatorError("Can't mke2fs home file")
                 if fstype == "ext2" or fstype == "ext3":
                     tune2fs = fs_related.find_binary_path("tune2fs")
                     args = [tune2fs, "-c0", "-i0", "-ouser_xattr,acl", homefile]
-                    rc = msger.run(args)
+                    rc = runner.show(args)
                     if rc:
                          raise CreatorError("Can't tune2fs home file")
 
@@ -186,7 +186,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             fd = open(syslinuxcfg, "w")
             fd.write(text)
             fd.close()
-            rc = msger.run(args)
+            rc = runner.show(args)
             if rc:
                 raise CreatorError("Can't install boot loader.")
 
@@ -205,7 +205,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
         outimg = "%s/%s.usbimg" % (self._outdir, self.name)
 
         args = ['dd', "if=" + mbrfile, "of=" + outimg, "seek=0", "conv=notrunc", "bs=1", "count=%d" % (mbrsize)]
-        rc = msger.run(args)
+        rc = runner.show(args)
         if rc:
             raise CreatorError("Can't set MBR.")
 

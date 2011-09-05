@@ -86,7 +86,7 @@ def cleanup_mounts(chrootdir):
     umountcmd = misc.find_binary_path("umount")
     for point in BIND_MOUNTS:
         args = [ umountcmd, "-l", chrootdir + point ]
-        msger.run(args, True)
+        runner.quiet(args)
 
     abs_chrootdir = os.path.abspath(chrootdir)
     with open('/proc/mounts') as f:
@@ -98,7 +98,7 @@ def cleanup_mounts(chrootdir):
                     continue
 
                 args = [ umountcmd, "-l", point ]
-                ret = msger.run(args, True)
+                ret = runner.quiet(args)
                 if ret != 0:
                     msger.warning("failed to unmount %s" % point)
                     return ret
