@@ -450,11 +450,6 @@ class Zypp(BackendPlugin):
         for repo in repos:
             if not repo.enabled():
                 continue
-            if not self.repo_manager.isCached( repo ):
-                msger.info("Retrieving repo metadata from %s ..." % repo.url())
-                self.repo_manager.buildCache( repo, zypp.RepoManager.BuildIfNeeded )
-            else:
-                self.repo_manager.refreshMetadata(repo, zypp.RepoManager.BuildIfNeeded)
             self.repo_manager.loadFromCache( repo );
 
         self.Z = zypp.ZYppFactory_instance().getZYpp()
