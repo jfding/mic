@@ -278,8 +278,6 @@ class Zypp(BackendPlugin):
         if found:
             if include == ksparser.GROUP_REQUIRED:
                 map(lambda p: self.deselectPackage(p), grp.default_packages.keys())
-            elif include == ksparser.GROUP_ALL:
-                map(lambda p: self.selectPackage(p), grp.optional_packages.keys())
             return None
         else:
             e = CreatorError("Unable to find pattern: %s" % (grp,))
