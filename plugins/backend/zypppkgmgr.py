@@ -398,10 +398,7 @@ class Zypp(BackendPlugin):
             return
 
         """ Clean up repo metadata """
-        shutil.rmtree(self.creator.cachedir + "/var", ignore_errors = True)
         shutil.rmtree(self.creator.cachedir + "/etc", ignore_errors = True)
-        shutil.rmtree(self.creator.cachedir + "/raw", ignore_errors = True)
-        shutil.rmtree(self.creator.cachedir + "/solv", ignore_errors = True)
 
         zypp.KeyRing.setDefaultAccept( zypp.KeyRing.ACCEPT_UNSIGNED_FILE
                                      | zypp.KeyRing.ACCEPT_VERIFICATION_FAILED
@@ -410,7 +407,7 @@ class Zypp(BackendPlugin):
                                      )
         self.repo_manager_options = zypp.RepoManagerOptions(zypp.Pathname(self.creator._instroot))
         self.repo_manager_options.knownReposPath = zypp.Pathname(self.creator.cachedir + "/etc/zypp/repos.d")
-        self.repo_manager_options.repoCachePath = zypp.Pathname(self.creator.cachedir + "/var/cache/zypp")
+        self.repo_manager_options.repoCachePath = zypp.Pathname(self.creator.cachedir)
         self.repo_manager_options.repoRawCachePath = zypp.Pathname(self.creator.cachedir + "/raw")
         self.repo_manager_options.repoSolvCachePath = zypp.Pathname(self.creator.cachedir + "/solv")
         self.repo_manager_options.repoPackagesCachePath = zypp.Pathname(self.creator.cachedir + "/packages")
