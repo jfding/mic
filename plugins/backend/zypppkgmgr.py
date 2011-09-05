@@ -415,17 +415,10 @@ class Zypp(BackendPlugin):
         self.repo_manager = zypp.RepoManager(self.repo_manager_options)
 
     def __build_repo_cache(self, name):
-        repos = self.repo_manager.knownRepositories()
-        for repo in repos:
-            if not repo.enabled():
-                continue
-            reponame = "%s" % repo.name()
-            if reponame != name:
-                continue
-            if self.repo_manager.isCached( repo ):
-                return
-
-            self.repo_manager.buildCache(repo, zypp.RepoManager.BuildIfNeeded)
+        repo = self.repo_manager.getRepositoryInfo(name)
+        if self.repo_manager.isCached( repo ) or not repo.enabled():
+            return
+        self.repo_manager.buildCache( repo, zypp.RepoManager.BuildIfNeeded )
 
     def __initialize_zypp(self):
         if self.Z:
