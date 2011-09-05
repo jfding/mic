@@ -499,7 +499,7 @@ class ExtDiskMount(DiskMount):
             msger.debug("Skip filesystem format.")
             return
 
-        msger.info("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
+        msger.verbose("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
         rc = msger.run([self.mkfscmd,
                         "-F", "-L", self.fslabel,
                         "-m", "1", "-b", str(self.blocksize),
@@ -607,11 +607,13 @@ class VfatDiskMount(DiskMount):
         if self.skipformat:
             msger.debug("Skip filesystem format.")
             return
-        msger.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
+
+        msger.verbose("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
         rc = msger.run([self.mkfscmd, "-n", self.fslabel, "-i", self.uuid, self.disk.device])
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))
-        msger.debug("Tuning filesystem on %s" % self.disk.device)
+
+        msger.verbose("Tuning filesystem on %s" % self.disk.device)
 
     def __resize_filesystem(self, size = None):
         current_size = os.stat(self.disk.lofile)[stat.ST_SIZE]
@@ -710,7 +712,8 @@ class BtrfsDiskMount(DiskMount):
         if self.skipformat:
             msger.debug("Skip filesystem format.")
             return
-        msger.debug("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
+
+        msger.verbose("Formating %s filesystem on %s" % (self.fstype, self.disk.device))
         rc = msger.run([self.mkfscmd, "-L", self.fslabel, self.disk.device])
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))

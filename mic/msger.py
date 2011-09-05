@@ -190,16 +190,18 @@ def run(cmdln_or_args, q=False):
 
     from subprocess import *
     if isinstance(cmdln_or_args, list):
-        cmdln = ' '.join(cmdln_or_args)
+        args = cmdln_or_args
     else:
-        cmdln = cmdln_or_args
+        import shlex
+        args = shlex.split(cmdln_or_args)
 
-    p = Popen(cmdln, stdout=PIPE, stderr=PIPE, shell=True)
+    p = Popen(args, stdout=PIPE, stderr=PIPE)
     out = p.communicate()[0].strip()
 
     if not q:
-        msg =  'running command: "%s"' % cmdln
+        msg =  'running command: "%s"' % ' '.join(args)
         if out:
+            msg += ', with output::'
             msg += '\n  +----------------'
             for line in out.splitlines():
                 msg += '\n  | %s' % line

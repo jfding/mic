@@ -115,11 +115,13 @@ class PartitionedMount(Mount):
         if fstype:
             part_cmd.extend([fstype])
         part_cmd.extend(["%d" % start, "%d" % end])
+
         msger.debug(part_cmd)
         p1 = subprocess.Popen(part_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        (out,err) = p1.communicate()
-        msger.debug(out)
-        return p1
+        out = p1.communicate()[0].strip()
+        if out:
+            msger.debug('"parted" output: %s' % out)
+        return p1.returncode
 
     def __format_disks(self):
         msger.debug("Assigning partitions to disks")
@@ -163,8 +165,9 @@ class PartitionedMount(Mount):
             msger.debug("Initializing partition table for %s" % (d['disk'].device))
             p1 = subprocess.Popen([self.parted, "-s", d['disk'].device, "mklabel", "msdos"],
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            (out,err) = p1.communicate()
-            msger.debug(out)
+            out = p1.communicate()[0].strip()
+            if out:
+                msger.debug('"parted" output: %s' % out)
 
             if p1.returncode != 0:
                 # NOTE: We don't throw exception when return code is not 0, because
@@ -195,11 +198,11 @@ class PartitionedMount(Mount):
                 msger.debug("Substracting one sector from '%s' partition to get even number of sectors for the partition." % (p['mountpoint']))
                 p['size'] -= 1
 
-            p1 = self.__create_part_to_image(d['disk'].device,p['type'],
+            ret = self.__create_part_to_image(d['disk'].device,p['type'],
                                              parted_fs_type, p['start'],
                                              p['size'])
 
-            if p1.returncode != 0:
+            if ret != 0:
                 # NOTE: We don't throw exception when return code is not 0, because
                 # parted always fails to reload part table with loop devices.
                 # This prevents us from distinguishing real errors based on return code.
