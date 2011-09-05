@@ -531,7 +531,22 @@ class Zypp(BackendPlugin):
             self.ts.closeDB()
             self.ts = None
         else:
-            msger.warning(unresolved_dependencies)
+            for pkg, need, needflags, sense, key in unresolved_dependencies:
+                package = '-'.join(pkg)
+                if needflags == rpm.RPMSENSE_LESS:
+                    deppkg = ' < '.join(need)
+                elif needflags == rpm.RPMSENSE_EQUAL:
+                    deppkg = ' = '.join(need)
+                elif needflags == rpm.RPMSENSE_GREATER:
+                    deppkg = ' > '.join(need)
+                else:
+                    deppkg = '-'.join(need)
+
+                if sense == rpm.RPMDEP_SENSE_REQUIRES:
+                    msger.warning ("[%s] Requires [%s], which is not provided" % (package, deppkg))
+                elif sense == rpm.RPMDEP_SENSE_CONFLICTS:
+                    msger.warning ("[%s] Conflicts with [%s]" % (package, deppkg))
+
             raise RepoError("Unresolved dependencies, transaction failed.")
 
     def __initialize_transaction(self):
