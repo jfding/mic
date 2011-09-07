@@ -45,9 +45,7 @@ class LoopPlugin(ImagerPlugin):
         if not args:
             raise errors.Usage("More arguments needed")
 
-        if len(args) == 1:
-            ksconf = args[0]
-        else:
+        if len(args) != 1:
             raise errors.Usage("Extra arguments given")
 
         try:
@@ -60,7 +58,7 @@ class LoopPlugin(ImagerPlugin):
 
         cfgmgr = configmgr.getConfigMgr()
         creatoropts = cfgmgr.create
-        cfgmgr.setProperty("ksconf", ksconf)
+        cfgmgr._ksconf = args[0]
 
         # try to find the pkgmgr
         pkgmgr = None

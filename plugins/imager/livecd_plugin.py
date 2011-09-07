@@ -40,14 +40,12 @@ class LiveCDPlugin(ImagerPlugin):
         if not args:
             raise errors.Usage("More arguments needed")
 
-        if len(args) == 1:
-            ksconf = args[0]
-        else:
+        if len(args) != 1:
             raise errors.Usage("Extra arguments given")
 
         cfgmgr = configmgr.getConfigMgr()
-        cfgmgr.setProperty("ksconf", ksconf)
         creatoropts = cfgmgr.create
+        cfgmgr._ksconf = args[0]
 
         if creatoropts['arch'] and creatoropts['arch'].startswith('arm'):
             msger.warning('livecd cannot support arm images, Quit')

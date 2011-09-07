@@ -63,7 +63,6 @@ class BaseImageCreator(object):
         if createopts:
             # A pykickstart.KickstartParser instance."""
             self.ks = createopts['ks']
-            self.repometadata = createopts['repomd']
 
             # A name for the image."""
             self.name = createopts['name']
@@ -80,7 +79,6 @@ class BaseImageCreator(object):
 
         else:
             self.ks = None
-            self.repometadata = None
             self.name = "target"
             self.tmpdir = "/var/tmp/mic"
             self.cachedir = "/var/tmp/mic/cache"

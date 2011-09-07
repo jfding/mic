@@ -20,10 +20,10 @@
 import os, sys
 import ConfigParser
 
-from mic.utils import misc
-from mic.utils import errors
 from mic import kickstart
 from mic import msger
+from mic.utils import misc
+from mic.utils import errors
 
 DEFAULT_GSITECONF='/etc/mic/mic.conf'
 
@@ -36,7 +36,7 @@ DEFAULT_CREATE = {
     "cachedir": DEFAULT_CACHEDIR,
     "outdir": DEFAULT_OUTDIR,
     "arch": None,
-    "pkgmgr": "zypp",
+    "pkgmgr": "yum",
     "name": "output",
     "ksfile": None,
     "ks": None,
@@ -50,7 +50,7 @@ class ConfigMgr(object):
         self.create = {}
         self.convert = {}
         self.chroot = {}
-        self.ksconf = None
+        self.__ksconf = None
         self.siteconf = None
 
         # initial create
@@ -61,8 +61,6 @@ class ConfigMgr(object):
         self._siteconf = siteconf
         if not self.siteconf:
             self._siteconf = DEFAULT_GSITECONF
-
-        self._ksconf = ksconf
 
     def __set_siteconf(self, siteconf):
         try:
@@ -75,10 +73,10 @@ class ConfigMgr(object):
     _siteconf = property(__get_siteconf, __set_siteconf)
 
     def __set_ksconf(self, ksconf):
-        self.ksconf = ksconf
+        self.__ksconf = ksconf
         self.parse_kickstart(ksconf)
     def __get_ksconf(self):
-        return self.ksconf
+        return self.__ksconf
     _ksconf = property(__get_ksconf, __set_ksconf)
 
     def parse_siteconf(self, siteconf = None):
@@ -112,74 +110,14 @@ class ConfigMgr(object):
             return
 
         ks = kickstart.read_kickstart(ksconf)
-        ksrepos = misc.get_repostrs_from_ks(ks)
-
-        msger.info("Retrieving repo metadata:")
-        repometadata = misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
-        msger.raw(" DONE")
 
         self.create['ks'] = ks
-        self.create['repomd'] = repometadata
         self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
 
-    def setProperty(self, key, value):
-        if not hasattr(self, key):
-            return False
-
-        if key == 'ksconf':
-            self._ksconf = value
-            return True
-
-        if key == 'siteconf':
-            self._siteconf = value
-            return True
-
-        return setattr(self, key, value)
-
-    def getProperty(self, key):
-        if not hasattr(self, key):
-            return None
-
-        return getattr(self, key)
-
-    def setCategoryProperty(self, category, key, value):
-        if not hasattr(self, category):
-            raise errors.ConfigError("Error to parse %s", category)
-        categ = getattr(self, category)
-        categ[key] = value
-
-    def getCategoryProperty(self, category, key):
-        if not hasattr(self, category):
-            raise errors.ConfigError("Error to parse %s", category)
-        categ = getattr(self, category)
-        return categ[key]
-
-    def getCreateOption(self, key):
-        if not self.create.has_key(key):
-            raise errors.ConfigError("Attribute Error: not such attribe %s" % key)
-        return self.create[key]
-
-    def getConvertOption(self, key):
-        if not self.convert.has_key(key):
-            raise errors.ConfigError("Attribute Error: not such attribe %s" % key)
-        return self.convert[key]
-
-    def getChrootOption(self, key):
-        if not self.chroot.has_key(key):
-            raise errors.ConfigError("Attribute Error: not such attribe %s" % key)
-        return self.chroot[key]
-
-    def dumpAllConfig(self):
-        # just for debug
-        msger.debug("create options:\n")
-        for key in self.create.keys():
-            msger.debug("%-8s= %s\n" % (key, self.create[key]))
-        msger.debug("convert options:\n")
-        for key in self.convert.keys():
-            msger.debug("%-8s= %s\n" % (key, self.ccnvert[key]))
-        msger.debug("chroot options:\n")
-        for key in self.chroot.keys():
-            msger.debug("%-8s= %s\n" % (key, self.chroot[key]))
+        msger.info("Retrieving repo metadata:")
+        ksrepos = misc.get_repostrs_from_ks(ks)
+        self.create['repomd'] = misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
+        msger.raw(" DONE")
 
 def getConfigMgr():
     return configmgr
