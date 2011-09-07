@@ -5,6 +5,8 @@
 # Copyright 2008, Daniel P. Berrange
 # Copyright 2008,  David P. Huff
 #
+# Copyright 2009, 2010, 2011 Intel, Inc.
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; version 2 of the License.
@@ -19,14 +21,11 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os
-import glob
-import shutil
-import subprocess
-import time
 
-from mic.utils.errors import *
-from mic.utils.fs_related import *
 from mic import msger
+from mic.utils import runner
+from mic.utils.errors import MountError
+from mic.utils.fs_related import *
 
 class PartitionedMount(Mount):
     def __init__(self, disks, mountdir, skipformat = False):
@@ -117,11 +116,11 @@ class PartitionedMount(Mount):
         part_cmd.extend(["%d" % start, "%d" % end])
 
         msger.debug(part_cmd)
-        p1 = subprocess.Popen(part_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out = p1.communicate()[0].strip()
+        rc, out = runner.runtool(part_cmd, catch=3)
+        out = out.strip()
         if out:
             msger.debug('"parted" output: %s' % out)
-        return p1.returncode
+        return rc
 
     def __format_disks(self):
         msger.debug("Assigning partitions to disks")
@@ -163,13 +162,12 @@ class PartitionedMount(Mount):
         for dev in self.disks.keys():
             d = self.disks[dev]
             msger.debug("Initializing partition table for %s" % (d['disk'].device))
-            p1 = subprocess.Popen([self.parted, "-s", d['disk'].device, "mklabel", "msdos"],
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            out = p1.communicate()[0].strip()
+            rc, out = runner.runtool([self.parted, "-s", d['disk'].device, "mklabel", "msdos"], catch=3)
+            out = out.strip()
             if out:
                 msger.debug('"parted" output: %s' % out)
 
-            if p1.returncode != 0:
+            if rc != 0:
                 # NOTE: We don't throw exception when return code is not 0, because
                 # parted always fails to reload part table with loop devices.
                 # This prevents us from distinguishing real errors based on return code.
@@ -212,35 +210,28 @@ class PartitionedMount(Mount):
                 msger.debug("Setting boot flag for partition '%s' on disk '%s'." % (p['num'],d['disk'].device))
                 boot_cmd = [self.parted, "-s", d['disk'].device, "set", "%d" % p['num'], "boot", "on"]
                 msger.debug(boot_cmd)
-                p1 = subprocess.Popen(boot_cmd,
-                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                (out,err) = p1.communicate()
-                msger.debug(out)
+                rc = runner.show(boot_cmd)
 
-                if p1.returncode != 0:
+                if rc != 0:
                     # NOTE: We don't throw exception when return code is not 0, because
                     # parted always fails to reload part table with loop devices.
                     # This prevents us from distinguishing real errors based on return code.
-                    msger.debug("WARNING: parted returned '%s' instead of 0 when adding boot flag for partition '%s' disk '%s'." % (p1.returncode,p['num'],d['disk'].device))
+                    msger.warning("parted returned '%s' instead of 0 when adding boot flag for partition '%s' disk '%s'." % (rc,p['num'],d['disk'].device))
 
     def __map_partitions(self):
         """Load it if dm_snapshot isn't loaded"""
         load_module("dm_snapshot")
 
-        dev_null = os.open("/dev/null", os.O_WRONLY)
         for dev in self.disks.keys():
             d = self.disks[dev]
             if d['mapped']:
                 continue
 
             msger.debug("Running kpartx on %s" % d['disk'].device )
-            kpartx = subprocess.Popen([self.kpartx, "-l", "-v", d['disk'].device],
-                                      stdout=subprocess.PIPE, stderr=dev_null)
+            rc, kpartxOutput = runner.runtool([self.kpartx, "-l", "-v", d['disk'].device])
+            kpartxOutput = kpartxOutput.splitlines()
 
-            kpartxOutput = kpartx.communicate()[0].strip().split("\n")
-
-            if kpartx.returncode:
-                os.close(dev_null)
+            if rc != 0:
                 raise MountError("Failed to query partition mapping for '%s'" %
                                  d['disk'].device)
 
@@ -254,7 +245,6 @@ class PartitionedMount(Mount):
             # our expectation. If it doesn't, someone broke the code
             # further up
             if len(kpartxOutput) != d['numpart']:
-                os.close(dev_null)
                 raise MountError("Unexpected number of partitions from kpartx: %d != %d" %
                                  (len(kpartxOutput), d['numpart']))
 
@@ -277,27 +267,19 @@ class PartitionedMount(Mount):
                 os.symlink(mapperdev, loopdev)
 
             msger.debug("Adding partx mapping for %s" % d['disk'].device)
-            p1 = subprocess.Popen([self.kpartx, "-v", "-a", d['disk'].device],
-                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            rc = runner.show([self.kpartx, "-v", "-a", d['disk'].device])
 
-            (out,err) = p1.communicate()
-            msger.debug(out)
-
-            if p1.returncode != 0:
+            if rc != 0:
                 # Make sure that the device maps are also removed on error case.
                 # The d['mapped'] isn't set to True if the kpartx fails so
                 # failed mapping will not be cleaned on cleanup either.
-                subprocess.call([self.kpartx, "-d", d['disk'].device],
-                                stdout=dev_null, stderr=dev_null)
-                os.close(dev_null)
+                runner.quiet([self.kpartx, "-d", d['disk'].device])
                 raise MountError("Failed to map partitions for '%s'" %
                                  d['disk'].device)
-            d['mapped'] = True
-        os.close(dev_null)
 
+            d['mapped'] = True
 
     def __unmap_partitions(self):
-        dev_null = os.open("/dev/null", os.O_WRONLY)
         for dev in self.disks.keys():
             d = self.disks[dev]
             if not d['mapped']:
@@ -310,16 +292,12 @@ class PartitionedMount(Mount):
                     self.partitions[pnum]['device'] = None
 
             msger.debug("Unmapping %s" % d['disk'].device)
-            rc = subprocess.call([self.kpartx, "-d", d['disk'].device],
-                                 stdout=dev_null, stderr=dev_null)
+            rc = runner.quiet([self.kpartx, "-d", d['disk'].device])
             if rc != 0:
-                os.close(dev_null)
                 raise MountError("Failed to unmap partitions for '%s'" %
                                  d['disk'].device)
 
             d['mapped'] = False
-            os.close(dev_null)
-
 
     def __calculate_mountorder(self):
         msger.debug("Calculating mount order")
@@ -367,15 +345,17 @@ class PartitionedMount(Mount):
         if not self.btrfscmd:
             self.btrfscmd=find_binary_path("btrfs")
         argv = [ self.btrfscmd, "subvolume", "list", rootpath ]
-        p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        (out,err) = p1.communicate()
+
+        rc, out = runner.runtool(argv)
         msger.debug(out)
-        if p1.returncode != 0:
-            raise MountError("Failed to get subvolume id from %s', return code: %d." % (rootpath, p1.returncode))
+
+        if rc != 0:
+            raise MountError("Failed to get subvolume id from %s', return code: %d." % (rootpath, rc))
+
         subvolid = -1
-        for line in out.split("\n"):
+        for line in out.splitlines():
             if line.endswith(" path %s" % subvol):
-                subvolid = line.split(" ")[1]
+                subvolid = line.split()[1]
                 if not subvolid.isdigit():
                     raise MountError("Invalid subvolume id: %s" % subvolid)
                 subvolid = int(subvolid)
@@ -385,20 +365,23 @@ class PartitionedMount(Mount):
     def __create_subvolume_metadata(self, p, pdisk):
         if len(self.subvolumes) == 0:
             return
+
         argv = [ self.btrfscmd, "subvolume", "list", pdisk.mountdir ]
-        p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        (out,err) = p1.communicate()
+        rc, out = runner.runtool(argv)
         msger.debug(out)
-        if p1.returncode != 0:
-            raise MountError("Failed to get subvolume id from %s', return code: %d." % (pdisk.mountdir, p1.returncode))
-        subvolid_items = out.split("\n")
+
+        if rc != 0:
+            raise MountError("Failed to get subvolume id from %s', return code: %d." % (pdisk.mountdir, rc))
+
+        subvolid_items = out.splitlines()
         subvolume_metadata = ""
         for subvol in self.subvolumes:
             for line in subvolid_items:
                 if line.endswith(" path %s" % subvol["subvol"]):
-                    subvolid = line.split(" ")[1]
+                    subvolid = line.split()[1]
                     if not subvolid.isdigit():
                         raise MountError("Invalid subvolume id: %s" % subvolid)
+
                     subvolid = int(subvolid)
                     opts = subvol["fsopts"].split(",")
                     for opt in opts:
@@ -407,6 +390,7 @@ class PartitionedMount(Mount):
                             break
                     fsopts = ",".join(opts)
                     subvolume_metadata += "%d\t%s\t%s\t%s\n" % (subvolid, subvol["subvol"], subvol['mountpoint'], fsopts)
+
         if subvolume_metadata:
             fd = open("%s/.subvolume_metadata" % pdisk.mountdir, "w")
             fd.write(subvolume_metadata)
@@ -416,10 +400,12 @@ class PartitionedMount(Mount):
         subvolume_metadata_file = "%s/.subvolume_metadata" % pdisk.mountdir
         if not os.path.exists(subvolume_metadata_file):
             return
+
         fd = open(subvolume_metadata_file, "r")
         content = fd.read()
         fd.close()
-        for line in content.split("\n"):
+
+        for line in content.splitlines():
             items = line.split("\t")
             if items and len(items) == 4:
                 self.subvolumes.append({'size': 0, # In sectors
@@ -436,13 +422,13 @@ class PartitionedMount(Mount):
 
     def __create_subvolumes(self, p, pdisk):
         """ Create all the subvolumes """
+
         for subvol in self.subvolumes:
             argv = [ self.btrfscmd, "subvolume", "create", pdisk.mountdir + "/" + subvol["subvol"]]
-            p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            (out,err) = p1.communicate()
-            msger.debug(out)
-            if p1.returncode != 0:
-                raise MountError("Failed to create subvolume '%s', return code: %d." % (subvol["subvol"], p1.returncode))
+
+            rc = runner.show(argv)
+            if rc != 0:
+                raise MountError("Failed to create subvolume '%s', return code: %d." % (subvol["subvol"], rc))
 
         """ Set default subvolume, subvolume for "/" is default """
         subvol = None
@@ -450,17 +436,15 @@ class PartitionedMount(Mount):
             if subvolume["mountpoint"] == "/" and p["disk"] == subvolume["disk"]:
                 subvol = subvolume
                 break
+
         if subvol:
             """ Get default subvolume id """
             subvolid = self. __get_subvolume_id(pdisk.mountdir, subvol["subvol"])
             """ Set default subvolume """
             if subvolid != -1:
-                argv = [ self.btrfscmd, "subvolume", "set-default", "%d" % subvolid, pdisk.mountdir]
-                p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                (out,err) = p1.communicate()
-                msger.debug(out)
-                if p1.returncode != 0:
-                    raise MountError("Failed to set default subvolume id: %d', return code: %d." % (subvolid, p1.returncode))
+                rc = runner.show([ self.btrfscmd, "subvolume", "set-default", "%d" % subvolid, pdisk.mountdir])
+                if rc != 0:
+                    raise MountError("Failed to set default subvolume id: %d', return code: %d." % (subvolid, rc))
 
         self.__create_subvolume_metadata(p, pdisk)
 
@@ -485,12 +469,14 @@ class PartitionedMount(Mount):
             return
 
         """ Remount to make default subvolume mounted """
-        rc = subprocess.call([self.umountcmd, pdisk.mountdir])
+        rc = runner.show([self.umountcmd, pdisk.mountdir])
         if rc != 0:
             raise MountError("Failed to umount %s" % pdisk.mountdir)
-        rc = subprocess.call([self.mountcmd, "-o", pdisk.fsopts, pdisk.disk.device, pdisk.mountdir])
+
+        rc = runner.show([self.mountcmd, "-o", pdisk.fsopts, pdisk.disk.device, pdisk.mountdir])
         if rc != 0:
             raise MountError("Failed to umount %s" % pdisk.mountdir)
+
         for subvol in self.subvolumes:
             if subvol["mountpoint"] == "/":
                 continue
@@ -510,7 +496,7 @@ class PartitionedMount(Mount):
             subvol['fsopts'] = fsopts
             mountpoint = self.mountdir + subvol['mountpoint']
             makedirs(mountpoint)
-            rc = subprocess.call([self.mountcmd, "-o", fsopts, pdisk.disk.device, mountpoint])
+            rc = runner.show([self.mountcmd, "-o", fsopts, pdisk.disk.device, mountpoint])
             if rc != 0:
                 raise MountError("Failed to mount subvolume %s to %s" % (subvol["subvol"], mountpoint))
             subvol["mounted"] = True
@@ -523,24 +509,26 @@ class PartitionedMount(Mount):
             if not subvol["mounted"]:
                 continue
             mountpoint = self.mountdir + subvol['mountpoint']
-            rc = subprocess.call([self.umountcmd, mountpoint])
+            rc = runner.show([self.umountcmd, mountpoint])
             if rc != 0:
                 raise MountError("Failed to unmount subvolume %s from %s" % (subvol["subvol"], mountpoint))
             subvol["mounted"] = False
 
     def __create_subvolume_snapshots(self, p, pdisk):
+        import time
+
         if self.snapshot_created:
             return
 
         """ Remount with subvolid=0 """
-        rc = subprocess.call([self.umountcmd, pdisk.mountdir])
+        rc = runner.show([self.umountcmd, pdisk.mountdir])
         if rc != 0:
             raise MountError("Failed to umount %s" % pdisk.mountdir)
         if pdisk.fsopts:
             mountopts = pdisk.fsopts + ",subvolid=0"
         else:
             mountopts = "subvolid=0"
-        rc = subprocess.call([self.mountcmd, "-o", mountopts, pdisk.disk.device, pdisk.mountdir])
+        rc = runner.show([self.mountcmd, "-o", mountopts, pdisk.disk.device, pdisk.mountdir])
         if rc != 0:
             raise MountError("Failed to umount %s" % pdisk.mountdir)
 
@@ -549,12 +537,10 @@ class PartitionedMount(Mount):
         for subvol in self.subvolumes:
             subvolpath = pdisk.mountdir + "/" + subvol["subvol"]
             snapshotpath = subvolpath + "_%s-1" % snapshotts
-            argv = [ self.btrfscmd, "subvolume", "snapshot", subvolpath, snapshotpath ]
-            p1 = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            (out,err) = p1.communicate()
-            msger.debug(out)
-            if p1.returncode != 0:
-                raise MountError("Failed to create subvolume snapshot '%s' for '%s', return code: %d." % (snapshotpath, subvolpath, p1.returncode))
+            rc = runner.show([ self.btrfscmd, "subvolume", "snapshot", subvolpath, snapshotpath ])
+            if rc != 0:
+                raise MountError("Failed to create subvolume snapshot '%s' for '%s', return code: %d." % (snapshotpath, subvolpath, rc))
+
         self.snapshot_created = True
 
     def mount(self):
@@ -574,7 +560,7 @@ class PartitionedMount(Mount):
                     break
 
             if mp == 'swap':
-                subprocess.call([self.mkswap, p['device']])
+                runner.show([self.mkswap, p['device']])
                 continue
 
             rmmountdir = False

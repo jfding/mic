@@ -84,8 +84,6 @@ class RawPlugin(ImagerPlugin):
 
     @classmethod
     def do_chroot(cls, target):
-        import subprocess
-
         img = target
         imgsize = misc.get_file_size(img) * 1024L * 1024L
         partedcmd = fs_related.find_binary_path("parted")
@@ -97,12 +95,7 @@ class RawPlugin(ImagerPlugin):
         # Check the partitions from raw disk.
         root_mounted = False
         partition_mounts = 0
-        for line in subprocess.Popen([partedcmd,"-s",img,"unit","B","print"],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)\
-                                             .communicate()[0]\
-                                             .strip()\
-                                             .splitlines():
-
+        for line in runner.outs([partedcmd,"-s",img,"unit","B","print"]).splitlines():
             line = line.strip()
 
             # Lines that start with number are the partitions,

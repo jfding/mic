@@ -18,14 +18,12 @@
 #
 
 from __future__ import with_statement
-import os, sys
+import os
 import shutil
 import subprocess
 
-import mic.utils.fs_related as fs_related
-import mic.utils.misc as misc
-import mic.utils.errors as errors
 from mic import msger
+from mic.utils import misc, errors, runner, fs_related
 
 chroot_lockfd = -1
 chroot_lock = ""
@@ -259,11 +257,7 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
         if not os.path.exists(ftc):
             continue
 
-        filecmd = misc.find_binary_path("file")
-
-        for line in subprocess.Popen([filecmd, ftc],
-                                     stdout=subprocess.PIPE,
-                                     stderr=dev_null).communicate()[0].strip().splitlines():
+        for line in runner.outs(['file', ftc]).splitlines():
             if 'ARM' in line:
                 qemu_emulator = misc.setup_qemu_emulator(chrootdir, "arm")
                 architecture_found = True
@@ -285,8 +279,8 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
         globalmounts = setup_chrootenv(chrootdir, bindmounts)
         subprocess.call(execute, preexec_fn = mychroot, shell=True)
 
-    except OSError, (err, msg):
-        raise errors.CreatorError("Failed to chroot: %s" % msg)
+    except OSError, err:
+        raise errors.CreatorError("chroot err: %s" % str(err))
 
     finally:
         cleanup_chrootenv(chrootdir, bindmounts, globalmounts)

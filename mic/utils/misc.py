@@ -18,7 +18,6 @@
 
 import os
 import sys
-import subprocess
 import tempfile
 import re
 import shutil
@@ -39,6 +38,7 @@ xmlparse = cElementTree.parse
 from errors import *
 from fs_related import *
 from proxy import get_proxy_for
+import runner
 
 from mic import msger
 
@@ -85,12 +85,7 @@ def get_image_type(path):
     if file_header[0:len(vdi_flag)] == vdi_flag:
         return maptab["vdi"]
 
-    dev_null = os.open("/dev/null", os.O_WRONLY)
-    filecmd = find_binary_path("file")
-    args = [ filecmd, path ]
-    file = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=dev_null)
-    output = file.communicate()[0]
-    os.close(dev_null)
+    output = runner.outs(['file', path])
     isoptn = re.compile(r".*ISO 9660 CD-ROM filesystem.*(bootable).*")
     usbimgptn = re.compile(r".*x86 boot sector.*active.*")
     rawptn = re.compile(r".*x86 boot sector.*")
@@ -111,23 +106,16 @@ def get_image_type(path):
 
 def get_file_size(file):
     """Return size in MB unit"""
-    du = find_binary_path("du")
-    dev_null = os.open("/dev/null", os.O_WRONLY)
-    duProc = subprocess.Popen([du, "-s", "-b", "-B", "1M", file],
-                               stdout=subprocess.PIPE, stderr=dev_null)
-    duOutput = duProc.communicate()[0]
-    if duProc.returncode:
+    rc, duOutput  = runner.runtool(['du', "-s", "-b", "-B", "1M", file])
+    if rc != 0:
         raise CreatorError("Failed to run %s" % du)
 
     size1 = int(duOutput.split()[0])
-    duProc = subprocess.Popen([du, "-s", "-B", "1M", file],
-                               stdout=subprocess.PIPE, stderr=dev_null)
-    duOutput = duProc.communicate()[0]
-    if duProc.returncode:
+    rc, duOutput = runner.runtool(['du', "-s", "-B", "1M", file])
+    if rc != 0:
         raise CreatorError("Failed to run %s" % du)
 
     size2 = int(duOutput.split()[0])
-    os.close(dev_null)
     if size1 > size2:
         return size1
     else:
@@ -151,7 +139,7 @@ def convert_image(srcimg, srcfmt, dstimg, dstfmt):
     else:
         raise CreatorError("Invalid soure image format: %s" % srcfmt)
 
-    rc = subprocess.call(argv)
+    rc = runner.show(argv)
     if rc == 0:
         msger.debug("convert successful")
     if rc != 0:
@@ -161,7 +149,7 @@ def uncompress_squashfs(squashfsimg, outdir):
     """Uncompress file system from squshfs image"""
     unsquashfs = find_binary_path("unsquashfs")
     args = [ unsquashfs, "-d", outdir, squashfsimg ]
-    rc = subprocess.call(args)
+    rc = runner.show(args)
     if (rc != 0):
         raise SquashfsError("Failed to uncompress %s." % squashfsimg)
 
@@ -215,11 +203,11 @@ def get_uncompressed_data_from_url(url, filename, proxies):
     if filename.endswith(".gz"):
         suffix = ".gz"
         gunzip = find_binary_path('gunzip')
-        subprocess.call([gunzip, "-f", filename])
+        runner.show([gunzip, "-f", filename])
     elif filename.endswith(".bz2"):
         suffix = ".bz2"
         bunzip2 = find_binary_path('bunzip2')
-        subprocess.call([bunzip2, "-f", filename])
+        runner.show([bunzip2, "-f", filename])
     if suffix:
         filename = filename.replace(suffix, "")
     return filename
@@ -416,6 +404,8 @@ def get_source_name(pkg, repometadata):
         return None
 
 def get_release_no(repometadata, distro="meego"):
+    import subprocess
+
     cpio = find_binary_path("cpio")
     rpm2cpio = find_binary_path("rpm2cpio")
     release_pkg = get_package("%s-release" % distro, repometadata)
@@ -559,25 +549,16 @@ def get_pkglist_in_comps(group, comps):
     return pkglist
 
 def is_statically_linked(binary):
-    ret = False
-    dev_null = os.open("/dev/null", os.O_WRONLY)
-    filecmd = find_binary_path("file")
-    args = [ filecmd, binary ]
-    file = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=dev_null)
-    output = file.communicate()[0]
-    os.close(dev_null)
-    if output.find(", statically linked, ") > 0:
-        ret = True
-    return ret
+    return ", statically linked, " in runner.outs(['file', binary])
 
 def setup_qemu_emulator(rootdir, arch):
     # mount binfmt_misc if it doesn't exist
     if not os.path.exists("/proc/sys/fs/binfmt_misc"):
         modprobecmd = find_binary_path("modprobe")
-        subprocess.call([modprobecmd, "binfmt_misc"])
+        runner.show([modprobecmd, "binfmt_misc"])
     if not os.path.exists("/proc/sys/fs/binfmt_misc/register"):
         mountcmd = find_binary_path("mount")
-        subprocess.call([mountcmd, "-t", "binfmt_misc", "none", "/proc/sys/fs/binfmt_misc"])
+        runner.show([mountcmd, "-t", "binfmt_misc", "none", "/proc/sys/fs/binfmt_misc"])
 
     # qemu_emulator is a special case, we can't use find_binary_path
     # qemu emulator should be a statically-linked executable file
@@ -592,7 +573,8 @@ def setup_qemu_emulator(rootdir, arch):
 
     # disable selinux, selinux will block qemu emulator to run
     if os.path.exists("/usr/sbin/setenforce"):
-        subprocess.call(["/usr/sbin/setenforce", "0"])
+        msger.info('Try to disable selinux')
+        runner.show(["/usr/sbin/setenforce", "0"])
 
     node = "/proc/sys/fs/binfmt_misc/arm"
     if is_statically_linked(qemu_emulator) and os.path.exists(node):
@@ -632,7 +614,7 @@ def create_release(config, destdir, name, outimages, release):
         shutil.rmtree(thatsubdir, ignore_errors = True)
 
     """ Create release directory and files """
-    os.system ("cp %s %s/%s.ks" % (config, destdir, name))
+    runner.show("cp %s %s/%s.ks" % (config, destdir, name))
     # When building a release we want to make sure the .ks
     # file generates the same build even when --release= is not used.
     fd = open(config, "r")
@@ -645,11 +627,10 @@ def create_release(config, destdir, name, outimages, release):
     outimages.append("%s/%s.ks" % (destdir,name))
 
     # Using system + mv, because of * in filename.
-    os.system ("mv %s/*-pkgs.txt %s/%s.packages" % (destdir, destdir, name))
+    runner.show("mv %s/*-pkgs.txt %s/%s.packages" % (destdir, destdir, name))
     outimages.append("%s/%s.packages" % (destdir,name))
 
-    d = os.listdir(destdir)
-    for f in d:
+    for f in os.listdir(destdir):
         if f.endswith(".iso"):
             ff = f.replace(".iso", ".img")
             os.rename("%s/%s" %(destdir, f ), "%s/%s" %(destdir, ff))
@@ -659,19 +640,17 @@ def create_release(config, destdir, name, outimages, release):
             os.rename("%s/%s" %(destdir, f ), "%s/%s" %(destdir, ff))
             outimages.append("%s/%s" %(destdir, ff))
 
-    fd = open(destdir + "/MANIFEST", "w")
-    d = os.listdir(destdir)
-    for f in d:
-        if f == "MANIFEST":
-            continue
-        if os.path.exists("/usr/bin/md5sum"):
-            p = subprocess.Popen(["/usr/bin/md5sum", "-b", "%s/%s" %(destdir, f )],
-                             stdout=subprocess.PIPE)
-            (md5sum, errorstr) = p.communicate()
-            if p.returncode != 0:
+    if os.path.exists("/usr/bin/md5sum"):
+        fd = open(destdir + "/MANIFEST", "w")
+        for f in os.listdir(destdir):
+            if f == "MANIFEST":
+                continue
+
+            rc, md5sum = runner.runtool(["/usr/bin/md5sum", "-b", "%s/%s" %(destdir, f )])
+            if rc != 0:
                 msger.warning("Can't generate md5sum for image %s/%s" %(destdir, f ))
             else:
-                md5sum = md5sum.split(" ")[0]
+                md5sum = md5sum.lstrip().split()[0]
                 fd.write(md5sum+" "+f+"\n")
 
     outimages.append("%s/MANIFEST" % destdir)

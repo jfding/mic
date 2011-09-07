@@ -21,7 +21,6 @@ import os
 import sys
 import errno
 import stat
-import subprocess
 import random
 import string
 import time
@@ -109,26 +108,22 @@ def resize2fs(fs, size):
     resize2fs = find_binary_path("resize2fs")
     return runner.quiet([resize2fs, fs, "%sK" % (size / 1024,)])
 
-def my_fuser(file):
-    ret = False
+def my_fuser(fp):
     fuser = find_binary_path("fuser")
-    if not os.path.exists(file):
-        return ret
+    if not os.path.exists(fp):
+        return False
 
-    dev_null = os.open("/dev/null", os.O_WRONLY)
-    rc = runner.quiet([fuser, "-s", file])
+    rc = runner.quiet([fuser, "-s", fp])
     if rc == 0:
-        fuser_proc = subprocess.Popen([fuser, file], stdout=subprocess.PIPE, stderr=dev_null)
-        pids = fuser_proc.communicate()[0].strip().split()
-        for pid in pids:
+        for pid in runner.outs([fuser, fp]).split():
             fd = open("/proc/%s/cmdline" % pid, "r")
             cmdline = fd.read()
             fd.close()
             if cmdline[:-1] == "/bin/bash":
-                ret = True
-                break
-    os.close(dev_null)
-    return ret
+                return True
+
+    # not found
+    return False
 
 class BindChrootMount:
     """Represents a bind mount of a directory into a chroot."""
@@ -146,18 +141,12 @@ class BindChrootMount:
         self.umountcmd = find_binary_path("umount")
 
     def ismounted(self):
-        ret = False
-        dev_null = os.open("/dev/null", os.O_WRONLY)
-        catcmd = find_binary_path("cat")
-        args = [ catcmd, "/proc/mounts" ]
-        proc_mounts = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=dev_null)
-        outputs = proc_mounts.communicate()[0].strip().split("\n")
-        for line in outputs:
-            if line.split()[1] == os.path.abspath(self.dest):
-                ret = True
-                break
-        os.close(dev_null)
-        return ret
+        with open('/proc/mounts') as f:
+            for line in f:
+                if line.split()[1] == os.path.abspath(self.dest):
+                    return True
+
+        return False
 
     def has_chroot_instance(self):
         lock = os.path.join(self.root, ".chroot.lock")
@@ -209,11 +198,8 @@ class LoopbackMount:
         if self.losetup:
             return
 
-        losetupProc = subprocess.Popen([self.losetupcmd, "-f"],
-                                       stdout=subprocess.PIPE)
-        losetupOutput = losetupProc.communicate()[0]
-
-        if losetupProc.returncode:
+        rc, losetupOutput  = runner.runtool([self.losetupcmd, "-f"])
+        if rc != 0:
             raise MountError("Failed to allocate loop device for '%s'" %
                              self.lofile)
 
@@ -331,11 +317,8 @@ class LoopbackDisk(Disk):
         if self.device is not None:
             return
 
-        losetupProc = subprocess.Popen([self.losetupcmd, "-f"],
-                                       stdout=subprocess.PIPE)
-        losetupOutput = losetupProc.communicate()[0]
-
-        if losetupProc.returncode:
+        rc, losetupOutput  = runner.runtool([self.losetupcmd, "-f"])
+        if rc != 0:
             raise MountError("Failed to allocate loop device for '%s'" %
                              self.lofile)
 
@@ -508,13 +491,7 @@ class ExtDiskMount(DiskMount):
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype, self.disk.device))
 
-        dev_null = os.open("/dev/null", os.O_WRONLY)
-        try:
-            out = subprocess.Popen([self.dumpe2fs, '-h', self.disk.device],
-                                   stdout = subprocess.PIPE,
-                                   stderr = dev_null).communicate()[0]
-        finally:
-            os.close(dev_null)
+        out = runner.outs([self.dumpe2fs, '-h', self.disk.device])
 
         self.uuid = self.__parse_field(out, "Filesystem UUID")
         msger.debug("Tuning filesystem on %s" % self.disk.device)
@@ -558,15 +535,8 @@ class ExtDiskMount(DiskMount):
         runner.show(["/sbin/e2fsck", "-f", "-y", self.disk.lofile])
 
     def __get_size_from_filesystem(self):
-        dev_null = os.open("/dev/null", os.O_WRONLY)
-        try:
-            out = subprocess.Popen([self.dumpe2fs, '-h', self.disk.lofile],
-                                   stdout = subprocess.PIPE,
-                                   stderr = dev_null).communicate()[0]
-        finally:
-            os.close(dev_null)
-
-        return int(self.__parse_field(out, "Block count")) * self.blocksize
+        return int(self.__parse_field(runner.outs([self.dumpe2fs, '-h', self.disk.lofile]),
+                                      "Block count")) * self.blocksize
 
     def __resize_to_minimal(self):
         self.__fsck()
@@ -719,15 +689,7 @@ class BtrfsDiskMount(DiskMount):
         if rc != 0:
             raise MountError("Error creating %s filesystem on disk %s" % (self.fstype,self.disk.device))
 
-        dev_null = os.open("/dev/null", os.O_WRONLY)
-        try:
-            out = subprocess.Popen([self.blkidcmd, self.disk.device],
-                                   stdout = subprocess.PIPE,
-                                   stderr = dev_null).communicate()[0]
-        finally:
-            os.close(dev_null)
-
-        self.uuid = self.__parse_field(out, "UUID")
+        self.uuid = self.__parse_field(runner.outs([self.blkidcmd, self.disk.device]), "UUID")
 
     def __resize_filesystem(self, size = None):
         current_size = os.stat(self.disk.lofile)[stat.ST_SIZE]
@@ -840,14 +802,6 @@ class DeviceMapperSnapshot(object):
         if not self.__created:
             return 0
 
-        dev_null = os.open("/dev/null", os.O_WRONLY)
-        try:
-            out = subprocess.Popen([self.dmsetupcmd, "status", self.__name],
-                                   stdout = subprocess.PIPE,
-                                   stderr = dev_null).communicate()[0]
-        finally:
-            os.close(dev_null)
-
         #
         # dmsetup status on a snapshot returns e.g.
         #   "0 8388608 snapshot 416/1048576"
@@ -855,6 +809,7 @@ class DeviceMapperSnapshot(object):
         #   "A B snapshot C/D"
         # where C is the number of 512 byte sectors in use
         #
+        out = runner.outs([self.dmsetupcmd, "status", self.__name])
         try:
             return int((out.split()[3]).split('/')[0]) * 512
         except ValueError:

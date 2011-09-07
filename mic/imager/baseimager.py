@@ -2,6 +2,7 @@
 # creator.py : ImageCreator and LoopImageCreator base classes
 #
 # Copyright 2007, Red Hat  Inc.
+# Copyright 2009, 2010, 2011 Intel, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,12 +28,10 @@ import glob
 
 import rpm
 
-from mic.utils.errors import CreatorError
-from mic.utils.misc import get_filesystem_avail, is_statically_linked,setup_qemu_emulator, create_release
-from mic.utils.fs_related import find_binary_path, makedirs, BindChrootMount
-from mic.utils import rpmmisc, runner
 from mic import kickstart
 from mic import msger
+from mic.utils.errors import CreatorError
+from mic.utils import misc, rpmmisc, runner, fs_related as fs
 
 class BaseImageCreator(object):
     """Installs a system to a chroot directory.
@@ -133,9 +132,9 @@ class BaseImageCreator(object):
 
         # make sure the specified tmpdir and cachedir exist
         if not os.path.exists(self.tmpdir):
-            makedirs(self.tmpdir)
+            os.makedirs(self.tmpdir)
         if not os.path.exists(self.cachedir):
-            makedirs(self.cachedir)
+            os.makedirs(self.cachedir)
 
     def set_target_arch(self, arch):
         if arch not in rpmmisc.arches:
@@ -147,7 +146,7 @@ class BaseImageCreator(object):
                 if dep == "extlinux":
                     self._dep_checks.remove(dep)
 
-            if not os.path.exists("/usr/bin/qemu-arm") or not is_statically_linked("/usr/bin/qemu-arm"):
+            if not os.path.exists("/usr/bin/qemu-arm") or not misc.is_statically_linked("/usr/bin/qemu-arm"):
                 self._dep_checks.append("qemu-arm-static")
 
             if os.path.exists("/proc/sys/vm/vdso_enabled"):
@@ -160,7 +159,6 @@ class BaseImageCreator(object):
                                   "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
 
         return True
-
 
     def __del__(self):
         self.cleanup()
@@ -272,7 +270,7 @@ class BaseImageCreator(object):
 
         # save package name list anyhow
         if not os.path.exists(destdir):
-            makedirs(destdir)
+            os.makedirs(destdir)
 
         namefile = os.path.join(destdir, self.name + '-pkgs.txt')
         f = open(namefile, "w")
@@ -580,7 +578,7 @@ class BaseImageCreator(object):
             self.cachedir = cachedir
         else:
             self.cachedir = self.__builddir + "/yum-cache"
-        makedirs(self.cachedir)
+        fs.makedirs(self.cachedir)
         return self.cachedir
 
     def __sanity_check(self):
@@ -622,7 +620,6 @@ class BaseImageCreator(object):
                 os.symlink(src, self._instroot + dest)
         os.umask(origumask)
 
-
     def mount(self, base_on = None, cachedir = None):
         """Setup the target filesystem in preparation for an install.
 
@@ -643,16 +640,16 @@ class BaseImageCreator(object):
         """
         self.__ensure_builddir()
 
-        makedirs(self._instroot)
-        makedirs(self._outdir)
+        fs.makedirs(self._instroot)
+        fs.makedirs(self._outdir)
 
         self._mount_instroot(base_on)
 
         for d in ("/dev/pts", "/etc", "/boot", "/var/log", "/var/cache/yum", "/sys", "/proc", "/usr/bin"):
-            makedirs(self._instroot + d)
+            fs.makedirs(self._instroot + d)
 
         if self.target_arch and self.target_arch.startswith("arm"):
-            self.qemu_emulator = setup_qemu_emulator(self._instroot, self.target_arch)
+            self.qemu_emulator = misc.setup_qemu_emulator(self._instroot, self.target_arch)
 
         self.get_cachedir(cachedir)
 
@@ -660,8 +657,7 @@ class BaseImageCreator(object):
         for (f, dest) in [("/sys", None), ("/proc", None), ("/proc/sys/fs/binfmt_misc", None),
                           ("/dev/pts", None),
                           (self.get_cachedir(), "/var/cache/yum")]:
-            self.__bindmounts.append(BindChrootMount(f, self._instroot, dest))
-
+            self.__bindmounts.append(fs.BindChrootMount(f, self._instroot, dest))
 
         self._do_bindmounts()
 
@@ -674,7 +670,7 @@ class BaseImageCreator(object):
         self.__write_fstab()
 
         # get size of available space in 'instroot' fs
-        self._root_fs_avail = get_filesystem_avail(self._instroot)
+        self._root_fs_avail = misc.get_filesystem_avail(self._instroot)
 
     def unmount(self):
         """Unmounts the target filesystem.
@@ -695,9 +691,7 @@ class BaseImageCreator(object):
         except OSError:
             pass
 
-
         self._undo_bindmounts()
-
         self._unmount_instroot()
 
     def cleanup(self):
@@ -790,7 +784,6 @@ class BaseImageCreator(object):
                      the kickstart to be overridden.
 
         """
-
 
         # initialize pkg list to install
         if self.ks:
@@ -898,7 +891,7 @@ class BaseImageCreator(object):
             return None
 
         gpgkeydir = "/etc/pki/rpm-gpg"
-        makedirs(self._instroot + gpgkeydir)
+        fs.makedirs(self._instroot + gpgkeydir)
         for repo in repodata:
             if repo["repokey"]:
                 repokey = gpgkeydir + "/RPM-GPG-KEY-%s" %  repo["name"]
@@ -956,10 +949,8 @@ class BaseImageCreator(object):
 
         """ Generate md5sum if /usr/bin/md5sum is available """
         if os.path.exists("/usr/bin/md5sum"):
-            p = subprocess.Popen(["/usr/bin/md5sum", "-b", image_name],
-                                 stdout=subprocess.PIPE)
-            (md5sum, errorstr) = p.communicate()
-            if p.returncode != 0:
+            (rc, md5sum) = runner.runtool(["/usr/bin/md5sum", "-b", image_name])
+            if rc != 0:
                 msger.warning("Can't generate md5sum for image %s" % image_name)
             else:
                 pattern = re.compile("\*.*$")
@@ -984,14 +975,14 @@ class BaseImageCreator(object):
         self._stage_final_image()
 
         if not os.path.exists(destdir):
-            makedirs(destdir)
+            fs.makedirs(destdir)
         if self.__img_compression_method:
             if not self._img_name:
                 raise CreatorError("Image name not set.")
             rc = None
             img_location = os.path.join(self._outdir,self._img_name)
             if self.__img_compression_method == "bz2":
-                bzip2 = find_binary_path('bzip2')
+                bzip2 = fs.find_binary_path('bzip2')
                 msger.info("Compressing %s with bzip2. Please wait..." % img_location)
                 rc = runner.show([bzip2, "-f", img_location])
                 if rc:
@@ -1009,7 +1000,7 @@ class BaseImageCreator(object):
         if self.image_format in ("raw", "vmdk", "vdi", "nand", "mrstnand"):
             destdir = os.path.join(destdir, "%s-%s" % (self.name, self.image_format))
             msger.debug("creating destination dir: %s" % destdir)
-            makedirs(destdir)
+            fs.makedirs(destdir)
 
         # Ensure all data is flushed to _outdir
         runner.quiet('sync')
@@ -1030,7 +1021,7 @@ class BaseImageCreator(object):
 
     def check_depend_tools(self):
         for tool in self._dep_checks:
-            find_binary_path(tool)
+            fs.find_binary_path(tool)
 
     def package_output(self, image_format, destdir = ".", package="none"):
         if not package or package == "none":
@@ -1057,18 +1048,17 @@ class BaseImageCreator(object):
                 else:
                     os.remove(file)
 
-
             tar.close()
 
             '''All the file in outimage has been packaged into tar.* file'''
             self.outimage = [dst]
 
     def release_output(self, config, destdir, name, release):
-        self.outimage = create_release(config, destdir, name, self.outimage, release)
+        self.outimage = misc.create_release(config, destdir, name, self.outimage, release)
 
     def save_kernel(self, destdir):
         if not os.path.exists(destdir):
-            makedirs(destdir)
+            os.makedirs(destdir)
         for kernel in glob.glob("%s/boot/vmlinuz-*" % self._instroot):
             kernelfilename = "%s/%s-%s" % (destdir, self.name, os.path.basename(kernel))
             shutil.copy(kernel, kernelfilename)
@@ -1087,5 +1077,3 @@ class BaseImageCreator(object):
 
     def get_pkg_manager(self, recording_pkgs=None):
         return self.pkgmgr(creator = self, recording_pkgs = recording_pkgs)
-
-

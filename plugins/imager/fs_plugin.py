@@ -99,8 +99,6 @@ class FsPlugin(ImagerPlugin):
     def do_chroot(self, target):#chroot.py parse opts&args
             try:
                 chroot.chroot(target, None, "/bin/env HOME=/root /bin/bash")
-            except:
-                msger.warning("Failed to chroot to %s." % target)
             finally:
                 chroot.cleanup_after_chroot("dir", None, None, None)
                 return 1
