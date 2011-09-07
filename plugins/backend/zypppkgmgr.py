@@ -26,7 +26,8 @@ from pykickstart import parser as ksparser
 
 from mic import msger
 from mic.imager.baseimager import BaseImageCreator
-from mic.utils import proxy, rpmmisc, fs_related as fs
+from mic.utils import rpmmisc, fs_related as fs
+from mic.utils.proxy import get_proxy_for
 from mic.utils.errors import CreatorError
 
 class RepositoryStub:
@@ -611,4 +612,4 @@ class Zypp(BackendPlugin):
             return proxy
         else:
             repourl = repoinfo.baseUrls()[0].__str__()
-            return proxy.get_proxy_for(repourl)
+            return get_proxy_for(repourl)
