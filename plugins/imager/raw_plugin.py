@@ -70,7 +70,6 @@ class RawPlugin(ImagerPlugin):
             creator.configure(creatoropts["repomd"])
             creator.unmount()
             creator.package(creatoropts["outdir"])
-            outimage = creator.outimage
             creator.print_outimage_info()
             outimage = creator.outimage
 

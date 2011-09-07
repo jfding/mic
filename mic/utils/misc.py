@@ -202,12 +202,10 @@ def get_uncompressed_data_from_url(url, filename, proxies):
     suffix = None
     if filename.endswith(".gz"):
         suffix = ".gz"
-        gunzip = find_binary_path('gunzip')
-        runner.show([gunzip, "-f", filename])
+        runner.quiet(['gunzip', "-f", filename])
     elif filename.endswith(".bz2"):
         suffix = ".bz2"
-        bunzip2 = find_binary_path('bunzip2')
-        runner.show([bunzip2, "-f", filename])
+        runner.quiet(['bunzip2', "-f", filename])
     if suffix:
         filename = filename.replace(suffix, "")
     return filename
@@ -297,7 +295,7 @@ def get_metadata_from_repos(repostrs, cachedir):
             repokey = get_metadata_from_repo(baseurl, proxies, cachedir, reponame, "repodata/repomd.xml.key")
         except CreatorError:
             repokey = None
-            msger.warning("can't get %s/%s" % (baseurl, "repodata/repomd.xml.key"))
+            msger.warning("\ncan't get %s/%s" % (baseurl, "repodata/repomd.xml.key"))
 
         my_repo_metadata.append({"name":reponame, "baseurl":baseurl, "repomd":repomd, "primary":primary, "cachedir":cachedir, "proxies":proxies, "patterns":patterns, "comps":comps, "repokey":repokey})
 

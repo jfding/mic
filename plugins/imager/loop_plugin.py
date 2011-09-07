@@ -22,7 +22,7 @@ import shutil
 import tempfile
 
 from mic import configmgr, pluginmgr, chroot, msger
-from mic.utils import misc, fs_related, errors
+from mic.utils import misc, fs_related, errors, cmdln
 import mic.imager.loop as loop
 
 from mic.pluginbase import ImagerPlugin
@@ -30,6 +30,11 @@ class LoopPlugin(ImagerPlugin):
     name = 'loop'
 
     @classmethod
+    @cmdln.option('-E', '--extra-loop', dest='extra_loop',
+                  help='Extra loop image to be mounted, multiple <mountpoint>:name_of_loop_file pairs expected, and '
+                       'joined by using "," like the following sample:'
+                       '  --extr-loop=/opt:opt.img,/boot:boot.img'
+                       )
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create loop image
 
@@ -45,6 +50,14 @@ class LoopPlugin(ImagerPlugin):
         else:
             raise errors.Usage("Extra arguments given")
 
+        try:
+            if opts.extra_loop:
+                extra_loop = dict([[i.strip() for i in one.split(':')] for one in opts.extra_loop.split(',')])
+            else:
+                extra_loop = {}
+        except ValueError:
+            raise errors.Usage("invalid --extra-loop option specified")
+
         cfgmgr = configmgr.getConfigMgr()
         creatoropts = cfgmgr.create
         cfgmgr.setProperty("ksconf", ksconf)
@@ -59,7 +72,7 @@ class LoopPlugin(ImagerPlugin):
         if not pkgmgr:
             raise errors.CreatorError("Can't find package manager: %s" % creatoropts['pkgmgr'])
 
-        creator = loop.LoopImageCreator(creatoropts, pkgmgr)
+        creator = loop.LoopImageCreator(creatoropts, pkgmgr, extra_loop)
         try:
             creator.check_depend_tools()
             creator.mount(None, creatoropts["cachedir"])
@@ -67,6 +80,8 @@ class LoopPlugin(ImagerPlugin):
             creator.configure(creatoropts["repomd"])
             creator.unmount()
             creator.package(creatoropts["outdir"])
+            creator.print_outimage_info()
+
         except errors.CreatorError:
             raise
         finally:

@@ -654,7 +654,9 @@ class BaseImageCreator(object):
         self.get_cachedir(cachedir)
 
         # bind mount system directories into _instroot
-        for (f, dest) in [("/sys", None), ("/proc", None), ("/proc/sys/fs/binfmt_misc", None),
+        for (f, dest) in [("/sys", None),
+                          ("/proc", None),
+                          ("/proc/sys/fs/binfmt_misc", None),
                           ("/dev/pts", None),
                           (self.get_cachedir(), "/var/cache/yum")]:
             self.__bindmounts.append(fs.BindChrootMount(f, self._instroot, dest))
