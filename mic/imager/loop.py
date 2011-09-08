@@ -63,7 +63,8 @@ class LoopImageCreator(BaseImageCreator):
             self.__fstype = None
             self.__fsopts = None
 
-        self.__instloops = [] # list of dict of image_name:loop_device
+        self._instloops = [] # list of dict of image_name:loop_device
+
         self.__imgdir = None
 
         if self.ks:
@@ -123,7 +124,7 @@ class LoopImageCreator(BaseImageCreator):
     def __get_blocksize(self):
         return self.__blocksize
     def __set_blocksize(self, val):
-        if self.__instloops:
+        if self._instloops:
             raise CreatorError("_blocksize must be set before calling mount()")
         try:
             self.__blocksize = int(val)
@@ -187,24 +188,26 @@ class LoopImageCreator(BaseImageCreator):
         loop.resparse(size) # base image
 
     def _base_on(self, base_on):
-        shutil.copyfile(base_on, self._image)
+        if base_on is not None:
+            shutil.copyfile(base_on, self._image)
+
+    def _check_imgdir(self):
+        if self.__imgdir is None:
+            self.__imgdir = self._mkdtemp()
 
     #
     # Actual implementation
     #
     def _mount_instroot(self, base_on = None):
-        if self.__imgdir is None:
-            self.__imgdir = self._mkdtemp()
-
-        if not base_on is None:
-            self._base_on(base_on)
+        self._check_imgdir()
+        self._base_on(base_on)
 
         if self.__fstype in ("ext2", "ext3", "ext4"):
             MyDiskMount = fs.ExtDiskMount
         elif self.__fstype == "btrfs":
             MyDiskMount = fs.BtrfsDiskMount
 
-        self.__instloops.append({
+        self._instloops.append({
                 'name': self._img_name,
                 'loop': MyDiskMount(fs.SparseLoopbackDisk(self._image, self.__image_size),
                                     self._instroot,
@@ -221,7 +224,7 @@ class LoopImageCreator(BaseImageCreator):
             if point.startswith('/'):
                 point = point.lstrip('/')
 
-            self.__instloops.append({
+            self._instloops.append({
                 'name': imgname,
                 'loop': MyDiskMount(fs.SparseLoopbackDisk(os.path.join(self.__imgdir, imgname),
                                                           self.__image_size),
@@ -231,7 +234,7 @@ class LoopImageCreator(BaseImageCreator):
                                     name)
                 })
 
-        for item in self.__instloops:
+        for item in self._instloops:
             try:
                 msger.verbose('Mounting image "%s" on "%s"' %(item['name'], item['loop'].mountdir))
                 fs.makedirs(item['loop'].mountdir)
@@ -240,11 +243,11 @@ class LoopImageCreator(BaseImageCreator):
                 raise
 
     def _unmount_instroot(self):
-        for item in reversed(self.__instloops):
+        for item in reversed(self._instloops):
             item['loop'].cleanup()
 
     def _stage_final_image(self):
-        for item in self.__instloops:
+        for item in self._instloops:
             self._resparse(item['loop'])
             shutil.move(os.path.join(self.__imgdir, item['name']),
                         os.path.join(self._outdir, item['name']))
