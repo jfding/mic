@@ -66,12 +66,10 @@ def read_kickstart(path):
 
     try:
         ks.readKickstart(path)
-    except IOError, (err, msg):
-        raise errors.KsError("Failed to read kickstart file "
-                             "'%s' : %s" % (path, msg))
+    except kserrors.KickstartError, e:
+        raise errors.KsError("'%s': %s" % (path, str(e)))
     except kserrors.KickstartParseError, e:
-        raise errors.KsError("Failed to parse kickstart file "
-                             "'%s' : %s" % (path, e))
+        raise errors.KsError("'%s': %s" % (path, str(e)))
     return ks
 
 def build_name(kscfg, prefix = None, suffix = None, maxlen = None):
