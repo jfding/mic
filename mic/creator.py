@@ -20,7 +20,7 @@
 import os, sys
 
 from mic import configmgr, pluginmgr, msger
-from mic.utils import cmdln
+from mic.utils import cmdln, errors
 
 class Creator(cmdln.Cmdln):
     """${name}: create an image
@@ -60,7 +60,42 @@ class Creator(cmdln.Cmdln):
         return optparser
 
     def preoptparse(self, argv):
-        pass
+        optparser = self.get_optparser()
+
+        largs = []
+        rargs = []
+        while argv:
+            arg = argv.pop(0)
+
+            if arg in ('-h', '--help'):
+                rargs.append(arg)
+
+            elif optparser.has_option(arg):
+                largs.append(arg)
+
+                if optparser.get_option(arg).takes_value():
+                    try:
+                        largs.append(argv.pop(0))
+                    except IndexError:
+                        raise errors.Usage("%s option requires an argument" % arg)
+
+            else:
+                if arg.startswith("--"):
+                    if "=" in arg:
+                        opt = arg.split("=")[0]
+                    else:
+                        opt = None
+                elif arg.startswith("-") and len(arg) > 2:
+                    opt = arg[0:2]
+                else:
+                    opt = None
+
+                if opt and optparser.has_option(opt):
+                    largs.append(arg)
+                else:
+                    rargs.append(arg)
+
+        return largs + rargs
 
     def postoptparse(self):
         if self.options.outdir is not None:
@@ -77,7 +112,7 @@ class Creator(cmdln.Cmdln):
         self.optparser = self.get_optparser()
         if self.optparser:
             try:
-                self.preoptparse(argv)
+                argv = self.preoptparse(argv)
                 self.options, args = self.optparser.parse_args(argv)
 
             except cmdln.CmdlnUserError, ex:
