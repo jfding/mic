@@ -84,10 +84,6 @@ class Zypp(BackendPlugin):
         pass
 
     def close(self):
-        try:
-            os.unlink(self.installroot + "/yum.conf")
-        except:
-            pass
         self.closeRpmDB()
         if not os.path.exists("/etc/fedora-release") and not os.path.exists("/etc/meego-release"):
             for i in range(3, os.sysconf("SC_OPEN_MAX")):
@@ -102,21 +98,6 @@ class Zypp(BackendPlugin):
     def __del__(self):
         self.close()
 
-    def _writeConf(self, confpath, installroot):
-        conf  = "[main]\n"
-        conf += "installroot=%s\n" % installroot
-        conf += "cachedir=/var/cache/yum\n"
-        conf += "plugins=0\n"
-        conf += "reposdir=\n"
-        conf += "failovermethod=priority\n"
-        conf += "http_caching=packages\n"
-
-        f = file(confpath, "w+")
-        f.write(conf)
-        f.close()
-
-        os.chmod(confpath, 0644)
-
     def _cleanupRpmdbLocks(self, installroot):
         # cleans up temporary files left by bdb so that differing
         # versions of rpm don't cause problems
@@ -125,7 +106,6 @@ class Zypp(BackendPlugin):
             os.unlink(f)
 
     def setup(self, confpath, installroot):
-        self._writeConf(confpath, installroot)
         self._cleanupRpmdbLocks(installroot)
         self.installroot = installroot
 
@@ -416,17 +396,10 @@ class Zypp(BackendPlugin):
         self.repo_manager = zypp.RepoManager(self.repo_manager_options)
 
     def __build_repo_cache(self, name):
-        repos = self.repo_manager.knownRepositories()
-        for repo in repos:
-            if not repo.enabled():
-                continue
-            reponame = "%s" % repo.name()
-            if reponame != name:
-                continue
-            if self.repo_manager.isCached( repo ):
-                return
-
-            self.repo_manager.buildCache(repo, zypp.RepoManager.BuildIfNeeded)
+        repo = self.repo_manager.getRepositoryInfo(name)
+        if self.repo_manager.isCached( repo ) or not repo.enabled():
+            return
+        self.repo_manager.buildCache( repo, zypp.RepoManager.BuildIfNeeded )
 
     def __initialize_zypp(self):
         if self.Z:
@@ -458,11 +431,6 @@ class Zypp(BackendPlugin):
         for repo in repos:
             if not repo.enabled():
                 continue
-            if not self.repo_manager.isCached( repo ):
-                msger.info("Retrieving repo metadata from %s ..." % repo.url())
-                self.repo_manager.buildCache( repo, zypp.RepoManager.BuildIfNeeded )
-            else:
-                self.repo_manager.refreshMetadata(repo, zypp.RepoManager.BuildIfNeeded)
             self.repo_manager.loadFromCache( repo );
 
         self.Z = zypp.ZYppFactory_instance().getZYpp()
