@@ -1012,7 +1012,7 @@ class BaseImageCreator(object):
             self.do_genchecksum(os.path.join(destdir, f))
 
     def print_outimage_info(self):
-        msg = "Your new image can be found here:\n"
+        msg = "The new image can be found here:\n"
         self.outimage.sort()
         for file in self.outimage:
             msg += '  %s\n' % os.path.abspath(file)

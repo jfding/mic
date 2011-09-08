@@ -722,3 +722,8 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
     msger.info("%d source packages gotten from cache" %cached_count)
 
     return src_pkgs
+
+def strip_end(text, suffix):
+    if not text.endswith(suffix):
+        return text
+    return text[:-len(suffix)]

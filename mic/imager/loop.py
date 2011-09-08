@@ -22,7 +22,7 @@ import shutil
 
 from mic import kickstart, msger
 from mic.utils.errors import CreatorError, MountError
-from mic.utils import fs_related as fs
+from mic.utils import misc, fs_related as fs
 
 from baseimager import BaseImageCreator
 
@@ -47,6 +47,11 @@ class LoopImageCreator(BaseImageCreator):
         """
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
 
+        if '/' in extra_loop:
+            self.name = misc.strip_end(os.path.basename(extra_loop['/']), '.img')
+            del extra_loop['/']
+        self.extra_loop = extra_loop
+
         self.__fslabel = None
         self.fslabel = self.name
 
@@ -69,7 +74,6 @@ class LoopImageCreator(BaseImageCreator):
 
         self._img_name = self.name + ".img"
 
-        self.extra_loop = extra_loop
 
     def _set_fstype(self, fstype):
         self.__fstype = fstype
@@ -213,7 +217,7 @@ class LoopImageCreator(BaseImageCreator):
             if name != os.path.basename(name):
                 msger.warning('can not specify path in %s' % name)
                 name = os.path.basename(name)
-            imgname = name.rstrip('.img') + '.img'
+            imgname = misc.strip_end(name,'.img') + '.img'
             if point.startswith('/'):
                 point = point.lstrip('/')
 
