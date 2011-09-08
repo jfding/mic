@@ -397,9 +397,9 @@ class Zypp(BackendPlugin):
 
     def __build_repo_cache(self, name):
         repo = self.repo_manager.getRepositoryInfo(name)
-        if self.repo_manager.isCached( repo ) or not repo.enabled():
+        if self.repo_manager.isCached(repo) or not repo.enabled():
             return
-        self.repo_manager.buildCache( repo, zypp.RepoManager.BuildIfNeeded )
+        self.repo_manager.buildCache(repo, zypp.RepoManager.BuildIfNeeded)
 
     def __initialize_zypp(self):
         if self.Z:
@@ -431,11 +431,11 @@ class Zypp(BackendPlugin):
         for repo in repos:
             if not repo.enabled():
                 continue
-            self.repo_manager.loadFromCache( repo );
+            self.repo_manager.loadFromCache(repo)
 
         self.Z = zypp.ZYppFactory_instance().getZYpp()
-        self.Z.initializeTarget( zypp.Pathname(self.creator._instroot) )
-        self.Z.target().load();
+        self.Z.initializeTarget(zypp.Pathname(self.creator._instroot))
+        self.Z.target().load()
 
 
     def buildTransaction(self):
@@ -553,9 +553,9 @@ class Zypp(BackendPlugin):
     def zypp_install(self):
         policy = zypp.ZYppCommitPolicy()
         policy.downloadMode(zypp.DownloadInAdvance)
-        policy.dryRun( False )
-        policy.syncPoolAfterCommit( False )
-        result = self.Z.commit( policy )
+        policy.dryRun(False)
+        policy.syncPoolAfterCommit(False)
+        result = self.Z.commit(policy)
         msger.info(result)
 
     def _add_prob_flags(self, *flags):
