@@ -19,6 +19,7 @@
 
 import os
 from subprocess import *
+
 from mic import msger
 
 def runtool(cmdln_or_args, catch=1):
@@ -38,7 +39,6 @@ def runtool(cmdln_or_args, catch=1):
         # invalid catch selection, will cause exception, that's good
         return None
 
-    from subprocess import *
     if isinstance(cmdln_or_args, list):
         args = cmdln_or_args
     else:
