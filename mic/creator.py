@@ -18,6 +18,7 @@
 #
 
 import os, sys
+from optparse import SUPPRESS_HELP
 
 from mic import configmgr, pluginmgr, msger
 from mic.utils import cmdln, errors
@@ -55,6 +56,8 @@ class Creator(cmdln.Cmdln):
 
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self)
+        optparser.add_option('-d', '--debug', action='store_true', dest='debug', help=SUPPRESS_HELP)
+        optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help=SUPPRESS_HELP)
         optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='output directory')
         optparser.add_option('', '--local-pkgs-path', type='string', dest='local_pkgs_path', default=None, help='Path for local pkgs(rpms) to be installed')
         return optparser
@@ -98,6 +101,11 @@ class Creator(cmdln.Cmdln):
         return largs + rargs
 
     def postoptparse(self):
+        if self.options.verbose:
+            msger.set_loglevel('verbose')
+        if self.options.debug:
+            msger.set_loglevel('debug')
+
         if self.options.outdir is not None:
             self.configmgr.create['outdir'] = self.options.outdir
         if self.options.local_pkgs_path is not None:
