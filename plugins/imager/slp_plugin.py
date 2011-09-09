@@ -145,3 +145,16 @@ class SLPImageCreator(LoopImageCreator):
                 raise
 
         self._instloops = self._allloops
+
+    def _stage_final_image(self):
+        import tarfile
+
+        imgdir = os.path.dirname(self._image)
+        curdir = os.getcwd()
+        os.chdir(imgdir)
+        tar = tarfile.open(os.path.join(self._outdir, 'platform.tar'), 'w')
+        for item in self._instloops:
+            self._resparse(item['loop'], 0)
+            tar.add(item['name'])
+        tar.close()
+        os.chdir(curdir)

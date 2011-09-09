@@ -106,7 +106,11 @@ def mksquashfs(in_img, out_img):
 
 def resize2fs(fs, size):
     resize2fs = find_binary_path("resize2fs")
-    return runner.quiet([resize2fs, fs, "%sK" % (size / 1024,)])
+    if size == 0:
+        # it means to minimalize it
+        return runner.show([resize2fs, '-M', fs])
+    else:
+        return runner.show([resize2fs, fs, "%sK" % (size / 1024,)])
 
 def my_fuser(fp):
     fuser = find_binary_path("fuser")
@@ -532,7 +536,7 @@ class ExtDiskMount(DiskMount):
 
     def __fsck(self):
         msger.info("Checking filesystem %s" % self.disk.lofile)
-        runner.show(["/sbin/e2fsck", "-f", "-y", self.disk.lofile])
+        runner.quiet(["/sbin/e2fsck", "-f", "-y", self.disk.lofile])
 
     def __get_size_from_filesystem(self):
         return int(self.__parse_field(runner.outs([self.dumpe2fs, '-h', self.disk.lofile]),
@@ -558,8 +562,12 @@ class ExtDiskMount(DiskMount):
 
     def resparse(self, size = None):
         self.cleanup()
-        minsize = self.__resize_to_minimal()
-        self.disk.truncate(minsize)
+        if size == 0:
+            minsize = 0
+        else:
+            minsize = self.__resize_to_minimal()
+            self.disk.truncate(minsize)
+
         self.__resize_filesystem(size)
         return minsize
 
@@ -724,7 +732,7 @@ class BtrfsDiskMount(DiskMount):
 
     def __fsck(self):
         msger.debug("Checking filesystem %s" % self.disk.lofile)
-        runner.show([self.btrfsckcmd, self.disk.lofile])
+        runner.quiet([self.btrfsckcmd, self.disk.lofile])
 
     def __get_size_from_filesystem(self):
         return self.disk.size
