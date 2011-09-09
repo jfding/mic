@@ -21,7 +21,19 @@
 import os,sys
 import re
 
-__ALL__ = ['set_mode', 'get_loglevel', 'set_loglevel', 'raw' 'debug', 'verbose', 'info', 'warning', 'error', 'ask', 'pause']
+__ALL__ = ['set_mode',
+           'get_loglevel',
+           'set_loglevel',
+           'set_logfile',
+           'raw',
+           'debug',
+           'verbose',
+           'info',
+           'warning',
+           'error',
+           'ask',
+           'pause',
+          ]
 
 # COLORs in ANSI
 INFO_COLOR = 32 # green
@@ -43,11 +55,19 @@ LOG_LEVELS = {
              }
 LOG_LEVEL = 1
 
-def _color_print(head, color, msg = None, stream = sys.stdout, level = 'normal'):
+LOG_FILE_FP = None
+
+def _general_print(head, color, msg = None, stream = sys.stdout, level = 'normal'):
     if LOG_LEVELS[level] > LOG_LEVEL:
         # skip
         return
 
+    if LOG_FILE_FP:
+        LOG_FILE_FP.write(msg.strip() + '\n')
+
+    _color_print(head, color, msg, stream, level)
+
+def _color_print(head, color, msg, stream, level):
     colored = True
     if color == NO_COLOR or \
        not stream.isatty() or \
@@ -80,7 +100,7 @@ def _color_print(head, color, msg = None, stream = sys.stdout, level = 'normal')
     stream.flush()
 
 def _color_perror(head, color, msg, level = 'normal'):
-    _color_print(head, color, msg, sys.stderr, level)
+    _general_print(head, color, msg, sys.stderr, level)
 
 def _split_msg(head, msg):
     if isinstance(msg, list):
@@ -114,26 +134,23 @@ def set_loglevel(level):
 
     LOG_LEVEL = LOG_LEVELS[level]
 
-def set_mode(interactive):
+def set_interactive(mode=True):
     global INTERACTIVE
-    if interactive:
+    if mode:
         INTERACTIVE = True
     else:
         INTERACTIVE = False
 
-def raw(msg=None):
-    if msg:
-        sys.stdout.write(msg)
-    sys.stdout.write('\n')
-    sys.stdout.flush()
+def raw(msg=''):
+    _general_print('', NO_COLOR, msg)
 
 def info(msg):
     head, msg = _split_msg('Info', msg)
-    _color_print(head, INFO_COLOR, msg)
+    _general_print(head, INFO_COLOR, msg)
 
 def verbose(msg):
     head, msg = _split_msg('Verbose', msg)
-    _color_print(head, INFO_COLOR, msg, level = 'verbose')
+    _general_print(head, INFO_COLOR, msg, level = 'verbose')
 
 def warning(msg):
     head, msg = _split_msg('Warning', msg)
@@ -149,7 +166,7 @@ def error(msg):
     sys.exit(1)
 
 def ask(msg, default=True):
-    _color_print('\rQ', ASK_COLOR, '')
+    _general_print('\rQ', ASK_COLOR, '')
     try:
         if default:
             msg += '(Y/n) '
@@ -168,11 +185,12 @@ def ask(msg, default=True):
 
                 # else loop
         else:
-            sys.stdout.write('%s ' % msg)
             if default:
-                sys.stdout.write('Y\n')
+                msg += ' Y'
             else:
-                sys.stdout.write('N\n')
+                msg += ' N'
+            _general_print('', NO_COLOR, msg)
+
             return default
     except KeyboardInterrupt:
         sys.stdout.write('\n')
@@ -180,8 +198,22 @@ def ask(msg, default=True):
 
 def pause(msg=None):
     if INTERACTIVE:
-        _color_print('\rQ', ASK_COLOR, '')
+        _general_print('\rQ', ASK_COLOR, '')
         if msg is None:
             msg = 'press <ENTER> to continue ...'
         raw_input(msg)
 
+def set_logfile(fpath):
+    global LOG_FILE_FP 
+
+    def _closelogf():
+        if LOG_FILE_FP:
+            LOG_FILE_FP.close()
+
+    if LOG_FILE_FP is not None:
+        warning('duplicate log file configuration')
+
+    LOG_FILE_FP = open(os.path.abspath(os.path.expanduser(fpath)), 'a')
+
+    import atexit
+    atexit.register(_closelogf)

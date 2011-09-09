@@ -60,6 +60,7 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help=SUPPRESS_HELP)
         optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='output directory')
         optparser.add_option('', '--local-pkgs-path', type='string', dest='local_pkgs_path', default=None, help='Path for local pkgs(rpms) to be installed')
+        optparser.add_option('', '--logfile', type='string', dest='logfile', default=None, help='Path of logfile')
         return optparser
 
     def preoptparse(self, argv):
@@ -110,6 +111,10 @@ class Creator(cmdln.Cmdln):
             self.configmgr.create['outdir'] = self.options.outdir
         if self.options.local_pkgs_path is not None:
             self.configmgr.create['local_pkgs_path'] = self.options.local_pkgs_path
+
+        if self.options.logfile:
+            msger.set_interactive(False)
+            msger.set_logfile(self.options.logfile)
 
     def main(self, argv=None):
         if argv is None:
