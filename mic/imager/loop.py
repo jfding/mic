@@ -169,7 +169,7 @@ class LoopImageCreator(BaseImageCreator):
     #
     # Helpers for subclasses
     #
-    def _resparse(self, loop, size = None):
+    def _resparse(self, size = None):
         """Rebuild the filesystem image to be as sparse as possible.
 
             This method should be used by subclasses when staging the final image
@@ -185,7 +185,14 @@ class LoopImageCreator(BaseImageCreator):
                     causing the original size specified by the kickstart file to
                     be used (or 4GiB if not specified in the kickstart).
         """
-        loop.resparse(size) # base image
+        minsize = 0
+        for item in self._instloops:
+            if item['name'] == self._img_name:
+                minsize = item['loop'].resparse(size)
+            else:
+                item['loop'].resparse(size)
+
+        return minsize
 
     def _base_on(self, base_on):
         if base_on is not None:
@@ -247,7 +254,7 @@ class LoopImageCreator(BaseImageCreator):
             item['loop'].cleanup()
 
     def _stage_final_image(self):
+        self._resparse()
         for item in self._instloops:
-            self._resparse(item['loop'])
             shutil.move(os.path.join(self.__imgdir, item['name']),
                         os.path.join(self._outdir, item['name']))

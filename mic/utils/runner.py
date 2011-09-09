@@ -72,7 +72,7 @@ def runtool(cmdln_or_args, catch=1):
             raise # relay
     finally:
         if catch != 3:
-            dev_null = os.open("/dev/null", os.O_WRONLY)
+            os.close(dev_null)
 
     return (p.returncode, out)
 

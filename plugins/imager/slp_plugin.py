@@ -152,9 +152,11 @@ class SLPImageCreator(LoopImageCreator):
         imgdir = os.path.dirname(self._image)
         curdir = os.getcwd()
         os.chdir(imgdir)
+        self._resparse(0)
+
         tar = tarfile.open(os.path.join(self._outdir, 'platform.tar'), 'w')
         for item in self._instloops:
-            self._resparse(item['loop'], 0)
             tar.add(item['name'])
         tar.close()
+
         os.chdir(curdir)
