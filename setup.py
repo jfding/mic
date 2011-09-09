@@ -71,9 +71,12 @@ setup(name=MOD_NAME,
                                                      "plugins/imager/livecd_plugin.py",
                                                      "plugins/imager/liveusb_plugin.py",
                                                      "plugins/imager/loop_plugin.py",
-                                                     "plugins/imager/raw_plugin.py"]),
+                                                     "plugins/imager/raw_plugin.py",
+                                                     "plugins/imager/slp_plugin.py",
+                                                    ]),
                     ("/usr/lib/mic/plugins/backend", ["plugins/backend/zypppkgmgr.py",
-                                                      "plugins/backend/yumpkgmgr.py"]),
+                                                      "plugins/backend/yumpkgmgr.py",
+                                                     ]),
                     ("/etc/mic", ["distfiles/mic.conf"])]
 )
 
