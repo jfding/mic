@@ -42,6 +42,7 @@ DEFAULT_CREATE = {
     "ks": None,
     "repomd": None,
     "local_pkgs_path": None,
+    "release": None,
 }
 
 class ConfigMgr(object):

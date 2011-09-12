@@ -42,6 +42,27 @@ import runner
 
 from mic import msger
 
+def save_ksconf_file(ksconf, release="latest", arch = "ia32", oldconf = None):
+    if not os.path.exists(ksconf):
+        return
+
+    if oldconf is not None:
+        oldconf = ksconf
+    fd = open(ksconf, 'r')
+    kscont = fd.read()
+    fd.close()
+
+    if kscont.find("/@ARCH@") != -1:
+        kscont.replace("@ARCH@", arch)
+    if kscont.find("/@BUILD_ID@/") != -1:
+        kscont = kscont.replace("@BUILD_ID@", release)
+        ksconf = "/var/tmp/%s" % ksconf
+        fd = open(ksconf, "w")
+        fd.write(kscont)
+        fd.close()
+
+    return ksconf
+
 def get_image_type(path):
 
     def _get_extension_name(path):
@@ -603,7 +624,8 @@ def create_release(config, destdir, name, outimages, release):
     thatsubdir = None
     for i in range(len(outimages)):
         file = outimages[i]
-        if not os.path.isdir(file) and os.path.dirname(file) != destdir:
+        if not os.path.isdir(file) and \
+          os.path.realpath(os.path.dirname(file)) != os.path.realpath(destdir):
             thatsubdir = os.path.dirname(file)
             newfile = os.path.join(destdir, os.path.basename(file))
             shutil.move(file, newfile)

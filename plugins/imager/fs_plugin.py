@@ -20,7 +20,7 @@
 import os
 
 from mic import configmgr, pluginmgr, chroot, msger
-from mic.utils import cmdln, errors
+from mic.utils import cmdln, misc, errors
 from mic.imager import fs
 
 from mic.pluginbase import ImagerPlugin
@@ -44,7 +44,15 @@ class FsPlugin(ImagerPlugin):
 
         cfgmgr = configmgr.getConfigMgr()
         createopts = cfgmgr.create
-        cfgmgr._ksconf = args[0]
+        ksconf = args[0]
+
+        recording_pkgs = None
+        if createopts['release'] is not None:
+            recording_pkgs = "name"
+            ksconf = misc.save_ksconf_file(ksconf, createopts['release'])
+            name = os.path.splitext(os.path.basename(ksconf))[0]
+            createopts['outdir'] = "%s/%s-%s/" % (createopts['outdir'], name, createopts['release'])
+        cfgmgr._ksconf = ksconf
 
         # try to find the pkgmgr
         pkgmgr = None
@@ -57,6 +65,9 @@ class FsPlugin(ImagerPlugin):
             raise CreatorError("Can't find backend plugin: %s" % createopts['pkgmgr'])
 
         creator = fs.FsImageCreator(createopts, pkgmgr)
+
+        if recording_pkgs is not None:
+            creator._recording_pkgs = recording_pkgs
 
         destdir = os.path.abspath(os.path.expanduser(createopts["outdir"]))
         fsdir = os.path.join(destdir, creator.name)
@@ -84,6 +95,8 @@ class FsPlugin(ImagerPlugin):
             creator.unmount()
             creator.package(destdir)
             outimage = creator.outimage
+            if createopts['release'] is not None:
+                misc.create_release(ksconf, creatoropts['outdir'], creatoropts['name'], outimage, creatoropts['release'])
             creator.print_outimage_info()
         except errors.CreatorError:
             raise

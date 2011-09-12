@@ -58,7 +58,15 @@ class LoopPlugin(ImagerPlugin):
 
         cfgmgr = configmgr.getConfigMgr()
         creatoropts = cfgmgr.create
-        cfgmgr._ksconf = args[0]
+        ksconf = args[0]
+
+        recording_pkgs = None
+        if creatoropts['release'] is not None:
+            recording_pkgs = "name"
+            ksconf = misc.save_ksconf_file(ksconf, creatoropts['release'])
+            name = os.path.splitext(os.path.basename(ksconf))[0]
+            creatoropts['outdir'] = "%s/%s-%s/" % (creatoropts['outdir'], name, creatoropts['release'])
+        cfgmgr._ksconf = ksconf
 
         # try to find the pkgmgr
         pkgmgr = None
@@ -71,6 +79,10 @@ class LoopPlugin(ImagerPlugin):
             raise errors.CreatorError("Can't find package manager: %s" % creatoropts['pkgmgr'])
 
         creator = loop.LoopImageCreator(creatoropts, pkgmgr, extra_loop)
+
+        if recording_pkgs is not None:
+            creator._recording_pkgs = recording_pkgs
+
         try:
             creator.check_depend_tools()
             creator.mount(None, creatoropts["cachedir"])
@@ -78,6 +90,9 @@ class LoopPlugin(ImagerPlugin):
             creator.configure(creatoropts["repomd"])
             creator.unmount()
             creator.package(creatoropts["outdir"])
+            outimage = creator.outimage
+            if creatoropts['release'] is not None:
+                misc.create_release(ksconf, creatoropts['outdir'], creatoropts['name'], outimage, creatoropts['release'])
             creator.print_outimage_info()
 
         except errors.CreatorError:
