@@ -62,6 +62,7 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('', '--local-pkgs-path', type='string', dest='local_pkgs_path', default=None, help='Path for local pkgs(rpms) to be installed')
         optparser.add_option('', '--logfile', type='string', dest='logfile', default=None, help='Path of logfile')
         optparser.add_option('', '--release', type='string', dest='release', default=None, help='Generate release package')
+        optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
         return optparser
 
     def preoptparse(self, argv):
@@ -115,6 +116,9 @@ class Creator(cmdln.Cmdln):
 
         if self.options.release:
             self.configmgr.create['release'] = self.options.release
+
+        if self.options.arch is not None:
+            self.configmgr.create['arch'] = self.options.arch
 
         if self.options.logfile:
             msger.set_interactive(False)

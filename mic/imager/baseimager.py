@@ -74,7 +74,7 @@ class BaseImageCreator(object):
 
             self.destdir = createopts['outdir']
 
-            self.arch = createopts['arch']
+            target_arch = createopts['arch']
             self._local_pkgs_path = createopts['local_pkgs_path']
 
         else:
@@ -83,7 +83,7 @@ class BaseImageCreator(object):
             self.tmpdir = "/var/tmp/mic"
             self.cachedir = "/var/tmp/mic/cache"
             self.destdir = "."
-            self.arch = "noarch"
+            target_arch = "noarch"
             self._local_pkgs_path = None
 
         self.__builddir = None
@@ -128,15 +128,11 @@ class BaseImageCreator(object):
                     self._dep_checks.append("mkfs.btrfs")
                     break
 
-        # make sure arch available
-        if not self.arch:
-            raise CreatorError("Architecture for creator is not available")
-        if self.arch.startswith("arm"):
-            if not self.set_target_arch(self.arch):
-                raise CreatorError("Architecture %s is not support" % self.arch)
+        if target_arch.startswith("arm"):
+            if not self.set_target_arch(target_arch):
+                raise CreatorError('arch "%s" can not be supported' % target_arch)
         else:
             self.target_arch = None
-        print self.arch, self.target_arch
 
         # make sure the specified tmpdir and cachedir exist
         if not os.path.exists(self.tmpdir):
@@ -162,8 +158,8 @@ class BaseImageCreator(object):
             vdso_fh.close()
             if (int)(vdso_value) == 1:
                 msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n"
-                                  "\tYou can disable vdso with following command before starting image build:\n"
-                                  "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
+                              "\tYou can disable vdso with following command before starting image build:\n"
+                              "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
 
         return True
 
