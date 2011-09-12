@@ -96,7 +96,7 @@ class FsPlugin(ImagerPlugin):
             creator.package(destdir)
             outimage = creator.outimage
             if createopts['release'] is not None:
-                misc.create_release(ksconf, creatoropts['outdir'], creatoropts['name'], outimage, creatoropts['release'])
+                misc.create_release(ksconf, createopts['outdir'], createopts['name'], outimage, createopts['release'])
             creator.print_outimage_info()
         except errors.CreatorError:
             raise
