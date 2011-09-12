@@ -46,6 +46,7 @@ PREFIX_RE = re.compile('^<(.*?)>\s*(.*)')
 
 INTERACTIVE = True
 
+LOG_LEVEL = 1
 LOG_LEVELS = {
                 'quiet': 0,
                 'normal': 1,
@@ -53,17 +54,18 @@ LOG_LEVELS = {
                 'debug': 3,
                 'never': 4,
              }
-LOG_LEVEL = 1
 
 LOG_FILE_FP = None
+LOG_CONTENT = ''
 
 def _general_print(head, color, msg = None, stream = sys.stdout, level = 'normal'):
+    global LOG_CONTENT
     if LOG_LEVELS[level] > LOG_LEVEL:
         # skip
         return
 
     if LOG_FILE_FP:
-        LOG_FILE_FP.write(msg.strip() + '\n')
+        LOG_CONTENT += msg.strip() + '\n'
 
     _color_print(head, color, msg, stream, level)
 
@@ -206,14 +208,16 @@ def pause(msg=None):
 def set_logfile(fpath):
     global LOG_FILE_FP 
 
-    def _closelogf():
+    def _savelogf():
         if LOG_FILE_FP:
-            LOG_FILE_FP.close()
+            fp = open(LOG_FILE_FP, 'w')
+            fp.write(LOG_CONTENT)
+            fp.close()
 
     if LOG_FILE_FP is not None:
         warning('duplicate log file configuration')
 
-    LOG_FILE_FP = open(os.path.abspath(os.path.expanduser(fpath)), 'a')
+    LOG_FILE_FP = os.path.abspath(os.path.expanduser(fpath))
 
     import atexit
-    atexit.register(_closelogf)
+    atexit.register(_savelogf)
