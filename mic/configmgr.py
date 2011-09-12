@@ -35,7 +35,7 @@ DEFAULT_CREATE = {
     "tmpdir": DEFAULT_TMPDIR,
     "cachedir": DEFAULT_CACHEDIR,
     "outdir": DEFAULT_OUTDIR,
-    "arch": None,
+    "arch": "i586",
     "pkgmgr": "yum",
     "name": "output",
     "ksfile": None,

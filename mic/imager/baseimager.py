@@ -73,8 +73,8 @@ class BaseImageCreator(object):
             self.cachedir = createopts['cachedir']
 
             self.destdir = createopts['outdir']
-            # target arch for non-x86 image
-            self.target_arch = createopts['arch']
+
+            self.arch = createopts['arch']
             self._local_pkgs_path = createopts['local_pkgs_path']
 
         else:
@@ -83,7 +83,7 @@ class BaseImageCreator(object):
             self.tmpdir = "/var/tmp/mic"
             self.cachedir = "/var/tmp/mic/cache"
             self.destdir = "."
-            self.target_arch = None
+            self.arch = "noarch"
             self._local_pkgs_path = None
 
         self.__builddir = None
@@ -128,6 +128,16 @@ class BaseImageCreator(object):
                     self._dep_checks.append("mkfs.btrfs")
                     break
 
+        # make sure arch available
+        if not self.arch:
+            raise CreatorError("Architecture for creator is not available")
+        if self.arch.startswith("arm"):
+            if not self.set_target_arch(self.arch):
+                raise CreatorError("Architecture %s is not support" % self.arch)
+        else:
+            self.target_arch = None
+        print self.arch, self.target_arch
+
         # make sure the specified tmpdir and cachedir exist
         if not os.path.exists(self.tmpdir):
             os.makedirs(self.tmpdir)
@@ -139,20 +149,19 @@ class BaseImageCreator(object):
             return False
 
         self.target_arch = arch
-        if self.target_arch.startswith("arm"):
-            for dep in self._dep_checks:
-                if dep == "extlinux":
-                    self._dep_checks.remove(dep)
+        for dep in self._dep_checks:
+            if dep == "extlinux":
+                self._dep_checks.remove(dep)
 
-            if not os.path.exists("/usr/bin/qemu-arm") or not misc.is_statically_linked("/usr/bin/qemu-arm"):
-                self._dep_checks.append("qemu-arm-static")
+        if not os.path.exists("/usr/bin/qemu-arm") or not misc.is_statically_linked("/usr/bin/qemu-arm"):
+            self._dep_checks.append("qemu-arm-static")
 
-            if os.path.exists("/proc/sys/vm/vdso_enabled"):
-                vdso_fh = open("/proc/sys/vm/vdso_enabled","r")
-                vdso_value = vdso_fh.read().strip()
-                vdso_fh.close()
-                if (int)(vdso_value) == 1:
-                    msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n"
+        if os.path.exists("/proc/sys/vm/vdso_enabled"):
+            vdso_fh = open("/proc/sys/vm/vdso_enabled","r")
+            vdso_value = vdso_fh.read().strip()
+            vdso_fh.close()
+            if (int)(vdso_value) == 1:
+                msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n"
                                   "\tYou can disable vdso with following command before starting image build:\n"
                                   "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
 
