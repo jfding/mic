@@ -20,6 +20,7 @@
 
 import os,sys
 import re
+from datetime import datetime
 
 __ALL__ = ['set_mode',
            'get_loglevel',
@@ -65,7 +66,10 @@ def _general_print(head, color, msg = None, stream = sys.stdout, level = 'normal
         return
 
     if LOG_FILE_FP:
-        LOG_CONTENT += msg.strip() + '\n'
+        save_msg = msg.strip()
+        if save_msg:
+            timestr = datetime.now().strftime('[%m/%d %H:%M:%S] ')
+            LOG_CONTENT += timestr + save_msg + '\n'
 
     _color_print(head, color, msg, stream, level)
 
