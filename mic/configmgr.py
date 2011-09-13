@@ -47,30 +47,35 @@ DEFAULT_CREATE = {
 
 class ConfigMgr(object):
     def __init__(self, ksconf=None, siteconf=None):
+        # reset config options
+        self.reset()
+
+        # initial options from siteconf
+        self._siteconf = siteconf
+        if not self.__siteconf:
+            self._siteconf = DEFAULT_GSITECONF
+
+    def reset(self):
         self.common = {}
         self.create = {}
         self.convert = {}
         self.chroot = {}
         self.__ksconf = None
-        self.siteconf = None
+        self.__siteconf = None
 
         # initial create
         for key in DEFAULT_CREATE.keys():
             self.create[key] = DEFAULT_CREATE[key]
 
-        # initial options from siteconf
-        self._siteconf = siteconf
-        if not self.siteconf:
-            self._siteconf = DEFAULT_GSITECONF
-
     def __set_siteconf(self, siteconf):
         try:
-            self.siteconf = siteconf
+            self.__siteconf = siteconf
             self.parse_siteconf(siteconf)
+            print self.__siteconf
         except ConfigParser.Error, error:
             raise errors.ConfigError("%s" % error)
     def __get_siteconf(self):
-        return self.siteconf
+        return self.__siteconf
     _siteconf = property(__get_siteconf, __set_siteconf)
 
     def __set_ksconf(self, ksconf):

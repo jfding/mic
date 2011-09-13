@@ -63,6 +63,7 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('', '--logfile', type='string', dest='logfile', default=None, help='Path of logfile')
         optparser.add_option('', '--release', type='string', dest='release', default=None, help='Generate release package')
         optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
+        optparser.add_option('-c', '--config', type='string', dest='config', default=None, help='Specify config file for mic')
         return optparser
 
     def preoptparse(self, argv):
@@ -108,6 +109,10 @@ class Creator(cmdln.Cmdln):
             msger.set_loglevel('verbose')
         if self.options.debug:
             msger.set_loglevel('debug')
+
+        if self.options.config:
+            self.configmgr.reset()
+            self.configmgr._siteconf = self.options.config
 
         if self.options.outdir is not None:
             self.configmgr.create['outdir'] = self.options.outdir
