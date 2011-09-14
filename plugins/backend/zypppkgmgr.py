@@ -123,6 +123,21 @@ class Zypp(BackendPlugin):
             kind = "%s" % item.kind()
             if kind == "package":
                 name = "%s" % item.name()
+                resolvable = item.resolvable()
+                try:
+                    caps = resolvable.provides().CapNames().split(':')
+                    for cap in caps:
+                        if cap.split('=')[0].strip() == pkg:
+                            found = True
+                            if name not in self.packages:
+                                self.packages.append(name)
+                                item.status().setToBeInstalled (zypp.ResStatus.USER)
+                            break
+                    if found == True:
+                        break
+                except AttributeError:
+                    msger.warning('python-zypp in host system cannot support CapNames interface, please'
+                            ' update it to enhanced version which can be found in repo.meego.com/tools')
                 if not ispattern:
                     if name in self.incpkgs or self.excpkgs:
                         found = True
