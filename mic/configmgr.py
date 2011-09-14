@@ -71,7 +71,6 @@ class ConfigMgr(object):
         try:
             self.__siteconf = siteconf
             self.parse_siteconf(siteconf)
-            print self.__siteconf
         except ConfigParser.Error, error:
             raise errors.ConfigError("%s" % error)
     def __get_siteconf(self):
