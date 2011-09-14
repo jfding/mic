@@ -160,8 +160,7 @@ class Zypp(BackendPlugin):
         if found:
             return None
         else:
-            e = CreatorError("Unable to find package: %s" % (pkg,))
-            return e
+            raise CreatorError("Unable to find package: %s" % (pkg,))
 
     def deselectPackage(self, pkg):
         """Deselect package.  Can be specified as name.arch or name*"""
@@ -261,8 +260,7 @@ class Zypp(BackendPlugin):
                 map(lambda p: self.deselectPackage(p), grp.default_packages.keys())
             return None
         else:
-            e = CreatorError("Unable to find pattern: %s" % (grp,))
-            return e
+            raise CreatorError("Unable to find pattern: %s" % (grp,))
 
     def addRepository(self, name, url = None, mirrorlist = None, proxy = None, proxy_username = None, proxy_password = None, inc = None, exc = None):
         if not self.repo_manager:
@@ -412,6 +410,7 @@ class Zypp(BackendPlugin):
             arches = ["armv7l", "armv7nhl", "armv7hl", "armv5tel"]
             if self.creator.target_arch not in arches:
                 raise CreatorError("Invalid architecture: %s" % self.creator.target_arch)
+
             arch_map = {}
             try:
                 if self.creator.target_arch == "armv7l":
@@ -497,9 +496,9 @@ class Zypp(BackendPlugin):
             url = baseurl + "/%s" % location
             try:
                 filename = fs.myurlgrab(url, filename, proxies, progress_obj)
-            except CreatorError, e:
+            except CreatorError:
                 self.close()
-                raise CreatorError("%s" % e)
+                raise
 
     def installPkgs(self, package_objects):
         if not self.ts:
