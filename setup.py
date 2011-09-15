@@ -49,12 +49,12 @@ if sys.version_info[:2] > (2, 5):
 PACKAGES = [MOD_NAME,
             MOD_NAME + '/utils',
             MOD_NAME + '/imager',
-            MOD_NAME + '/urlgrabber',
             MOD_NAME + '/kickstart',
             MOD_NAME + '/kickstart/custom_commands',
-            MOD_NAME + '/pykickstart',
-            MOD_NAME + '/pykickstart/commands',
-            MOD_NAME + '/pykickstart/handlers',
+            MOD_NAME + '/3rdparty/pykickstart',
+            MOD_NAME + '/3rdparty/pykickstart/commands',
+            MOD_NAME + '/3rdparty/pykickstart/handlers',
+            MOD_NAME + '/3rdparty/pykickstart/urlgrabber',
            ]
 
 setup(name=MOD_NAME,

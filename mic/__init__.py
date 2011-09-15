@@ -1,3 +1,4 @@
 import os, sys
 
-sys.path.insert(0, os.path.dirname(__file__) or '.')
+cur_path = os.path.dirname(__file__) or '.'
+sys.path.insert(0, cur_path + '/3rdparty')
