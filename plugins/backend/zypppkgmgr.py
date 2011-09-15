@@ -75,6 +75,9 @@ class Zypp(BackendPlugin):
         self.incpkgs = []
         self.excpkgs = []
 
+        self.has_prov_query = True
+
+
     def doFileLogSetup(self, uid, logfile):
         # don't do the file log for the livecd as it can lead to open fds
         # being left and an inability to clean up after ourself
@@ -124,20 +127,25 @@ class Zypp(BackendPlugin):
             if kind == "package":
                 name = "%s" % item.name()
                 resolvable = item.resolvable()
-                try:
-                    caps = resolvable.provides().CapNames().split(':')
-                    for cap in caps:
-                        if cap.split('=')[0].strip() == pkg:
-                            found = True
-                            if name not in self.packages:
-                                self.packages.append(name)
-                                item.status().setToBeInstalled (zypp.ResStatus.USER)
+                if self.has_prov_query:
+                    try:
+                        caps = resolvable.provides().CapNames().split(':')
+                    except AttributeError, e:
+                        msger.warning('python-zypp in host system cannot support "CapNames" api, please'
+                                ' update it to enhanced version which can be found in repo.meego.com/tools')
+                        self.has_prov_query = False
+
+                    else:
+                        for cap in caps:
+                            if cap.split('=')[0].strip() == pkg:
+                                found = True
+                                if name not in self.packages:
+                                    self.packages.append(name)
+                                    item.status().setToBeInstalled(zypp.ResStatus.USER)
+                                break
+                        if found == True:
                             break
-                    if found == True:
-                        break
-                except AttributeError:
-                    msger.warning('python-zypp in host system cannot support CapNames interface, please'
-                            ' update it to enhanced version which can be found in repo.meego.com/tools')
+
                 if not ispattern:
                     if name in self.incpkgs or self.excpkgs:
                         found = True
