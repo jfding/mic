@@ -64,7 +64,7 @@ class TextProgress(object):
 
     def end(self, *args):
         if self.counter == self.total:
-            msger.info("\n")
+            msger.raw("\n")
 
         self.counter += 1
 
