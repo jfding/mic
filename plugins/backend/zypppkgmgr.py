@@ -18,17 +18,17 @@
 #
 
 import os
-import zypp
-import rpm
 import shutil
 
-from pykickstart import parser as ksparser
+import rpm
+import zypp
 
 from mic import msger
-from mic.imager.baseimager import BaseImageCreator
+from mic.kickstart import ksparser
 from mic.utils import rpmmisc, fs_related as fs
 from mic.utils.proxy import get_proxy_for
 from mic.utils.errors import CreatorError
+from mic.imager.baseimager import BaseImageCreator
 
 class RepositoryStub:
     def __init__(self):
