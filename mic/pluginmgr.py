@@ -69,9 +69,12 @@ class PluginMgr(object):
                     if mod in sys.modules:
                         msger.debug("Module %s already exists, skip" % mod)
                     else:
-                        pymod = __import__(mod)
-                        self.plugin_dirs[pdir] = True
-                        msger.debug("Plugin module %s:%s importing" % (mod, pymod.__file__))
+                        try:
+                            pymod = __import__(mod)
+                            self.plugin_dirs[pdir] = True
+                            msger.debug("Plugin module %s:%s imported" % (mod, pymod.__file__))
+                        except ImportError, e:
+                            msger.warning('%s, skip plugin %s/%s' %(str(e), os.path.basename(pdir), mod))
 
             del(sys.path[0])
 
