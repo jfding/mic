@@ -17,13 +17,17 @@ endif
 all:
 	$(PYTHON) setup.py build
 
-dist-bz2:
-	git archive --format=tar --prefix=$(PKGNAME)-$(TAGVER)/ $(TAG) | \
-		bzip2  > $(PKGNAME)-$(TAGVER).tar.bz2
+dist-common:
+	git archive --format=tar --prefix=$(PKGNAME)-$(TAGVER)/ $(TAG) | tar xpf -
+	git show $(TAG) --oneline | head -1 > $(PKGNAME)-$(TAGVER)/commit-id
 
-dist-gz:
-	git archive --format=tar --prefix=$(PKGNAME)-$(TAGVER)/ $(TAG) | \
-		gzip  > $(PKGNAME)-$(TAGVER).tar.gz
+dist-bz2: dist-common
+	tar jcpf $(PKGNAME)-$(TAGVER).tar.bz2 $(PKGNAME)-$(TAGVER)
+	rm -rf $(PKGNAME)-$(TAGVER)
+
+dist-gz: dist-common
+	tar zcpf $(PKGNAME)-$(TAGVER).tar.gz $(PKGNAME)-$(TAGVER)
+	rm -rf $(PKGNAME)-$(TAGVER)
 
 install: all
 	$(PYTHON) setup.py install  --prefix=$(DESTDIR)/$(PREFIX)
