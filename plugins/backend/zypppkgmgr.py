@@ -64,8 +64,6 @@ class Zypp(BackendPlugin):
         self.__pkgs_content = {}
         self.creator = creator
         self.repos = []
-        self.packages = []
-        self.patterns = []
         self.localpkgs = {}
         self.repo_manager = None
         self.repo_manager_options = None
@@ -139,9 +137,7 @@ class Zypp(BackendPlugin):
                         for cap in caps:
                             if cap.split('=')[0].strip() == pkg:
                                 found = True
-                                if name not in self.packages:
-                                    self.packages.append(name)
-                                    item.status().setToBeInstalled(zypp.ResStatus.USER)
+                                item.status().setToBeInstalled(zypp.ResStatus.USER)
                                 break
                         if found == True:
                             break
@@ -154,16 +150,12 @@ class Zypp(BackendPlugin):
                         arch = "%s" % item.arch()
                         if name == sp[0] and arch == sp[1]:
                             found = True
-                            if name not in self.packages:
-                                self.packages.append(name)
-                                item.status().setToBeInstalled (zypp.ResStatus.USER)
+                            item.status().setToBeInstalled (zypp.ResStatus.USER)
                             break
                     else:
                         if name == sp[0]:
                             found = True
-                            if name not in self.packages:
-                                self.packages.append(name)
-                                item.status().setToBeInstalled (zypp.ResStatus.USER)
+                            item.status().setToBeInstalled (zypp.ResStatus.USER)
                             break
                 else:
                     if name in self.incpkgs or self.excpkgs:
@@ -171,15 +163,11 @@ class Zypp(BackendPlugin):
                         continue
                     if startx and name.endswith(sp[0][1:]):
                         found = True
-                        if name not in self.packages:
-                            self.packages.append(name)
-                            item.status().setToBeInstalled (zypp.ResStatus.USER)
+                        item.status().setToBeInstalled (zypp.ResStatus.USER)
 
                     if endx and name.startswith(sp[0][:-1]):
                         found = True
-                        if name not in self.packages:
-                            self.packages.append(name)
-                            item.status().setToBeInstalled (zypp.ResStatus.USER)
+                        item.status().setToBeInstalled (zypp.ResStatus.USER)
         if found:
             return None
         else:
@@ -205,28 +193,20 @@ class Zypp(BackendPlugin):
                         if name == sp[0] and arch == sp[1]:
                             if item.status().isToBeInstalled():
                                 item.status().resetTransact(zypp.ResStatus.USER)
-                            if name in self.packages:
-                                self.packages.remove(name)
                             break
                     else:
                         if name == sp[0]:
                             if item.status().isToBeInstalled():
                                 item.status().resetTransact(zypp.ResStatus.USER)
-                            if name in self.packages:
-                                self.packages.remove(name)
                             break
                 else:
                     if startx and name.endswith(sp[0][1:]):
                         if item.status().isToBeInstalled():
                             item.status().resetTransact(zypp.ResStatus.USER)
-                        if name in self.packages:
-                            self.packages.remove(name)
 
                     if endx and name.startswith(sp[0][:-1]):
                         if item.status().isToBeInstalled():
                             item.status().resetTransact(zypp.ResStatus.USER)
-                        if name in self.packages:
-                            self.packages.remove(name)
 
     def __selectIncpkgs(self):
         found = False
@@ -238,9 +218,7 @@ class Zypp(BackendPlugin):
                     repoalias = "%s" % item.repoInfo().alias()
                     if name == pkg and repoalias.endswith("include"):
                         found = True
-                        if name not in self.packages:
-                            self.packages.append(name)
-                            item.status().setToBeInstalled (zypp.ResStatus.USER)
+                        item.status().setToBeInstalled (zypp.ResStatus.USER)
                         break
         if not found:
             raise CreatorError("Unable to find package: %s" % (pkg,))
@@ -255,9 +233,7 @@ class Zypp(BackendPlugin):
                     repoalias = "%s" % item.repoInfo().alias()
                     if name == pkg and not repoalias.endswith("exclude"):
                         found = True
-                        if name not in self.packages:
-                            self.packages.append(name)
-                            item.status().setToBeInstalled (zypp.ResStatus.USER)
+                        item.status().setToBeInstalled (zypp.ResStatus.USER)
                         break
         if not found:
             raise CreatorError("Unable to find package: %s" % (pkg,))
@@ -273,9 +249,7 @@ class Zypp(BackendPlugin):
                 name = "%s" % item.name()
                 if name == grp or summary == grp:
                     found = True
-                    if name not in self.patterns:
-                        self.patterns.append(name)
-                        item.status().setToBeInstalled (zypp.ResStatus.USER)
+                    item.status().setToBeInstalled (zypp.ResStatus.USER)
                     break
 
         if found:
