@@ -179,4 +179,4 @@ if __name__ == "__main__":
             import traceback
             msger.error(traceback.format_exc())
         else:
-            msger.error(str(err))
+            msger.error('\n'+str(err))
