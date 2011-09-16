@@ -29,7 +29,6 @@ import struct
 import termios
 
 from errors import *
-from urlgrabber.grabber import URLGrabber, URLGrabError
 from mic import msger
 import runner
 
@@ -873,6 +872,8 @@ def load_module(module):
         runner.quiet(['modprobe', module])
 
 def myurlgrab(url, filename, proxies, progress_obj = None):
+    from pykickstart.urlgrabber.grabber import URLGrabber, URLGrabError
+
     g = URLGrabber()
     if progress_obj is None:
         progress_obj = TextProgress()
