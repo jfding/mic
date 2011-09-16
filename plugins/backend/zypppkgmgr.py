@@ -567,14 +567,6 @@ class Zypp(BackendPlugin):
 
         return ret
 
-    def zypp_install(self):
-        policy = zypp.ZYppCommitPolicy()
-        policy.downloadMode(zypp.DownloadInAdvance)
-        policy.dryRun(False)
-        policy.syncPoolAfterCommit(False)
-        result = self.Z.commit(policy)
-        msger.info(result)
-
     def _add_prob_flags(self, *flags):
         for flag in flags:
            if flag not in self.probFilterFlags:
