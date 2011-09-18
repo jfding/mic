@@ -111,11 +111,26 @@ class Zypp(BackendPlugin):
         self._cleanupRpmdbLocks(installroot)
         self.installroot = installroot
 
+    def whatObsolete(self, pkg):
+        query = zypp.PoolQuery()
+        query.addKind(zypp.ResKind.package)
+        query.addAttribute(zypp.SolvAttr.obsoletes, pkg)
+        query.setMatchExact()
+        for pi in query.queryResults(self.Z.pool()):
+            return pi
+        return None
+
     def selectPackage(self, pkg):
         """ Select a given package or package pattern, can be specified with name.arch or name* or *name """
         if not self.Z:
             self.__initialize_zypp()
 
+        def markPoolItem(obs, pi):
+            if obs == None:
+                pi.status().setToBeInstalled (zypp.ResStatus.USER)
+            else:
+                obs.status().setToBeInstalled (zypp.ResStatus.USER)
+                
         found = False
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
@@ -125,6 +140,7 @@ class Zypp(BackendPlugin):
             kind = "%s" % item.kind()
             if kind == "package":
                 name = "%s" % item.name()
+                obspkg = self.whatObsolete(name)
                 resolvable = item.resolvable()
                 if self.has_prov_query:
                     try:
@@ -138,7 +154,7 @@ class Zypp(BackendPlugin):
                         for cap in caps:
                             if cap.split('=')[0].strip() == pkg:
                                 found = True
-                                item.status().setToBeInstalled(zypp.ResStatus.USER)
+                                markPoolItem(obspkg, item)
                                 break
                         if found == True:
                             break
@@ -151,12 +167,12 @@ class Zypp(BackendPlugin):
                         arch = "%s" % item.arch()
                         if name == sp[0] and arch == sp[1]:
                             found = True
-                            item.status().setToBeInstalled (zypp.ResStatus.USER)
+                            markPoolItem(obspkg, item)
                             break
                     else:
                         if name == sp[0]:
                             found = True
-                            item.status().setToBeInstalled (zypp.ResStatus.USER)
+                            markPoolItem(obspkg, item)
                             break
                 else:
                     if name in self.incpkgs or self.excpkgs:
@@ -164,11 +180,11 @@ class Zypp(BackendPlugin):
                         continue
                     if startx and name.endswith(sp[0][1:]):
                         found = True
-                        item.status().setToBeInstalled (zypp.ResStatus.USER)
+                        markPoolItem(obspkg, item)
 
                     if endx and name.startswith(sp[0][:-1]):
                         found = True
-                        item.status().setToBeInstalled (zypp.ResStatus.USER)
+                        markPoolItem(obspkg, item)
         if found:
             return None
         else:
