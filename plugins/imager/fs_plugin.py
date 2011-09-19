@@ -62,7 +62,7 @@ class FsPlugin(ImagerPlugin):
                 break
 
         if not pkgmgr:
-            raise CreatorError("Can't find backend plugin: %s" % createopts['pkgmgr'])
+            raise errors.CreatorError("Can't find backend plugin: %s" % createopts['pkgmgr'])
 
         creator = fs.FsImageCreator(createopts, pkgmgr)
 
