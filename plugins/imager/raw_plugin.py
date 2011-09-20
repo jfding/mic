@@ -197,7 +197,7 @@ class RawPlugin(ImagerPlugin):
         msger.info("`dd` image ...")
         rc = runner.show(args)
         srcloop.cleanup()
-        shutil.rmtree(srcmnt, ignore_errors = True)
+        shutil.rmtree(os.path.dirname(srcmnt), ignore_errors = True)
 
         if rc != 0:
             raise errors.CreatorError("Failed to dd")
