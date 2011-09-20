@@ -46,6 +46,14 @@ def truncate_url(url, width):
     return os.path.basename(url)[0:width]
 
 class TextProgress(object):
+    # make the manager class as singleton
+    _instance = None
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(TextProgress, cls).__new__(cls, *args, **kwargs)
+
+        return cls._instance
+
     def __init__(self, totalnum = None):
         self.total = totalnum
         self.counter = 1
@@ -66,7 +74,8 @@ class TextProgress(object):
         if self.counter == self.total:
             msger.raw("\n")
 
-        self.counter += 1
+        if self.total is not None:
+            self.counter += 1
 
 def find_binary_path(binary):
     if os.environ.has_key("PATH"):

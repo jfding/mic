@@ -298,7 +298,6 @@ class Yum(BackendPlugin, yum.YumBase):
         repo.gpgcheck = 1
         repo.enable()
         repo.setup(0)
-        repo.setCallback(fs.TextProgress())
         self.repos.add(repo)
 
         msger.verbose('repo: %s was added' % name)
@@ -351,6 +350,9 @@ class Yum(BackendPlugin, yum.YumBase):
 
         msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, total_count - cached_count))
         try:
+            repos = self.repos.listEnabled()
+            for repo in repos:
+                repo.setCallback(fs.TextProgress(total_count - cached_count))
             self.downloadPkgs(dlpkgs)
             # FIXME: sigcheck?
 
