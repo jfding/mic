@@ -417,14 +417,7 @@ class Zypp(BackendPlugin):
 
             arch_map = {}
             try:
-                if self.creator.target_arch == "armv7l":
-                    arch_map["armv7l"] = zypp.Arch_armv7l()
-                elif self.creator.target_arch == "armv7nhl":
-                    arch_map["armv7nhl"] = zypp.Arch_armv7nhl()
-                elif self.creator.target_arch == "armv7hl":
-                    arch_map["armv7hl"] = zypp.Arch_armv7hl()
-                elif self.creator.target_arch == "armv5tel":
-                    arch_map["armv5tel"] = zypp.Arch_armv5tel()
+                arch_map[self.creator.target_arch] = zypp.Arch(self.creator.target_arch)
             except AttributeError:
                 msger.error('libzypp/python-zypp in host system cannot support arch %s, please'
                             ' update it to enhanced version which can be found in repo.meego.com/tools'\
