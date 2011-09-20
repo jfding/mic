@@ -94,9 +94,8 @@ class FsPlugin(ImagerPlugin):
             creator.configure(createopts["repomd"])
             creator.unmount()
             creator.package(destdir)
-            outimage = creator.outimage
             if createopts['release'] is not None:
-                misc.create_release(ksconf, createopts['outdir'], createopts['name'], outimage, createopts['release'])
+                creator.release_output(ksconf, createopts['outdir'], createopts['name'], createopts['release'])
             creator.print_outimage_info()
         except errors.CreatorError:
             raise
