@@ -19,11 +19,12 @@
 #
 
 import os, sys
-import yum
+
 import rpmUtils
-from pykickstart import parser as ksparser
+import yum
 
 from mic import msger
+from mic.kickstart import ksparser
 from mic.utils import rpmmisc, fs_related as fs
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
