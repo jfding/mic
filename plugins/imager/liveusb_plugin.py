@@ -157,14 +157,16 @@ class LiveUSBPlugin(ImagerPlugin):
         convertor._set_image_size(srcimgsize)
         base_on_dir = os.path.dirname(base_on)
         convertor._LoopImageCreator__imgdir = base_on_dir
-        convertor.mount()
-        __mkinitrd(convertor)
-        convertor._create_bootconfig()
-        __run_post_cleanups(convertor)
-        convertor.unmount()
-        convertor.package()
-        convertor.print_outimage_info()
-        shutil.rmtree(base_on_dir, ignore_errors = True)
+        try:
+            convertor.mount()
+            __mkinitrd(convertor)
+            convertor._create_bootconfig()
+            __run_post_cleanups(convertor)
+            convertor.unmount()
+            convertor.package()
+            convertor.print_outimage_info()
+        finally:
+            shutil.rmtree(base_on_dir, ignore_errors = True)
 
     @classmethod
     def do_unpack(cls, srcimg):

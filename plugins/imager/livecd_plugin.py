@@ -155,14 +155,16 @@ class LiveCDPlugin(ImagerPlugin):
         convertor._LoopImageCreator__imgdir = base_on_dir
         convertor._set_fstype("ext3")
         convertor._set_image_size(srcimgsize)
-        convertor.mount()
-        __mkinitrd(convertor)
-        convertor._create_bootconfig()
-        __run_post_cleanups(convertor)
-        convertor.unmount()
-        convertor.package()
-        convertor.print_outimage_info()
-        shutil.rmtree(base_on_dir, ignore_errors = True)
+        try:
+            convertor.mount()
+            __mkinitrd(convertor)
+            convertor._create_bootconfig()
+            __run_post_cleanups(convertor)
+            convertor.unmount()
+            convertor.package()
+            convertor.print_outimage_info()
+        finally:
+            shutil.rmtree(base_on_dir, ignore_errors = True)
 
     @classmethod
     def do_unpack(cls, srcimg):
