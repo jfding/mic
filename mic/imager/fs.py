@@ -28,6 +28,7 @@ class FsImageCreator(BaseImageCreator):
         BaseImageCreator.__init__(self, cfgmgr, pkgmgr)
         self._fstype = None
         self._fsopts = None
+        self._include_src = False
 
     def package(self, destdir = "."):
         fsdir = os.path.join(destdir, self.name)
