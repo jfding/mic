@@ -81,11 +81,9 @@ class LiveCDPlugin(ImagerPlugin):
             creator.configure(creatoropts["repomd"])
             creator.unmount()
             creator.package(creatoropts["outdir"])
-            outimage = creator.outimage
             if creatoropts['release'] is not None:
-                misc.create_release(ksconf, creatoropts['outdir'], creatoropts['name'], outimage, creatoropts['release'])
+                creator.release_output(ksconf, creatoropts['outdir'], creatoropts['name'], creatoropts['release'])
             creator.print_outimage_info()
-            outimage = creator.outimage
 
         except errors.CreatorError:
             raise
