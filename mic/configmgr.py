@@ -78,12 +78,14 @@ class ConfigMgr(object):
     _siteconf = property(__get_siteconf, __set_siteconf)
 
     def __set_ksconf(self, ksconf):
+        if not os.path.isfile(ksconf):
+            msger.error('Cannot find ks file: %s' % ksconf)
+
         self.__ksconf = ksconf
         self.parse_kickstart(ksconf)
     def __get_ksconf(self):
         return self.__ksconf
     _ksconf = property(__get_ksconf, __set_ksconf)
-
     def parse_siteconf(self, siteconf = None):
         if not siteconf:
             return
