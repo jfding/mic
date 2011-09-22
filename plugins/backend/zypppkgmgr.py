@@ -469,6 +469,7 @@ class Zypp(BackendPlugin):
                 'Could not open local rpm file: %s: %s' % (self.localpath, e)
         arch = zypp.Arch(hdr.arch)
         if self.creator.target_arch == None:
+            # TODO, get the default_arch from conf or detected from global settings
             sysarch = zypp.Arch('i686')
         else:
             sysarch = zypp.Arch(self.creator.target_arch)

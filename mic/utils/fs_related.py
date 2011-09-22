@@ -45,7 +45,7 @@ def truncate_url(url, width):
     return os.path.basename(url)[0:width]
 
 class TextProgress(object):
-    # make the manager class as singleton
+    # make the class as singleton
     _instance = None
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
