@@ -23,7 +23,11 @@ import shutil
 import rpmUtils.miscutils
 import rpmUtils.transaction
 import rpm
+
 import zypp
+if not hasattr(zypp, 'PoolQuery'):
+    raise ImportError("python-zypp in host system cannot support PoolQuery interface, please "
+                      "update it to enhanced version which can be found in repo.meego.com/tools")
 
 from mic import msger
 from mic.kickstart import ksparser
@@ -31,10 +35,6 @@ from mic.utils import rpmmisc, fs_related as fs
 from mic.utils.proxy import get_proxy_for
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
-
-if not hasattr(zypp, 'PoolQuery'):
-    raise ImportError("python-zypp in host system cannot support PoolQuery interface, please "
-                      "update it to enhanced version which can be found in repo.meego.com/tools")
 
 class RepositoryStub:
     def __init__(self):
@@ -81,7 +81,6 @@ class Zypp(BackendPlugin):
         self.excpkgs = []
 
         self.has_prov_query = True
-
 
     def doFileLogSetup(self, uid, logfile):
         # don't do the file log for the livecd as it can lead to open fds
