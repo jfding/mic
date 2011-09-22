@@ -64,6 +64,7 @@ class Zypp(BackendPlugin):
         self.__pkgs_content = {}
         self.creator = creator
         self.repos = []
+        self.to_deselect = []
         self.localpkgs = {}
         self.repo_manager = None
         self.repo_manager_options = None
@@ -110,11 +111,26 @@ class Zypp(BackendPlugin):
         self._cleanupRpmdbLocks(installroot)
         self.installroot = installroot
 
+    def whatObsolete(self, pkg):
+        query = zypp.PoolQuery()
+        query.addKind(zypp.ResKind.package)
+        query.addAttribute(zypp.SolvAttr.obsoletes, pkg)
+        query.setMatchExact()
+        for pi in query.queryResults(self.Z.pool()):
+            return pi
+        return None
+
     def selectPackage(self, pkg):
         """ Select a given package or package pattern, can be specified with name.arch or name* or *name """
         if not self.Z:
             self.__initialize_zypp()
 
+        def markPoolItem(obs, pi):
+            if obs == None:
+                pi.status().setToBeInstalled (zypp.ResStatus.USER)
+            else:
+                obs.status().setToBeInstalled (zypp.ResStatus.USER)
+                
         found = False
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
@@ -124,6 +140,7 @@ class Zypp(BackendPlugin):
             kind = "%s" % item.kind()
             if kind == "package":
                 name = "%s" % item.name()
+                obspkg = self.whatObsolete(name)
                 resolvable = item.resolvable()
                 if self.has_prov_query:
                     try:
@@ -137,7 +154,7 @@ class Zypp(BackendPlugin):
                         for cap in caps:
                             if cap.split('=')[0].strip() == pkg:
                                 found = True
-                                item.status().setToBeInstalled(zypp.ResStatus.USER)
+                                markPoolItem(obspkg, item)
                                 break
                         if found == True:
                             break
@@ -150,12 +167,12 @@ class Zypp(BackendPlugin):
                         arch = "%s" % item.arch()
                         if name == sp[0] and arch == sp[1]:
                             found = True
-                            item.status().setToBeInstalled (zypp.ResStatus.USER)
+                            markPoolItem(obspkg, item)
                             break
                     else:
                         if name == sp[0]:
                             found = True
-                            item.status().setToBeInstalled (zypp.ResStatus.USER)
+                            markPoolItem(obspkg, item)
                             break
                 else:
                     if name in self.incpkgs or self.excpkgs:
@@ -163,50 +180,40 @@ class Zypp(BackendPlugin):
                         continue
                     if startx and name.endswith(sp[0][1:]):
                         found = True
-                        item.status().setToBeInstalled (zypp.ResStatus.USER)
+                        markPoolItem(obspkg, item)
 
                     if endx and name.startswith(sp[0][:-1]):
                         found = True
-                        item.status().setToBeInstalled (zypp.ResStatus.USER)
+                        markPoolItem(obspkg, item)
         if found:
             return None
         else:
             raise CreatorError("Unable to find package: %s" % (pkg,))
+    def inDeselectPackages(self, name):
+        """check if specified pacakges are in the list of inDeselectPackages"""
+        for pkg in self.to_deselect:
+            startx = pkg.startswith("*")
+            endx = pkg.endswith("*")
+            ispattern = startx or endx
+            sp = pkg.rsplit(".", 2)
+            if not ispattern:
+                if len(sp) == 2:
+                    arch = "%s" % item.arch()
+                    if name == sp[0] and arch == sp[1]:
+                        return True;
+                else:
+                    if name == sp[0]:
+                        return True;
+            else:
+                if startx and name.endswith(sp[0][1:]):
+                        return True;
+                if endx and name.startswith(sp[0][:-1]):
+                        return True;
+        return False;
 
     def deselectPackage(self, pkg):
-        """Deselect package.  Can be specified as name.arch or name*"""
-
-        if not self.Z:
-            self.__initialize_zypp()
-
-        startx = pkg.startswith("*")
-        endx = pkg.endswith("*")
-        ispattern = startx or endx
-        sp = pkg.rsplit(".", 2)
-        for item in self.Z.pool():
-            kind = "%s" % item.kind()
-            if kind == "package":
-                name = "%s" % item.name()
-                if not ispattern:
-                    if len(sp) == 2:
-                        arch = "%s" % item.arch()
-                        if name == sp[0] and arch == sp[1]:
-                            if item.status().isToBeInstalled():
-                                item.status().resetTransact(zypp.ResStatus.USER)
-                            break
-                    else:
-                        if name == sp[0]:
-                            if item.status().isToBeInstalled():
-                                item.status().resetTransact(zypp.ResStatus.USER)
-                            break
-                else:
-                    if startx and name.endswith(sp[0][1:]):
-                        if item.status().isToBeInstalled():
-                            item.status().resetTransact(zypp.ResStatus.USER)
-
-                    if endx and name.startswith(sp[0][:-1]):
-                        if item.status().isToBeInstalled():
-                            item.status().resetTransact(zypp.ResStatus.USER)
+        """collect packages should not be installed"""
+        self.to_deselect.append(pkg)
 
     def __selectIncpkgs(self):
         found = False
@@ -322,7 +329,7 @@ class Zypp(BackendPlugin):
         installed_pkgs = todo._toInstall
         dlpkgs = []
         for item in installed_pkgs:
-            if not zypp.isKindPattern(item):
+            if not zypp.isKindPattern(item) and not self.inDeselectPackages(item.name()):
                 dlpkgs.append(item)
 
         # record the total size of installed pkgs
@@ -410,14 +417,7 @@ class Zypp(BackendPlugin):
 
             arch_map = {}
             try:
-                if self.creator.target_arch == "armv7l":
-                    arch_map["armv7l"] = zypp.Arch_armv7l()
-                elif self.creator.target_arch == "armv7nhl":
-                    arch_map["armv7nhl"] = zypp.Arch_armv7nhl()
-                elif self.creator.target_arch == "armv7hl":
-                    arch_map["armv7hl"] = zypp.Arch_armv7hl()
-                elif self.creator.target_arch == "armv5tel":
-                    arch_map["armv5tel"] = zypp.Arch_armv5tel()
+                arch_map[self.creator.target_arch] = zypp.Arch(self.creator.target_arch)
             except AttributeError:
                 msger.error('libzypp/python-zypp in host system cannot support arch %s, please'
                             ' update it to enhanced version which can be found in repo.meego.com/tools'\
