@@ -32,6 +32,10 @@ from mic.utils.proxy import get_proxy_for
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
 
+if not hasattr(zypp, 'PoolQuery'):
+    raise ImportError("python-zypp in host system cannot support PoolQuery interface, please "
+                      "update it to enhanced version which can be found in repo.meego.com/tools")
+
 class RepositoryStub:
     def __init__(self):
         self.name = None
@@ -137,56 +141,43 @@ class Zypp(BackendPlugin):
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
         ispattern = startx or endx
-        sp = pkg.rsplit(".", 2)
-        for item in self.Z.pool():
-            kind = "%s" % item.kind()
-            if kind == "package":
-                name = "%s" % item.name()
-                obspkg = self.whatObsolete(name)
-                resolvable = item.resolvable()
-                if self.has_prov_query:
-                    try:
-                        caps = resolvable.provides().CapNames().split(':')
-                    except AttributeError, e:
-                        msger.warning('python-zypp in host system cannot support "CapNames" api, please'
-                                ' update it to enhanced version which can be found in repo.meego.com/tools')
-                        self.has_prov_query = False
+        sp = pkg.rsplit(".", 1)
 
-                    else:
-                        for cap in caps:
-                            if cap.split('=')[0].strip() == pkg:
-                                found = True
-                                markPoolItem(obspkg, item)
-                                break
-                        if found == True:
-                            break
+        q = zypp.PoolQuery()
+        q.addKind(zypp.ResKind.package)
+        if ispattern:
+            if startx and not endx:
+                pattern = '%s$' % (pkg[1:])
+            if endx and not startx:
+                pattern = '^%s' % (pkg[0:-1])
+            if endx and startx:
+                pattern = '%s' % (pkg[1:-1])
+            q.setMatchRegex()
+            q.addAttribute(zypp.SolvAttr.name,pattern)
+        elif len(sp) == 2:
+            q.setMatchExact()
+            q.addAttribute(zypp.SolvAttr.name,sp[0])
+        else:
+            q.setMatchExact()
+            q.addAttribute(zypp.SolvAttr.name,pkg)
 
-                if not ispattern:
-                    if name in self.incpkgs or self.excpkgs:
-                        found = True
-                        break
-                    if len(sp) == 2:
-                        arch = "%s" % item.arch()
-                        if name == sp[0] and arch == sp[1]:
-                            found = True
-                            markPoolItem(obspkg, item)
-                            break
-                    else:
-                        if name == sp[0]:
-                            found = True
-                            markPoolItem(obspkg, item)
-                            break
-                else:
-                    if name in self.incpkgs or self.excpkgs:
-                        found =  True
-                        continue
-                    if startx and name.endswith(sp[0][1:]):
-                        found = True
-                        markPoolItem(obspkg, item)
-
-                    if endx and name.startswith(sp[0][:-1]):
-                        found = True
-                        markPoolItem(obspkg, item)
+        for item in q.queryResults(self.Z.pool()):
+            found = True
+            obspkg = self.whatObsolete(item.name())
+            if len(sp) == 2:
+                if item.arch() == sp[1]:
+                    item.status().setToBeInstalled (zypp.ResStatus.USER)
+            else:
+                markPoolItem(obspkg, item)
+        # Can't match using package name, then search from packge provides infomation
+        if found == False and not ispattern:
+            q.addAttribute(zypp.SolvAttr.provides, pkg)
+            q.addAttribute(zypp.SolvAttr.name,'')
+            for item in q.queryResults(self.Z.pool()):
+                found = True
+                obspkg = self.whatObsolete(item.name())
+                markPoolItem(obspkg, item)
+                break
         if found:
             return None
         else:
@@ -251,15 +242,15 @@ class Zypp(BackendPlugin):
         if not self.Z:
             self.__initialize_zypp()
         found = False
-        for item in self.Z.pool():
-            kind = "%s" % item.kind()
-            if kind == "pattern":
-                summary = "%s" % item.summary()
-                name = "%s" % item.name()
-                if name == grp or summary == grp:
-                    found = True
-                    item.status().setToBeInstalled (zypp.ResStatus.USER)
-                    break
+        q=zypp.PoolQuery()
+        q.addKind(zypp.ResKind.pattern)
+        for item in q.queryResults(self.Z.pool()):
+            summary = "%s" % item.summary()
+            name = "%s" % item.name()
+            if name == grp or summary == grp:
+                found = True
+                item.status().setToBeInstalled (zypp.ResStatus.USER)
+                break
 
         if found:
             if include == ksparser.GROUP_REQUIRED:
