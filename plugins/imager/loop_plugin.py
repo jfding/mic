@@ -76,7 +76,8 @@ class LoopPlugin(ImagerPlugin):
                 break
 
         if not pkgmgr:
-            raise errors.CreatorError("Can't find package manager: %s" % creatoropts['pkgmgr'])
+            pkgmgrs = pluginmgr.PluginMgr().get_plugins('backend').keys()
+            raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
 
         creator = loop.LoopImageCreator(creatoropts, pkgmgr, extra_loop)
 
