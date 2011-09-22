@@ -180,6 +180,7 @@ class Yum(BackendPlugin, yum.YumBase):
         conf  = "[main]\n"
         conf += "installroot=%s\n" % installroot
         conf += "cachedir=/var/cache/yum\n"
+        conf += "persistdir=/var/lib/yum\n"
         conf += "plugins=0\n"
         conf += "reposdir=\n"
         conf += "failovermethod=priority\n"
@@ -293,6 +294,7 @@ class Yum(BackendPlugin, yum.YumBase):
                 repo.setAttribute(k, v)
 
         repo.basecachedir = self.conf.cachedir
+        repo.base_persistdir = self.conf.persistdir
         repo.failovermethod = "priority"
         repo.metadata_expire = 0
         # Enable gpg check for verifying corrupt packages
