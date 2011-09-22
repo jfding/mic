@@ -107,7 +107,6 @@ class BaseImageCreator(object):
         self.__img_compression_method = None
 
         self._recording_pkgs = None
-        self._include_src = None
 
         # available size in root fs, init to 0
         self._root_fs_avail = 0
@@ -807,7 +806,7 @@ class BaseImageCreator(object):
         yum_conf = self._mktemp(prefix = "yum.conf-")
 
         keep_record = None
-        if self._include_src:
+        if hasattr(self, '_include_src') and self._include_src:
             keep_record = 'include_src'
         if self._recording_pkgs in ('name', 'content'):
             keep_record = self._recording_pkgs

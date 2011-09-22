@@ -65,6 +65,7 @@ class FsPlugin(ImagerPlugin):
             raise errors.CreatorError("Can't find backend plugin: %s" % createopts['pkgmgr'])
 
         creator = fs.FsImageCreator(createopts, pkgmgr)
+        creator._include_src = opts.include_src
 
         if recording_pkgs is not None:
             creator._recording_pkgs = recording_pkgs
