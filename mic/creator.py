@@ -58,13 +58,13 @@ class Creator(cmdln.Cmdln):
         optparser = cmdln.CmdlnOptionParser(self)
         optparser.add_option('-d', '--debug', action='store_true', dest='debug', help=SUPPRESS_HELP)
         optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help=SUPPRESS_HELP)
-        optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='Output directory')
-        optparser.add_option('', '--local-pkgs-path', type='string', dest='local_pkgs_path', default=None, help='Path for local pkgs(rpms) to be installed')
         optparser.add_option('', '--logfile', type='string', dest='logfile', default=None, help='Path of logfile')
-        optparser.add_option('', '--release', type='string', dest='release', default=None, help='Generate release package')
-        optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
         optparser.add_option('-c', '--config', type='string', dest='config', default=None, help='Specify config file for mic')
+        optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='Output directory')
+        optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
+        optparser.add_option('', '--release', type='string', dest='release', default=None, metavar='RID', help='Generate a release of RID with all neccessary files ')
         optparser.add_option('', '--pkgmgr', type='string', dest='pkgmgr', default=None, help='Specify backend package manager')
+        optparser.add_option('', '--local-pkgs-path', type='string', dest='local_pkgs_path', default=None, help='Path for local pkgs(rpms) to be installed')
         return optparser
 
     def preoptparse(self, argv):
