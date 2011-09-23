@@ -64,6 +64,7 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('', '--release', type='string', dest='release', default=None, help='Generate release package')
         optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
         optparser.add_option('-c', '--config', type='string', dest='config', default=None, help='Specify config file for mic')
+        optparser.add_option('', '--pkgmgr', type='string', dest='pkgmgr', default=None, help='Specify backend package manager')
         return optparser
 
     def preoptparse(self, argv):
@@ -124,6 +125,9 @@ class Creator(cmdln.Cmdln):
 
         if self.options.arch is not None:
             self.configmgr.create['arch'] = self.options.arch
+
+        if self.options.pkgmgr is not None:
+            self.configmgr.create['pkgmgr'] = self.options.pkgmgr
 
         if self.options.logfile:
             msger.set_interactive(False)
