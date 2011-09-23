@@ -341,6 +341,8 @@ class Zypp(BackendPlugin):
 
         """ Clean up repo metadata """
         shutil.rmtree(self.creator.cachedir + "/etc", ignore_errors = True)
+        shutil.rmtree(self.creator.cachedir + "/solv", ignore_errors = True)
+        shutil.rmtree(self.creator.cachedir + "/raw", ignore_errors = True)
 
         zypp.KeyRing.setDefaultAccept( zypp.KeyRing.ACCEPT_UNSIGNED_FILE
                                      | zypp.KeyRing.ACCEPT_VERIFICATION_FAILED
