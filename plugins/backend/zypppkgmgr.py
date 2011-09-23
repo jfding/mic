@@ -44,9 +44,6 @@ class RepositoryStub:
         self.proxy = None
         self.proxy_username = None
         self.proxy_password = None
-        self.includepkgs = None
-        self.includepkgs = None
-        self.exclude = None
 
         self.enabled = True
         self.autorefresh = True
@@ -77,8 +74,8 @@ class Zypp(BackendPlugin):
         self.Z = None
         self.ts = None
         self.probFilterFlags = []
-        self.incpkgs = []
-        self.excpkgs = []
+        self.incpkgs = {}
+        self.excpkgs = {}
 
         self.has_prov_query = True
 
@@ -161,6 +158,10 @@ class Zypp(BackendPlugin):
             q.addAttribute(zypp.SolvAttr.name,pkg)
 
         for item in q.queryResults(self.Z.pool()):
+            if item.name() in self.excpkgs.keys() and self.excpkgs[item.name()] == item.repoInfo().name():
+                continue
+            if item.name() in self.incpkgs.keys() and self.incpkgs[item.name()] != item.repoInfo().name():
+                continue
             found = True
             obspkg = self.whatObsolete(item.name())
             if len(sp) == 2:
@@ -173,6 +174,10 @@ class Zypp(BackendPlugin):
             q.addAttribute(zypp.SolvAttr.provides, pkg)
             q.addAttribute(zypp.SolvAttr.name,'')
             for item in q.queryResults(self.Z.pool()):
+                if item.name() in self.excpkgs.keys() and self.excpkgs[item.name()] == item.repoInfo().name():
+                    continue
+                if item.name() in self.incpkgs.keys() and self.incpkgs[item.name()] != item.repoInfo().name():
+                    continue
                 found = True
                 obspkg = self.whatObsolete(item.name())
                 markPoolItem(obspkg, item)
@@ -207,36 +212,6 @@ class Zypp(BackendPlugin):
         """collect packages should not be installed"""
         self.to_deselect.append(pkg)
 
-    def __selectIncpkgs(self):
-        found = False
-        for pkg in self.incpkgs:
-            for item in self.Z.pool():
-                kind = "%s" % item.kind()
-                if kind == "package":
-                    name = "%s" % item.name()
-                    repoalias = "%s" % item.repoInfo().alias()
-                    if name == pkg and repoalias.endswith("include"):
-                        found = True
-                        item.status().setToBeInstalled (zypp.ResStatus.USER)
-                        break
-        if not found:
-            raise CreatorError("Unable to find package: %s" % (pkg,))
-
-    def __selectExcpkgs(self):
-        found = False
-        for pkg in self.excpkgs:
-            for item in self.Z.pool():
-                kind = "%s" % item.kind()
-                if kind == "package":
-                    name = "%s" % item.name()
-                    repoalias = "%s" % item.repoInfo().alias()
-                    if name == pkg and not repoalias.endswith("exclude"):
-                        found = True
-                        item.status().setToBeInstalled (zypp.ResStatus.USER)
-                        break
-        if not found:
-            raise CreatorError("Unable to find package: %s" % (pkg,))
-
     def selectGroup(self, grp, include = ksparser.GROUP_DEFAULT):
         if not self.Z:
             self.__initialize_zypp()
@@ -269,13 +244,12 @@ class Zypp(BackendPlugin):
         repo.proxy_username = proxy_username
         repo.proxy_password = proxy_password
         repo.baseurl.append(url)
-        repo_alias = repo.id
         if inc:
-            repo_alias = name + "include"
-            self.incpkgs = inc
+            for pkg in inc:
+                self.incpkgs[pkg] = name
         if exc:
-            repo_alias = name + "exclude"
-            self.excpkgs = exc
+            for pkg in exc:
+                self.excpkgs[pkg] = name
 
         # check LICENSE files
         if not rpmmisc.checkRepositoryEULA(name, repo):
@@ -291,7 +265,7 @@ class Zypp(BackendPlugin):
 
         try:
             repo_info = zypp.RepoInfo()
-            repo_info.setAlias(repo_alias)
+            repo_info.setAlias(repo.name)
             repo_info.setName(repo.name)
             repo_info.setEnabled(repo.enabled)
             repo_info.setAutorefresh(repo.autorefresh)
@@ -309,11 +283,6 @@ class Zypp(BackendPlugin):
         return False
 
     def runInstall(self, checksize = 0):
-        if self.incpkgs:
-            self.__selectIncpkgs()
-        if self.excpkgs:
-            self.__selectExcpkgs()
-
         os.environ["HOME"] = "/"
         self.buildTransaction()
 
