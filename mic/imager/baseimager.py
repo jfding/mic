@@ -332,12 +332,7 @@ class BaseImageCreator(object):
         implementation of this hook.
 
         """
-        excluded_packages = []
-        for rpm_path in self._get_local_packages():
-            rpm_name = os.path.basename(rpm_path)
-            package_name = rpmmisc.splitFilename(rpm_name)[0]
-            excluded_packages += [package_name]
-        return excluded_packages
+        return []
 
     def _get_local_packages(self):
         """Return a list of rpm path to be local installed.
@@ -796,7 +791,7 @@ class BaseImageCreator(object):
             self._required_pkgs = \
                 kickstart.get_packages(self.ks, self._get_required_packages())
             self._excluded_pkgs = \
-                kickstart.get_excluded(self.ks, self._get_excluded_packages())
+                kickstart.get_excluded(self.ks)
             self._required_groups = kickstart.get_groups(self.ks)
         else:
             self._required_pkgs = None
