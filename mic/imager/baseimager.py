@@ -791,7 +791,7 @@ class BaseImageCreator(object):
             self._required_pkgs = \
                 kickstart.get_packages(self.ks, self._get_required_packages())
             self._excluded_pkgs = \
-                kickstart.get_excluded(self.ks)
+                kickstart.get_excluded(self.ks, self._get_excluded_packages())
             self._required_groups = kickstart.get_groups(self.ks)
         else:
             self._required_pkgs = None
