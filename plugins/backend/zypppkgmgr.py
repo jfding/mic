@@ -20,8 +20,6 @@
 import os
 import shutil
 
-import rpmUtils.miscutils
-import rpmUtils.transaction
 import rpm
 
 import zypp
@@ -420,29 +418,20 @@ class Zypp(BackendPlugin):
     def installLocal(self, pkg, po=None, updateonly=False):
         if not self.ts:
             self.__initialize_transaction()
-        ts = rpmUtils.transaction.initReadOnlyTransaction()
-        try:
-            hdr = rpmUtils.miscutils.hdrFromPackage(ts, pkg)
-        except RpmUtilsError, e:
-            raise Errors.MiscError, \
-                'Could not open local rpm file: %s: %s' % (self.localpath, e)
-        arch = zypp.Arch(hdr.arch)
+        hdr = rpmmisc.readRpmHeader(self.ts, pkg)
+        arch = zypp.Arch(hdr['arch'])
         if self.creator.target_arch == None:
             # TODO, get the default_arch from conf or detected from global settings
             sysarch = zypp.Arch('i686')
         else:
             sysarch = zypp.Arch(self.creator.target_arch)
         if arch.compatible_with (sysarch):
-            pkgname = self.__get_pkg_name(pkg)
+            pkgname = hdr['name']
             self.localpkgs[pkgname] = pkg
             self.selectPackage(pkgname)
             msger.info("Marking %s to be installed" % (pkg))
         else:
             msger.warning ("Cannot add package %s to transaction. Not a compatible architecture: %s" % (pkg, hdr.arch))
-
-    def __get_pkg_name(self, pkgpath):
-        h = rpmmisc.readRpmHeader(self.ts, pkgpath)
-        return h["name"]
 
     def downloadPkgs(self, package_objects, count):
         localpkgs = self.localpkgs.keys()
