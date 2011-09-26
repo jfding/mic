@@ -758,18 +758,17 @@ def remove_duplicate_repos(ks):
             i += 1
             j = i + 1
 
-def resolve_groups(creator, repometadata, use_comps = False):
-    pkgmgr = creator.pkgmgr.get_default_pkg_manager
+def resolve_groups(creatoropts, repometadata):
     iszypp = False
-    if creator.pkgmgr.managers.has_key("zypp") and creator.pkgmgr.managers['zypp'] == pkgmgr:
+    if 'zypp' == creatoropts['pkgmgr']:
         iszypp = True
-    ks = creator.ks
+    ks = creatoropts['ks']
 
     for repo in repometadata:
         """ Mustn't replace group with package list if repo is ready for the corresponding package manager """
-        if iszypp and repo["patterns"] and not use_comps:
+        if iszypp and repo["patterns"]:
             continue
-        if not iszypp and repo["comps"] and use_comps:
+        if not iszypp and repo["comps"]:
             continue
 
         """
@@ -778,14 +777,12 @@ def resolve_groups(creator, repometadata, use_comps = False):
             use yum but use_comps is false.
         """
         groupfile = None
-        if iszypp:
-            if (use_comps and repo["comps"]) or (not repo["patterns"] and repo["comps"]):
-                groupfile = repo["comps"]
-                get_pkglist_handler = misc.get_pkglist_in_comps
-        if not iszypp:
-            if (not use_comps and repo["patterns"]) or (not repo["comps"] and repo["patterns"]):
-                groupfile = repo["patterns"]
-                get_pkglist_handler = misc.get_pkglist_in_patterns
+        if iszypp and repo["comps"]:
+            groupfile = repo["comps"]
+            get_pkglist_handler = misc.get_pkglist_in_comps
+        if not iszypp and repo["patterns"]:
+            groupfile = repo["patterns"]
+            get_pkglist_handler = misc.get_pkglist_in_patterns
 
         if groupfile:
             i = 0

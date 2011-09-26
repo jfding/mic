@@ -124,6 +124,7 @@ class ConfigMgr(object):
         msger.info("Retrieving repo metadata:")
         ksrepos = misc.get_repostrs_from_ks(ks)
         self.create['repomd'] = misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
+        kickstart.resolve_groups(self.create, self.create['repomd'])
         msger.raw(" DONE")
 
 def getConfigMgr():
