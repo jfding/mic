@@ -855,6 +855,9 @@ class BaseImageCreator(object):
 
     def __run_post_scripts(self):
         msger.info("Running scripts ...")
+        if os.path.exists(self._instroot + "/tmp"):
+            shutil.rmtree(self._instroot + "/tmp")
+        os.mkdir (self._instroot + "/tmp", 0755)
         for s in kickstart.get_post_scripts(self.ks):
             (fd, path) = tempfile.mkstemp(prefix = "ks-script-",
                                           dir = self._instroot + "/tmp")
