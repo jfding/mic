@@ -68,10 +68,10 @@ class RPMInstallCallback:
         fmt_bar = "%-" + width + "s"
         if progress:
             bar = fmt_bar % (self.mark * int(marks * (percent / 100.0)), )
-            fmt = "\r  %-10.10s: " + bar + " " + done
+            fmt = "\r  %-10.10s: %-20.20s " + bar + " " + done
         else:
             bar = fmt_bar % (self.mark * marks, )
-            fmt = "  %-10.10s: "  + bar + " " + done
+            fmt = "  %-10.10s: %-20.20s "  + bar + " " + done
         return fmt
 
     def _logPkgString(self, hdr):
@@ -126,9 +126,15 @@ class RPMInstallCallback:
         elif what == rpm.RPMCALLBACK_INST_PROGRESS:
             if h is not None:
                 percent = (self.total_installed*100L)/self.total_actions
+                if total > 0:
+                    m = re.match("(.*)-(\d+.*)-(\d+\.\d+)\.(.+)\.rpm", os.path.basename(h))
+                    if m:
+                        pkgname = m.group(1)
+                    else:
+                        pkgname = os.path.basename(h)
                 if self.output and (sys.stdout.isatty() or self.total_installed == self.total_actions):
                     fmt = self._makefmt(percent)
-                    msg = fmt % ("Installing")
+                    msg = fmt % ("Installing", pkgname)
                     if msg != self.lastmsg:
                         self.lastmsg = msg
 
