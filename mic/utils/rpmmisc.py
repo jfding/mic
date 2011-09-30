@@ -366,7 +366,7 @@ def getBaseArch():
         return basearch
 
 def checkRpmIntegrity(bin_rpm, package):
-    return runner.quiet([bin_rpm, "--checksig", "--nogpg", package])
+    return runner.quiet([bin_rpm, "-K", "--nosignature", package])
 
 def checkSig(ts, package):
     """ Takes a transaction set and a package, check it's sigs,
