@@ -306,6 +306,15 @@ class Yum(BackendPlugin, yum.YumBase):
         msger.verbose('repo: %s was added' % name)
         return repo
 
+    def installLocal(self, pkg, po=None, updateonly=False):
+        ts = rpmUtils.transaction.initReadOnlyTransaction()
+        try:
+            hdr = rpmUtils.miscutils.hdrFromPackage(ts, pkg)
+        except RpmUtilsError, e:
+            raise Errors.MiscError, 'Could not open local rpm file: %s: %s' % (pkg, e)
+        self.deselectPackage(hdr.name)
+        yum.YumBase.installLocal(self, pkg, po, updateonly)
+
     def installHasFile(self, file):
         provides_pkg = self.whatProvides(file, None, None)
         dlpkgs = map(lambda x: x.po, filter(lambda txmbr: txmbr.ts_state in ("i", "u"), self.tsInfo.getMembers()))
