@@ -167,6 +167,8 @@ class Zypp(BackendPlugin):
                     item.status().setToBeInstalled (zypp.ResStatus.USER)
             else:
                 markPoolItem(obspkg, item)
+            if len(sp) == 1 and not ispattern:
+                break
         # Can't match using package name, then search from packge provides infomation
         if found == False and not ispattern:
             q.addAttribute(zypp.SolvAttr.provides, pkg)
