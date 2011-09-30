@@ -435,7 +435,7 @@ class Zypp(BackendPlugin):
             self.selectPackage(pkgname)
             msger.info("Marking %s to be installed" % (pkg))
         else:
-            msger.warning ("Cannot add package %s to transaction. Not a compatible architecture: %s" % (pkg, hdr.arch))
+            msger.warning ("Cannot add package %s to transaction. Not a compatible architecture: %s" % (pkg, hdr['arch']))
 
     def downloadPkgs(self, package_objects, count):
         localpkgs = self.localpkgs.keys()
