@@ -43,7 +43,7 @@ ERR_COLOR  = 31 # red
 ASK_COLOR  = 34 # blue
 NO_COLOR = 0
 
-PREFIX_RE = re.compile('^<(.*?)>\s*(.*)')
+PREFIX_RE = re.compile('^<(.*?)>\s*(.*)', re.S)
 
 INTERACTIVE = True
 
