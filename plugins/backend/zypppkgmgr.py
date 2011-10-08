@@ -511,7 +511,16 @@ class Zypp(BackendPlugin):
         if not unresolved_dependencies:
             self.ts.order()
             cb = rpmmisc.RPMInstallCallback(self.ts)
-            self.ts.run(cb.callback, '')
+            errors = self.ts.run(cb.callback, '')
+            if errors is None:
+                pass
+            elif len(errors) == 0:
+                msger.warning('scriptlet or other non-fatal errors occurred during transaction.')
+            else:
+                for e in errors:
+                    msger.warning(e[0])
+                msger.error('Could not run transaction.')
+             
             self.ts.closeDB()
             self.ts = None
         else:
