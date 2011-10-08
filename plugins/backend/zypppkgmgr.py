@@ -19,7 +19,7 @@
 
 import os
 import shutil
-
+import urlparse
 import rpm
 
 import zypp
@@ -270,7 +270,16 @@ class Zypp(BackendPlugin):
             repo_info.setEnabled(repo.enabled)
             repo_info.setAutorefresh(repo.autorefresh)
             repo_info.setKeepPackages(repo.keeppackages)
-            repo_info.addBaseUrl(zypp.Url(repo.baseurl[0]))
+            baseurl = zypp.Url(repo.baseurl[0])
+            if proxy:
+                (scheme, host, path, parm, query, frag) = urlparse.urlparse(proxy)
+                proxyinfo = host.split(":")
+                baseurl.setQueryParam ("proxy", proxyinfo[0])
+                port = "80"
+                if len(proxyinfo) > 1:
+                    port = proxyinfo[1]
+                baseurl.setQueryParam ("proxyport", port)
+            repo_info.addBaseUrl(baseurl)
             self.repo_manager.addRepository(repo_info)
             self.__build_repo_cache(name)
         except RuntimeError, e:
@@ -451,6 +460,9 @@ class Zypp(BackendPlugin):
             if not os.path.exists(dirn):
                 os.makedirs(dirn)
             baseurl = po.repoInfo().baseUrls()[0].__str__()
+            index = baseurl.find("?")
+            if index > -1:
+                baseurl = baseurl[:index]
             proxy = self.get_proxy(po.repoInfo())
             proxies = {}
             if proxy:

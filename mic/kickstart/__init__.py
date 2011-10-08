@@ -138,6 +138,8 @@ class KickstartConfig(object):
 class LanguageConfig(KickstartConfig):
     """A class to apply a kickstart language configuration to a system."""
     def apply(self, kslang):
+        if not os.path.exists(self.path("/etc/sysconfig")):
+            os.mkdir(self.path("/etc/sysconfig"))
         if kslang.lang:
             f = open(self.path("/etc/sysconfig/i18n"), "w+")
             f.write("LANG=\"" + kslang.lang + "\"\n")
@@ -160,6 +162,8 @@ class KeyboardConfig(KickstartConfig):
 class TimezoneConfig(KickstartConfig):
     """A class to apply a kickstart timezone configuration to a system."""
     def apply(self, kstimezone):
+        if not os.path.exists(self.path("/etc/sysconfig")):
+            os.mkdir(self.path("/etc/sysconfig"))
         tz = kstimezone.timezone or "America/New_York"
         utc = str(kstimezone.isUtc)
 
