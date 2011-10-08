@@ -210,7 +210,7 @@ def pause(msg=None):
         raw_input(msg)
 
 def set_logfile(fpath):
-    global LOG_FILE_FP 
+    global LOG_FILE_FP
 
     def _savelogf():
         if LOG_FILE_FP:

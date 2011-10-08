@@ -160,7 +160,7 @@ class Creator(cmdln.Cmdln):
 
         if not args:
             return self.emptyline()
-            
+
         if os.geteuid() != 0:
             msger.error('Root permission is required to continue, abort')
 

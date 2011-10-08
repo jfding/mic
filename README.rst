@@ -12,11 +12,11 @@ corresponding subcommand. (Details in the following sections)
 
 It supports native running in many mainstream Linux distributions, including:
 
-  * Fedora (13 and above)
-  * openSUSE (11.3 and above)
-  * Ubuntu (10.04 and above)
-  * Debian (5.0 and above)
-  * MeeGo
+ * Fedora (13 and above)
+ * openSUSE (11.3 and above)
+ * Ubuntu (10.04 and above)
+ * Debian (5.0 and above)
+ * MeeGo
 
 Installation
 ============
@@ -25,17 +25,20 @@ Repositories
 ------------
 So far we support `mic` binary rpms/debs for many popular Linux distributions,
 please see the following list. And you can get the corresponding repository on
-`<http://download.meego.com/live/devel:/tools:/building/>`_, if there is no 
-your distribution in the list, please install the tool `mic` from source.
 
-  * Debian 5.0
-  * Fedora 13
-  * Fedora 14
-  * Fedora 15
-  * openSUSE 11.3
-  * openSUSE 11.4
-  * Ubuntu 10.04
-  * Ubuntu 10.10
+ `<http://download.meego.com/live/devel:/tools:/building>`_
+
+If there is no the distribution you want in the list, please install it from
+source code.
+
+ * Debian 5.0
+ * Fedora 13
+ * Fedora 14
+ * Fedora 15
+ * openSUSE 11.3
+ * openSUSE 11.4
+ * Ubuntu 10.04
+ * Ubuntu 10.10
 
 *Tips*: Debian 6.0 can use the repository of Debian 5.0.
 
@@ -44,107 +47,119 @@ Binary Installation
 
 Fedora Installation
 ~~~~~~~~~~~~~~~~~~~
-1. Add devel:tools:building repo
+1. Add devel:tools:building repo:
+::
 
->>> sudo cat <<REPO > /etc/yum.repos.d/devel-tools-building.repo
->>> [devel-tools-building]
->>> name=Tools for Fedora
->>> baseurl=http://download.meego.com/live/devel:/tools:/building/Fedora_<VERSION>
->>> enabled=1
->>> gpgcheck =1
->>> gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-meego
->>> REPO
+  $ sudo cat <<REPO > /etc/yum.repos.d/devel-tools-building.repo
+  > [devel-tools-building]
+  > name=Tools for Fedora
+  > baseurl=http://download.meego.com/live/devel:/tools:/building/Fedora_<VERSION>
+  > enabled=1
+  > gpgcheck =1
+  > gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-meego
+  > REPO
 
 Also you can take the repo file on devel:tools:building as example. For example,
 Fedora 13 can use:
 `<http://download.meego.com/live/devel:/tools:/building/Fedora_13/devel:tools:building.repo>`_.
 
-2. Update repolist
+2. Update repolist:
+::
 
->>> sudo yum update
+  $ sudo yum update
 
-3. Install mic
+3. Install mic:
+::
 
->>> sudo yum install mic
+  $ sudo yum install mic
 
 openSUSE Installation
 ~~~~~~~~~~~~~~~~~~~~~
-1. Add devel:tools:building repo
+1. Add devel:tools:building repo:
+::
 
->>> sudo zypper addrepo http:/download.meego.com/live/devel:/tools:/building/openSUSE_<VERSION>/ devel-tools-building
+  $ sudo zypper addrepo http:/download.meego.com/live/devel:/tools:/building/openSUSE_<VERSION>/ devel-tools-building
 
-2. Update repolist
+2. Update repolist:
+::
 
->>> sudo zypper refresh
+  $ sudo zypper refresh
 
-3. Update libzypp
+3. Update libzypp:
+::
 
->>> sudo zypper update libzypp
+  $ sudo zypper update libzypp
 
-4. Install mic
+4. Install mic:
+::
 
->>> sudo zypper install mic
+  $ sudo zypper install mic
 
 Ubuntu/Debian Installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-1. Append repo source
+1. Append repo source:
+::
 
->>> sudo cat <<REPO >> /etc/apt-sources.list
->>> deb http://download.meego.com/live/devel:/tools:/building/<Ubuntu/Debian>_<VERSION>/ /
->>> REPO
+  $ sudo cat <<REPO >> /etc/apt-sources.list
+  > deb http://download.meego.com/live/devel:/tools:/building/<Ubuntu/Debian>_<VERSION>/ /
+  > REPO
 
-2. Update repolist
+2. Update repolist:
+::
 
->>> sudo apt-get update
+  $ sudo apt-get update
 
-3. Install mic
+3. Install mic:
+::
 
->>> sudo apt-get install mic
+  $ sudo apt-get install mic
 
 Source Installation
 -------------------
 First, get the source of mic (`<TBD>`_). Then unpack the tar ball, and use make
 to process the installation.
 
-1. unpack
+1. Unpack:
+::
 
->>> tar xzvf mic.tar.gz
+  $ tar xzvf mic.tar.gz
 
-2. Build
+2. Build:
+::
 
->>> cd micng
->>> make clean
->>> make
+  $ cd micng
+  $ make clean
+  $ make
 
-3. Install
+3. Install:
+::
 
->>> sudo make install
+  $ sudo make install
 
 Configuration file
 ==================
-A global configure file for mic is provided as `/etc/mic/mic.conf`, where you 
+A global configure file for mic is provided as `/etc/mic/mic.conf`, where you
 can specify the program options statically.
-Below is a sample file which is presented in the source:
+Below is a sample file which is presented in the source: ::
 
->>> cat /etc/mic/mic.conf
->>> [common]
->>> ; general settings
->>>
->>> [create]
->>> ; settings for create subcommand
->>> tmpdir= /var/tmp/mic
->>> cachedir= /var/tmp/mic/cache
->>> outdir= .
->>> pkgmgr = zypp
->>>
->>> ; proxy = http://proxy.yourcompany.com:8080/
->>> ; no_proxy = localhost,127.0.0.0/8,.yourcompany.com
->>>
->>> [convert]
->>> ; settings for convert subcommand
->>>
->>> [chroot]
->>> ; settings for chroot subcommand
+  [common]
+  ; general settings
+  
+  [create]
+  ; settings for create subcommand
+  tmpdir= /var/tmp/mic
+  cachedir= /var/tmp/mic/cache
+  outdir= .
+  pkgmgr = zypp
+  
+  ; proxy = http://proxy.yourcompany.com:8080/
+  ; no_proxy = localhost,127.0.0.0/8,.yourcompany.com
+  
+  [convert]
+  ; settings for convert subcommand
+  
+  [chroot]
+  ; settings for chroot subcommand
 
 For the further development, there are four sections on mic.conf, and [common]
 is for general setting, [create], [convert], and [chroot] are prepared for the
@@ -177,11 +192,11 @@ Running 'mic create'
 Subcommand *create* is used for creating images. To create an image, you should
 give the sub-sub commands which presents the image type you want, and also you
 should provide an argument which presents the kickstart file for using, such
-as:
+as: ::
 
->>> sudo mic create fs test.ks
+  $ sudo mic create fs test.ks
 
-The supported image types can be listed using `mic create --help`::
+The supported image types can be listed using `mic create --help` ::
 
   fs             create fs image
   livecd         create livecd image
@@ -212,13 +227,13 @@ by all image types, see following table:
 +------------------+----------------------------------------------------------+
 
 *Tips*: the common options can be normally put before sub-sub command, but also
-can be after them, such as:
+can be after them, such as: ::
 
->>> sudo mic cr --outdir output fs test.ks
+  $ sudo mic cr --outdir output fs test.ks
 
-or
+or ::
 
->>> sudo mic cr fs test.ks --outdir output
+  $ sudo mic cr fs test.ks --outdir output
 
 Running 'mic chroot'
 --------------------
@@ -227,9 +242,9 @@ can use `mic chroot` to chroot inside the image, and then you can do some
 modification to the image. After you logout, the image file will keep your
 changes. It's a convenient way to hack your image file.
 
-Sample command could be like this:
+Sample command: ::
 
->>> sudo mic chroot test.img
+  $ sudo mic chroot test.img
 
 Running 'mic convert'
 ---------------------
@@ -238,14 +253,14 @@ different image type. Using `convert`, you can get your needed image type
 comfortably. So far converting livecd to liveusb and liveusb to livecd is
 supported.
 
-Sample command is given as following:
+Sample command: ::
 
->>> sudo mic convert test.iso liveusb
+  $ sudo mic convert test.iso liveusb
 
 Debug/Verbose Output
 --------------------
 When you encounter some errors, and you want to know more about it, please use
 debug/verbose output to get more details in the process by adding `-d/-v`. And
-it's recommended to add `-d/--debug` or `-v/--verbose` like as following:
+it's recommended to add `-d/--debug` or `-v/--verbose` like: ::
 
->>> sudo mic -d cr fs test.ks
+  $ sudo mic -d cr fs test.ks

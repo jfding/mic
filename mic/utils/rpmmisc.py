@@ -432,7 +432,7 @@ def getSigInfo(hdr):
     return error, infotuple
 
 def checkRepositoryEULA(name, repo):
-    """ This function is to check the EULA file if provided. 
+    """ This function is to check the EULA file if provided.
         return True: no EULA or accepted
         return False: user declined the EULA
     """
