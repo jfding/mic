@@ -311,8 +311,13 @@ class Zypp(BackendPlugin):
 
         if self.__recording_pkgs:
             # record all pkg and the content
+            localpkgs = self.localpkgs.keys()
             for pkg in dlpkgs:
-                pkg_long_name = "%s-%s.%s.rpm" % (pkg.name(), pkg.edition(), pkg.arch())
+                if pkg.name() in localpkgs:
+                    hdr = rpmmisc.readRpmHeader(self.ts, self.localpkgs[pkg.name()])
+                    pkg_long_name = "%s-%s-%s.%s.rpm" % (hdr['name'], hdr['version'], hdr['release'], hdr['arch'])
+                else:
+                    pkg_long_name = "%s-%s.%s.rpm" % (pkg.name(), pkg.edition(), pkg.arch())
                 self.__pkgs_content[pkg_long_name] = {} #TBD: to get file list
 
         total_count = len(dlpkgs)
