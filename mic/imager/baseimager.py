@@ -671,7 +671,7 @@ class BaseImageCreator(object):
         # get size of available space in 'instroot' fs
         self._root_fs_avail = misc.get_filesystem_avail(self._instroot)
 
-    def unmount(self):
+    def unmount(self, keep_mtab=False):
         """Unmounts the target filesystem.
 
         The ImageCreator class detaches the system from the install root, but
@@ -680,13 +680,17 @@ class BaseImageCreator(object):
 
         """
         try:
-            os.unlink(self._instroot + "/etc/mtab")
+            if not keep_mtab:
+                os.unlink(self._instroot + "/etc/mtab")
+
             if self.qemu_emulator:
                 os.unlink(self._instroot + self.qemu_emulator)
+
             """ Clean up yum garbage """
             instroot_pdir = os.path.dirname(self._instroot + self._instroot)
             if os.path.exists(instroot_pdir):
                 shutil.rmtree(instroot_pdir, ignore_errors = True)
+
         except OSError:
             pass
 
@@ -713,7 +717,9 @@ class BaseImageCreator(object):
         if not self.__builddir:
             return
 
-        self.unmount()
+        # its calling must be the 2nd time, so need not to clean up
+        # /etc/mtab again, even required
+        self.unmount(keep_mtab=True)
 
         shutil.rmtree(self.__builddir, ignore_errors = True)
         self.__builddir = None
