@@ -312,7 +312,7 @@ class Yum(BackendPlugin, yum.YumBase):
             hdr = rpmUtils.miscutils.hdrFromPackage(ts, pkg)
         except RpmUtilsError, e:
             raise Errors.MiscError, 'Could not open local rpm file: %s: %s' % (pkg, e)
-        self.deselectPackage(hdr.name)
+        self.deselectPackage(hdr['name'])
         yum.YumBase.installLocal(self, pkg, po, updateonly)
 
     def installHasFile(self, file):
