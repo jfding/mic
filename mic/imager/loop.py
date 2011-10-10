@@ -33,6 +33,9 @@ class LoopImageCreator(BaseImageCreator):
         LoopImageCreator is a straightforward ImageCreator subclass; the system
         is installed into an ext3 filesystem on a sparse file which can be
         subsequently loopback-mounted.
+
+        When specifying multiple partitions in kickstart file, each partition
+        will be created as a separated loop image.
     """
 
     def __init__(self, creatoropts = None, pkgmgr = None):
@@ -52,11 +55,38 @@ class LoopImageCreator(BaseImageCreator):
         if self.ks:
             self.__fstype = kickstart.get_image_fstype(self.ks, "ext3")
             self.__fsopts = kickstart.get_image_fsopts(self.ks, "defaults,noatime")
+
+            allloops = []
+            for part in sorted(kickstart.get_partitions(self.ks),
+                               key = lambda p: p.mountpoint):
+                label = part.label
+
+                mp = part.mountpoint
+                if mp == '/':
+                    # the base image
+                    if not label:
+                        label =  self.name
+                else:
+                    mp = mp.rstrip('/')
+                    if not label:
+                        msger.warning('no "label" specified for loop img at %s, use the mountpoint as the name' % mp)
+                        label = mp.split('/')[-1]
+
+                imgname = misc.strip_end(label,'.img') + '.img'
+                allloops.append({
+                    'mountpoint': mp,
+                    'label': label,
+                    'name': imgname,
+                    'size': part.size or 4096L * 1024 * 1024,
+                    'fstype': part.fstype or 'ext4',
+                    'loop': None, # to be created in _mount_instroot
+                    })
+            self._instloops = allloops
+
         else:
             self.__fstype = None
             self.__fsopts = None
-
-        self._instloops = [] # list of dict of image_name:loop_device
+            self._instloops = []
 
         self.__imgdir = None
 
@@ -201,27 +231,34 @@ class LoopImageCreator(BaseImageCreator):
     def _mount_instroot(self, base_on = None):
         self._check_imgdir()
         self._base_on(base_on)
+        imgdir = os.path.dirname(self._image)
 
-        if self.__fstype in ("ext2", "ext3", "ext4"):
-            MyDiskMount = fs.ExtDiskMount
-        elif self.__fstype == "btrfs":
-            MyDiskMount = fs.BtrfsDiskMount
+        for loop in self._instloops:
+            fstype = loop['fstype']
+            mp = os.path.join(self._instroot, loop['mountpoint'].lstrip('/'))
+            size = loop['size'] * 1024L * 1024L
+            imgname = loop['name']
 
-        self._instloops.append({
-                'name': self._img_name,
-                'loop': MyDiskMount(fs.SparseLoopbackDisk(self._image, self.__image_size),
-                                    self._instroot,
-                                    self.__fstype,
-                                    self.__blocksize,
-                                    self.fslabel)
-                })
+            if fstype in ("ext2", "ext3", "ext4"):
+                MyDiskMount = fs.ExtDiskMount
+            elif fstype == "btrfs":
+                MyDiskMount = fs.BtrfsDiskMount
+            elif fstype in ("vfat", "msdos"):
+                MyDiskMount = fs.VfatDiskMount
+            else:
+                msger.error('Cannot support fstype: %s' % fstype)
 
-        for item in self._instloops:
+            loop['loop'] = MyDiskMount(fs.SparseLoopbackDisk(os.path.join(imgdir, imgname), size),
+                                       mp,
+                                       fstype,
+                                       self._blocksize,
+                                       loop['label'])
+
             try:
-                msger.verbose('Mounting image "%s" on "%s"' %(item['name'], item['loop'].mountdir))
-                fs.makedirs(item['loop'].mountdir)
-                item['loop'].mount()
-            except MountError, e:
+                msger.verbose('Mounting image "%s" on "%s"' %(imgname, mp))
+                fs.makedirs(mp)
+                loop['loop'].mount()
+            except errors.MountError, e:
                 raise
 
     def _unmount_instroot(self):

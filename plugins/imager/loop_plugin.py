@@ -76,7 +76,7 @@ class LoopPlugin(ImagerPlugin):
             creator.configure(creatoropts["repomd"])
             creator.unmount()
             creator.package(creatoropts["outdir"])
-            outimage = creator.outimage
+
             if creatoropts['release'] is not None:
                 creator.release_output(ksconf, creatoropts['outdir'], creatoropts['name'], creatoropts['release'])
             creator.print_outimage_info()
