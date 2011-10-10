@@ -20,7 +20,7 @@ import shutil
 import tempfile
 
 from mic import configmgr, pluginmgr, chroot, msger
-from mic.utils import misc, fs_related, errors, cmdln
+from mic.utils import misc, fs_related, errors
 import mic.imager.loop as loop
 
 from mic.pluginbase import ImagerPlugin
@@ -28,11 +28,6 @@ class LoopPlugin(ImagerPlugin):
     name = 'loop'
 
     @classmethod
-    @cmdln.option('-E', '--extra-loop', dest='extra_loop',
-                  help='Extra loop image to be mounted, multiple <mountpoint>:name_of_loop_file pairs expected, and '
-                       'joined by using "," like the following sample:'
-                       '  --extr-loop=/opt:opt.img,/boot:boot.img'
-                       )
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create loop image
 
@@ -45,14 +40,6 @@ class LoopPlugin(ImagerPlugin):
 
         if len(args) != 1:
             raise errors.Usage("Extra arguments given")
-
-        try:
-            if opts.extra_loop:
-                extra_loop = dict([[i.strip() for i in one.split(':')] for one in opts.extra_loop.split(',')])
-            else:
-                extra_loop = {}
-        except ValueError:
-            raise errors.Usage("invalid --extra-loop option specified")
 
         cfgmgr = configmgr.getConfigMgr()
         creatoropts = cfgmgr.create
@@ -77,7 +64,7 @@ class LoopPlugin(ImagerPlugin):
             pkgmgrs = pluginmgr.PluginMgr().get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
 
-        creator = loop.LoopImageCreator(creatoropts, pkgmgr, extra_loop)
+        creator = loop.LoopImageCreator(creatoropts, pkgmgr)
 
         if recording_pkgs is not None:
             creator._recording_pkgs = recording_pkgs

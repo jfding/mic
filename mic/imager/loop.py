@@ -35,7 +35,7 @@ class LoopImageCreator(BaseImageCreator):
         subsequently loopback-mounted.
     """
 
-    def __init__(self, creatoropts = None, pkgmgr = None, extra_loop = {}):
+    def __init__(self, creatoropts = None, pkgmgr = None):
         """Initialize a LoopImageCreator instance.
 
             This method takes the same arguments as ImageCreator.__init__() with
@@ -44,11 +44,6 @@ class LoopImageCreator(BaseImageCreator):
             fslabel -- A string used as a label for any filesystems created.
         """
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
-
-        if '/' in extra_loop:
-            self.name = misc.strip_end(os.path.basename(extra_loop['/']), '.img')
-            del extra_loop['/']
-        self.extra_loop = extra_loop
 
         self.__fslabel = None
         self.fslabel = self.name
@@ -219,24 +214,6 @@ class LoopImageCreator(BaseImageCreator):
                                     self.__fstype,
                                     self.__blocksize,
                                     self.fslabel)
-                })
-
-        for point, name in self.extra_loop.iteritems():
-            if name != os.path.basename(name):
-                msger.warning('can not specify path in %s' % name)
-                name = os.path.basename(name)
-            imgname = misc.strip_end(name,'.img') + '.img'
-            if point.startswith('/'):
-                point = point.lstrip('/')
-
-            self._instloops.append({
-                'name': imgname,
-                'loop': MyDiskMount(fs.SparseLoopbackDisk(os.path.join(self.__imgdir, imgname),
-                                                          self.__image_size),
-                                    os.path.join(self._instroot, point),
-                                    self.__fstype,
-                                    self.__blocksize,
-                                    name)
                 })
 
         for item in self._instloops:
