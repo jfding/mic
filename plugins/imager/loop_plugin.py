@@ -20,7 +20,7 @@ import shutil
 import tempfile
 
 from mic import configmgr, pluginmgr, chroot, msger
-from mic.utils import misc, fs_related, errors
+from mic.utils import misc, fs_related, errors, cmdln
 import mic.imager.loop as loop
 
 from mic.pluginbase import ImagerPlugin
@@ -28,6 +28,7 @@ class LoopPlugin(ImagerPlugin):
     name = 'loop'
 
     @classmethod
+    @cmdln.option("--taring-to", dest="taring_to", type='string', default=None, help="Specify the filename for packaging all loop images into a single tarball")
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create loop image
 
@@ -64,7 +65,7 @@ class LoopPlugin(ImagerPlugin):
             pkgmgrs = pluginmgr.PluginMgr().get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
 
-        creator = loop.LoopImageCreator(creatoropts, pkgmgr)
+        creator = loop.LoopImageCreator(creatoropts, pkgmgr, opts.taring_to)
 
         if recording_pkgs is not None:
             creator._recording_pkgs = recording_pkgs

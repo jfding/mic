@@ -20,7 +20,7 @@ import shutil
 
 from mic import kickstart, msger
 from mic.utils.errors import CreatorError, MountError
-from mic.utils import misc, fs_related as fs
+from mic.utils import misc, runner, fs_related as fs
 
 from baseimager import BaseImageCreator
 
@@ -38,7 +38,7 @@ class LoopImageCreator(BaseImageCreator):
         will be created as a separated loop image.
     """
 
-    def __init__(self, creatoropts = None, pkgmgr = None):
+    def __init__(self, creatoropts=None, pkgmgr=None, taring_to=None):
         """Initialize a LoopImageCreator instance.
 
             This method takes the same arguments as ImageCreator.__init__() with
@@ -47,6 +47,7 @@ class LoopImageCreator(BaseImageCreator):
             fslabel -- A string used as a label for any filesystems created.
         """
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
+        self.taring_to = taring_to
 
         self.__fslabel = None
         self.fslabel = self.name
@@ -78,7 +79,7 @@ class LoopImageCreator(BaseImageCreator):
                     'label': label,
                     'name': imgname,
                     'size': part.size or 4096L * 1024 * 1024,
-                    'fstype': part.fstype or 'ext4',
+                    'fstype': part.fstype or 'ext3',
                     'loop': None, # to be created in _mount_instroot
                     })
             self._instloops = allloops
@@ -91,13 +92,11 @@ class LoopImageCreator(BaseImageCreator):
         self.__imgdir = None
 
         if self.ks:
-            self.__image_size = kickstart.get_image_size(self.ks,
-                                                         4096L * 1024 * 1024)
+            self.__image_size = kickstart.get_image_size(self.ks, 4096L * 1024 * 1024)
         else:
             self.__image_size = 0
 
         self._img_name = self.name + ".img"
-
 
     def _set_fstype(self, fstype):
         self.__fstype = fstype
@@ -231,7 +230,6 @@ class LoopImageCreator(BaseImageCreator):
     def _mount_instroot(self, base_on = None):
         self._check_imgdir()
         self._base_on(base_on)
-        imgdir = os.path.dirname(self._image)
 
         for loop in self._instloops:
             fstype = loop['fstype']
@@ -248,7 +246,7 @@ class LoopImageCreator(BaseImageCreator):
             else:
                 msger.error('Cannot support fstype: %s' % fstype)
 
-            loop['loop'] = MyDiskMount(fs.SparseLoopbackDisk(os.path.join(imgdir, imgname), size),
+            loop['loop'] = MyDiskMount(fs.SparseLoopbackDisk(os.path.join(self.__imgdir, imgname), size),
                                        mp,
                                        fstype,
                                        self._blocksize,
@@ -266,7 +264,26 @@ class LoopImageCreator(BaseImageCreator):
             item['loop'].cleanup()
 
     def _stage_final_image(self):
-        self._resparse()
-        for item in self._instloops:
-            shutil.move(os.path.join(self.__imgdir, item['name']),
-                        os.path.join(self._outdir, item['name']))
+        if self.taring_to:
+            import tarfile
+
+            curdir = os.getcwd()
+            os.chdir(self.__imgdir)
+            self._resparse(0)
+
+            tarfile_name = self.taring_to
+            if not tarfile_name.endswith('.tar'):
+                tarfile_name += ".tar"
+
+            tar = tarfile.open(os.path.join(self._outdir, tarfile_name), 'w')
+            for item in self._instloops:
+                runner.show('/sbin/tune2fs -O ^huge_file,extents,uninit_bg ' + item['name'])
+                tar.add(item['name'])
+
+            tar.close()
+            os.chdir(curdir)
+
+        else:
+            self._resparse()
+            for item in self._instloops:
+                shutil.move(os.path.join(self.__imgdir, item['name']), os.path.join(self._outdir, item['name']))
