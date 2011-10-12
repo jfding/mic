@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+from __future__ import with_statement
 import os
 import sys
 import tempfile
@@ -616,7 +617,8 @@ def setup_qemu_emulator(rootdir, arch):
 
 def create_release(config, destdir, name, outimages, release):
     """ TODO: This functionality should really be in creator.py inside the
-    ImageCreator class. """
+    ImageCreator class.
+    """
 
     # For virtual machine images, we have a subdir for it, this is unnecessary
     # for release
@@ -659,21 +661,22 @@ def create_release(config, destdir, name, outimages, release):
             os.rename("%s/%s" %(destdir, f ), "%s/%s" %(destdir, ff))
             outimages.append("%s/%s" %(destdir, ff))
 
-    if os.path.exists("/usr/bin/md5sum"):
-        fd = open(destdir + "/MANIFEST", "w")
-        for f in os.listdir(destdir):
-            if f == "MANIFEST":
-                continue
+    with open(destdir + "/MANIFEST", "w") as wf:
+        if os.path.exists("/usr/bin/md5sum"):
+            for f in os.listdir(destdir):
+                if f == "MANIFEST": continue
 
-            rc, md5sum = runner.runtool(["/usr/bin/md5sum", "-b", "%s/%s" %(destdir, f )])
-            if rc != 0:
-                msger.warning("Can't generate md5sum for image %s/%s" %(destdir, f ))
-            else:
-                md5sum = md5sum.lstrip().split()[0]
-                fd.write(md5sum+" "+f+"\n")
+                rc, md5sum = runner.runtool(["/usr/bin/md5sum", "-b", "%s/%s" %(destdir, f)])
+                if rc != 0:
+                    msger.warning("Can't generate md5sum for image %s/%s" %(destdir, f))
+                else:
+                    md5sum = md5sum.lstrip().split()[0]
+                    wf.write(md5sum+" "+f+"\n")
+        else:
+            msger.warning('no md5sum tool found, no checksum string in MANIFEST')
+            wf.write('\n'.join(os.listdir(destdir)))
 
     outimages.append("%s/MANIFEST" % destdir)
-    fd.close()
 
     """ Update the file list. """
     updated_list = []
@@ -684,7 +687,6 @@ def create_release(config, destdir, name, outimages, release):
     return updated_list
 
 def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
-
     def get_source_repometadata(repometadata):
         src_repometadata=[]
         for repo in repometadata:
