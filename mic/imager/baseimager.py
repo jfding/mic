@@ -685,12 +685,20 @@ class BaseImageCreator(object):
 
             if self.qemu_emulator:
                 os.unlink(self._instroot + self.qemu_emulator)
+        except OSError:
+            pass
 
-            """ Clean up yum garbage """
+        """ Clean up yum garbage """
+        try:
             instroot_pdir = os.path.dirname(self._instroot + self._instroot)
             if os.path.exists(instroot_pdir):
                 shutil.rmtree(instroot_pdir, ignore_errors = True)
-
+            yumcachedir = self._instroot + "/var/cache/yum"
+            if os.path.exists(yumcachedir):
+                shutil.rmtree(yumcachedir, ignore_errors = True)
+            yumlibdir = self._instroot + "/var/lib/yum"
+            if os.path.exists(yumlibdir):
+                shutil.rmtree(yumlibdir, ignore_errors = True)
         except OSError:
             pass
 
