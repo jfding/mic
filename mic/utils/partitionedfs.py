@@ -488,7 +488,7 @@ class PartitionedMount(Mount):
                 if opt.strip().startswith("subvol="):
                     opts.remove(opt)
                     break
-            #opts.append("subvolid=%d" % subvolid)
+
             opts.extend(["subvolrootid=0", "subvol=%s" % subvol["subvol"]])
             fsopts = ",".join(opts)
             subvol['fsopts'] = fsopts
