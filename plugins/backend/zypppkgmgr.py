@@ -308,7 +308,7 @@ class Zypp(BackendPlugin):
         if checksize and pkgs_total_size > checksize:
             raise CreatorError("Size of specified root partition in kickstart file is too small to install all selected packages.")
 
-        if len(self.__recording_pkgs) > 0:
+        if self.__recording_pkgs:
             # record all pkg and the content
             localpkgs = self.localpkgs.keys()
             for pkg in dlpkgs:
@@ -358,7 +358,7 @@ class Zypp(BackendPlugin):
     def getAllContent(self):
         return self.__pkgs_content
 
-    def getPkgLicense(self):
+    def getPkgsLicense(self):
         return self.__pkgs_license
 
     def __initialize_repo_manager(self):

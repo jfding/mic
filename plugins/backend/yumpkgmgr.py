@@ -348,7 +348,7 @@ class Yum(BackendPlugin, yum.YumBase):
         if checksize and pkgs_total_size > checksize:
             raise CreatorError("Size of specified root partition in kickstart file is too small to install all selected packages.")
 
-        if len(self.__recording_pkgs) > 0:
+        if self.__recording_pkgs:
             # record all pkg and the content
             for pkg in dlpkgs:
                 pkg_long_name = "%s-%s.%s.rpm" % (pkg.name, pkg.printVer(), pkg.arch)
@@ -409,5 +409,5 @@ class Yum(BackendPlugin, yum.YumBase):
     def getAllContent(self):
         return self.__pkgs_content
 
-    def getPkgLicense(self):
+    def getPkgsLicense(self):
         return self.__pkgs_license

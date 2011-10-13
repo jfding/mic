@@ -61,7 +61,8 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='Output directory')
         optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
         optparser.add_option('', '--release', type='string', dest='release', default=None, metavar='RID', help='Generate a release of RID with all neccessary files ')
-        optparser.add_option("", "--record-pkgs", type="string", dest="record_pkgs", default=None, help="Record the installed packages, valid values: name, content, license")
+        optparser.add_option("", "--record-pkgs", type="string", dest="record_pkgs", default=None,
+                             help='Record the info of installed packages, multiple values can be specified which joined by ",", valid values: "name", "content", "license"')
         optparser.add_option('', '--pkgmgr', type='string', dest='pkgmgr', default=None, help='Specify backend package manager')
         optparser.add_option('', '--local-pkgs-path', type='string', dest='local_pkgs_path', default=None, help='Path for local pkgs(rpms) to be installed')
         return optparser
@@ -124,10 +125,11 @@ class Creator(cmdln.Cmdln):
 
         if self.options.record_pkgs:
             self.configmgr.create['record_pkgs'] = []
-            for type in self.options.record_pkgs.split(','):
-                if type not in ('name', 'content', 'license'):
-                    msger.error("Please specify what to be recorded: \"name\", \"content\", \"license\"")
-                self.configmgr.create['record_pkgs'].append(type)
+            for infotype in self.options.record_pkgs.split(','):
+                if infotype not in ('name', 'content', 'license'):
+                    raise errors.Usage('Invalid pkg recording: %s, valid ones: "name", "content", "license"' % infotype)
+
+                self.configmgr.create['record_pkgs'].append(infotype)
 
         if self.options.arch is not None:
             self.configmgr.create['arch'] = self.options.arch

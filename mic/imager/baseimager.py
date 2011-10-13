@@ -304,15 +304,18 @@ class BaseImageCreator(object):
         if 'license' in self._recording_pkgs:
             licensefile = os.path.join(destdir, self.name + '-license.txt')
             f = open(licensefile, "w")
+
             f.write('Summary:\n')
-            for license in sorted (self._pkgs_license, key=lambda license: len(self._pkgs_license[license])):
-                f.write("\t- %s: %s\n" % (license, len(self._pkgs_license[license])))
+            for license in reversed(sorted(self._pkgs_license, key=lambda license: len(self._pkgs_license[license]))):
+                f.write("    - %s: %s\n" % (license, len(self._pkgs_license[license])))
+
             f.write('\nDetails:\n')
-            for license in sorted (self._pkgs_license, key=lambda license: len(self._pkgs_license[license])):
-                f.write("\t- %s:\n" % (license))
+            for license in reversed(sorted(self._pkgs_license, key=lambda license: len(self._pkgs_license[license]))):
+                f.write("    - %s:\n" % (license))
                 for pkg in sorted(self._pkgs_license[license]):
-                    f.write("\t\t- %s\n" % (pkg))
+                    f.write("        - %s\n" % (pkg))
                 f.write('\n')
+
             f.close()
             self.outimage.append(licensefile);
 
@@ -860,7 +863,7 @@ class BaseImageCreator(object):
         finally:
             if len(keep_record):
                 self._pkgs_content = pkg_manager.getAllContent()
-                self._pkgs_license = pkg_manager.getPkgLicense()
+                self._pkgs_license = pkg_manager.getPkgsLicense()
 
             pkg_manager.closeRpmDB()
             pkg_manager.close()
