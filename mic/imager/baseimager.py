@@ -105,7 +105,7 @@ class BaseImageCreator(object):
         # This value is set with compression_method function. """
         self.__img_compression_method = None
 
-        self._recording_pkgs = None
+        self._recording_pkgs = []
 
         # available size in root fs, init to 0
         self._root_fs_avail = 0
@@ -263,25 +263,21 @@ class BaseImageCreator(object):
     def _save_recording_pkgs(self, destdir):
         """Save the list or content of installed packages to file.
         """
-        if self._recording_pkgs not in ('content', 'name'):
-            return
-
         pkgs = self._pkgs_content.keys()
         pkgs.sort() # inplace op
 
-        # save package name list anyhow
         if not os.path.exists(destdir):
             os.makedirs(destdir)
-
-        namefile = os.path.join(destdir, self.name + '-pkgs.txt')
-        f = open(namefile, "w")
-        content = '\n'.join(pkgs)
-        f.write(content)
-        f.close()
-        self.outimage.append(namefile);
+        if 'name' in self._recording_pkgs :
+            namefile = os.path.join(destdir, self.name + '-pkgs.txt')
+            f = open(namefile, "w")
+            content = '\n'.join(pkgs)
+            f.write(content)
+            f.close()
+            self.outimage.append(namefile);
 
         # if 'content', save more details
-        if self._recording_pkgs == 'content':
+        if 'content' in self._recording_pkgs :
             contfile = os.path.join(destdir, self.name + '-pkgs-content.txt')
             f = open(contfile, "w")
 
@@ -304,6 +300,21 @@ class BaseImageCreator(object):
                 f.write(content)
             f.close()
             self.outimage.append(contfile)
+
+        if 'license' in self._recording_pkgs:
+            licensefile = os.path.join(destdir, self.name + '-license.txt')
+            f = open(licensefile, "w")
+            f.write('Summary:\n')
+            for license in sorted (self._pkgs_license, key=lambda license: len(self._pkgs_license[license])):
+                f.write("\t- %s: %s\n" % (license, len(self._pkgs_license[license])))
+            f.write('\nDetails:\n')
+            for license in sorted (self._pkgs_license, key=lambda license: len(self._pkgs_license[license])):
+                f.write("\t- %s:\n" % (license))
+                for pkg in sorted(self._pkgs_license[license]):
+                    f.write("\t\t- %s\n" % (pkg))
+                f.write('\n')
+            f.close()
+            self.outimage.append(licensefile);
 
     def _get_required_packages(self):
         """Return a list of required packages.
@@ -805,10 +816,8 @@ class BaseImageCreator(object):
 
         yum_conf = self._mktemp(prefix = "yum.conf-")
 
-        keep_record = None
-        if hasattr(self, '_include_src') and self._include_src:
-            keep_record = 'include_src'
-        if self._recording_pkgs in ('name', 'content'):
+        keep_record = []
+        if len(self._recording_pkgs) > 0:
             keep_record = self._recording_pkgs
 
         pkg_manager = self.get_pkg_manager(keep_record)
@@ -842,8 +851,9 @@ class BaseImageCreator(object):
             except CreatorError, e:
                 raise
         finally:
-            if keep_record:
+            if len(keep_record):
                 self._pkgs_content = pkg_manager.getAllContent()
+                self._pkgs_license = pkg_manager.getPkgLicense()
 
             pkg_manager.closeRpmDB()
             pkg_manager.close()
