@@ -48,9 +48,12 @@ class RawPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         ksconf = args[0]
 
-        recording_pkgs = None
+        recording_pkgs = []
+        if len(creatoropts['record_pkgs']) > 0:
+            recording_pkgs = creatoropts['record_pkgs']
         if creatoropts['release'] is not None:
-            recording_pkgs = "name"
+            if 'name' not in recording_pkgs:
+                recording_pkgs.append('name')
             ksconf = misc.save_ksconf_file(ksconf, creatoropts['release'])
             name = os.path.splitext(os.path.basename(ksconf))[0]
             creatoropts['outdir'] = "%s/%s-%s/" % (creatoropts['outdir'], name, creatoropts['release'])
@@ -69,7 +72,7 @@ class RawPlugin(ImagerPlugin):
 
         creator = raw.RawImageCreator(creatoropts, pkgmgr)
 
-        if recording_pkgs is not None:
+        if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
         try:

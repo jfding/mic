@@ -44,9 +44,12 @@ class FsPlugin(ImagerPlugin):
         createopts = cfgmgr.create
         ksconf = args[0]
 
-        recording_pkgs = None
+        recording_pkgs = []
+        if len(createopts['record_pkgs']) > 0:
+            recording_pkgs = createopts['record_pkgs']
         if createopts['release'] is not None:
-            recording_pkgs = "name"
+            if 'name' not in recording_pkgs:
+                recording_pkgs.append('name')
             ksconf = misc.save_ksconf_file(ksconf, createopts['release'])
             name = os.path.splitext(os.path.basename(ksconf))[0]
             createopts['outdir'] = "%s/%s-%s/" % (createopts['outdir'], name, createopts['release'])
@@ -66,7 +69,7 @@ class FsPlugin(ImagerPlugin):
         creator = fs.FsImageCreator(createopts, pkgmgr)
         creator._include_src = opts.include_src
 
-        if recording_pkgs is not None:
+        if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
         destdir = os.path.abspath(os.path.expanduser(createopts["outdir"]))

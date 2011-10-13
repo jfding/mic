@@ -154,6 +154,7 @@ class Yum(BackendPlugin, yum.YumBase):
             self.arch.setup_arch(self.creator.target_arch)
 
         self.__recording_pkgs = recording_pkgs
+        self.__pkgs_license = {}
         self.__pkgs_content = {}
 
     def doFileLogSetup(self, uid, logfile):
@@ -347,11 +348,16 @@ class Yum(BackendPlugin, yum.YumBase):
         if checksize and pkgs_total_size > checksize:
             raise CreatorError("Size of specified root partition in kickstart file is too small to install all selected packages.")
 
-        if self.__recording_pkgs:
+        if len(self.__recording_pkgs) > 0:
             # record all pkg and the content
             for pkg in dlpkgs:
                 pkg_long_name = "%s-%s.%s.rpm" % (pkg.name, pkg.printVer(), pkg.arch)
                 self.__pkgs_content[pkg_long_name] = pkg.files
+                license = pkg.license
+                if license in self.__pkgs_license.keys():
+                    self.__pkgs_license[license].append(pkg_long_name)
+                else:
+                    self.__pkgs_license[license] = [pkg_long_name]
 
         total_count = len(dlpkgs)
         cached_count = 0
@@ -402,3 +408,6 @@ class Yum(BackendPlugin, yum.YumBase):
 
     def getAllContent(self):
         return self.__pkgs_content
+
+    def getPkgLicense(self):
+        return self.__pkgs_license
