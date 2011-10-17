@@ -221,8 +221,8 @@ class Yum(BackendPlugin, yum.YumBase):
         try:
             self.install(pattern = pkg)
             return None
-        except yum.Errors.InstallError, e:
-            return e
+        except yum.Errors.InstallError:
+            return "No package(s) available to install"
         except yum.Errors.RepoError, e:
             raise CreatorError("Unable to download from repo : %s" % (e,))
         except yum.Errors.YumBaseError, e:
