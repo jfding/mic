@@ -886,8 +886,8 @@ def myurlgrab(url, filename, proxies, progress_obj = None):
     if progress_obj is None:
         progress_obj = TextProgress()
 
-    if url.startswith("file:///"):
-        file = url.replace("file://", "")
+    if url.startswith("file:/"):
+        file = url.replace("file:", "")
         if not os.path.exists(file):
             raise CreatorError("URLGrabber error: can't find file %s" % file)
         runner.show(['cp', "-f", file, filename])

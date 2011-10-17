@@ -454,12 +454,10 @@ class Zypp(BackendPlugin):
 
     def getLocalPkgPath(self, po):
         repoinfo = po.repoInfo()
-        name = po.name()
         cacheroot = repoinfo.packagesPath()
-        arch =  po.arch()
-        edition = po.edition()
-        version = "%s-%s" % (edition.version(), edition.release())
-        pkgpath = "%s/%s/%s-%s.%s.rpm" % (cacheroot, arch, name, version, arch)
+        location= zypp.asKindPackage(po).location()
+        rpmpath = location.filename().__str__()
+        pkgpath = "%s/%s" % (cacheroot, rpmpath)
         return pkgpath
 
     def installLocal(self, pkg, po=None, updateonly=False):
@@ -534,8 +532,10 @@ class Zypp(BackendPlugin):
                 """ Maybe it is a local repo """
                 baseurl = po.repoInfo().baseUrls()[0].__str__()
                 baseurl = baseurl.strip()
+                location = zypp.asKindPackage(po).location()
+                location = location.filename().__str__()
                 if baseurl.startswith("file:/"):
-                    rpmpath = baseurl[5:] + "/%s/%s" % (po.arch(), os.path.basename(rpmpath))
+                    rpmpath = baseurl[5:] + "/%s" % (location)
             if not os.path.exists(rpmpath):
                 raise RpmError("Error: %s doesn't exist" % rpmpath)
             h = rpmmisc.readRpmHeader(self.ts, rpmpath)
