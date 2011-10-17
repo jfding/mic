@@ -586,6 +586,19 @@ def setup_qemu_emulator(rootdir, arch):
         qemu_emulator = "/usr/bin/qemu-arm-static"
     if not os.path.exists(qemu_emulator):
         raise CreatorError("Please install a statically-linked qemu-arm")
+
+    # qemu emulator version check
+    armv7_list = ["armv7hl", "armv7thl", "armv7nhl", "armv7tnhl"]
+    if arch in armv7_list:  # need qemu (>=0.13.0)
+        qemuout = runner.outs([qemu_emulator, "-h"])
+        m = re.search("version\s*([.\d]+)", qemuout)
+        if m:
+            qemu_version = m.group(1)
+            if qemu_version < "0.13":
+                raise CreatorError("Requires %s version >=0.13 for %s" % (qemu_emulator, arch))
+        else:
+            msger.warning("Can't get version info of %s, please make sure it's higher than 0.13.0" % qemu_emulator)
+
     if not os.path.exists(rootdir + "/usr/bin"):
         makedirs(rootdir + "/usr/bin")
     shutil.copy(qemu_emulator, rootdir + qemu_emulator)
