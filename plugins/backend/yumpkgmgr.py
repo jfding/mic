@@ -257,9 +257,13 @@ class Yum(BackendPlugin, yum.YumBase):
         try:
             yum.YumBase.selectGroup(self, grp)
             if include == ksparser.GROUP_REQUIRED:
-                map(lambda p: self.deselectPackage(p), grp.default_packages.keys())
+                for p in grp.default_packages.keys():
+                    self.deselectPackage(p)
+
             elif include == ksparser.GROUP_ALL:
-                map(lambda p: self.selectPackage(p), grp.optional_packages.keys())
+                for p in grp.optional_packages.keys():
+                    self.selectPackage(p)
+
             return None
         except (yum.Errors.InstallError, yum.Errors.GroupsError), e:
             return e
@@ -316,8 +320,8 @@ class Yum(BackendPlugin, yum.YumBase):
         ts = rpmUtils.transaction.initReadOnlyTransaction()
         try:
             hdr = rpmUtils.miscutils.hdrFromPackage(ts, pkg)
-        except RpmUtilsError, e:
-            raise Errors.MiscError, 'Could not open local rpm file: %s: %s' % (pkg, e)
+        except rpmUtils.RpmUtilsError, e:
+            raise yum.Errors.MiscError, 'Could not open local rpm file: %s: %s' % (pkg, e)
         self.deselectPackage(hdr['name'])
         yum.YumBase.installLocal(self, pkg, po, updateonly)
 
@@ -404,11 +408,11 @@ class Yum(BackendPlugin, yum.YumBase):
             msger.disable_logstderr()
             return ret
         except rpmUtils.RpmUtilsError, e:
-            raise CreatorError("%s, notice: mic doesn't support delta rpm, please check whether all the packages have .rpm available" % e)
+            raise CreatorError("mic does NOT support delta rpm: %s" % e)
         except yum.Errors.RepoError, e:
-            raise CreatorError("Unable to download from repo : %s" % (e,))
+            raise CreatorError("Unable to download from repo : %s" % e)
         except yum.Errors.YumBaseError, e:
-            raise CreatorError("Unable to install: %s" % (e,))
+            raise CreatorError("Unable to install: %s" % e)
 
     def getAllContent(self):
         return self.__pkgs_content

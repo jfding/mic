@@ -170,7 +170,7 @@ class Zypp(BackendPlugin):
             q.setMatchExact()
             q.addAttribute(zypp.SolvAttr.name,pkg)
 
-        for item in sorted(q.queryResults(self.Z.pool()), key=lambda item:item.edition().__str__(), reverse=True):
+        for item in sorted(q.queryResults(self.Z.pool()), key=lambda item: str(item.edition()), reverse=True):
             if item.name() in self.excpkgs.keys() and self.excpkgs[item.name()] == item.repoInfo().name():
                 continue
             if item.name() in self.incpkgs.keys() and self.incpkgs[item.name()] != item.repoInfo().name():
@@ -178,8 +178,7 @@ class Zypp(BackendPlugin):
             found = True
             obspkg = self.whatObsolete(item.name())
             if arch:
-                pkgarch = "%s" % (item.arch())
-                if pkgarch == arch:
+                if arch == str(item.arch()):
                     item.status().setToBeInstalled (zypp.ResStatus.USER)
             else:
                 markPoolItem(obspkg, item)
@@ -189,7 +188,7 @@ class Zypp(BackendPlugin):
         if found == False and not ispattern:
             q.addAttribute(zypp.SolvAttr.provides, pkg)
             q.addAttribute(zypp.SolvAttr.name,'')
-            for item in sorted(q.queryResults(self.Z.pool()), key=lambda item:item.edition().__str__(), reverse=True):
+            for item in sorted(q.queryResults(self.Z.pool()), key=lambda item: str(item.edition()), reverse=True):
                 if item.name() in self.excpkgs.keys() and self.excpkgs[item.name()] == item.repoInfo().name():
                     continue
                 if item.name() in self.incpkgs.keys() and self.incpkgs[item.name()] != item.repoInfo().name():
@@ -206,7 +205,6 @@ class Zypp(BackendPlugin):
     def inDeselectPackages(self, item):
         """check if specified pacakges are in the list of inDeselectPackages"""
         name = item.name()
-        arch = "%s" % (item.arch())
         for pkg in self.to_deselect:
             startx = pkg.startswith("*")
             endx = pkg.endswith("*")
@@ -214,7 +212,7 @@ class Zypp(BackendPlugin):
             pkgname, pkgarch = self._splitPkgString(pkg)
             if not ispattern:
                 if pkgarch:
-                    if name == pkgname and arch == pkgarch:
+                    if name == pkgname and str(item.arch()) == pkgarch:
                         return True;
                 else:
                     if name == pkgname:
@@ -456,7 +454,7 @@ class Zypp(BackendPlugin):
         repoinfo = po.repoInfo()
         cacheroot = repoinfo.packagesPath()
         location= zypp.asKindPackage(po).location()
-        rpmpath = location.filename().__str__()
+        rpmpath = str(location.filename())
         pkgpath = "%s/%s" % (cacheroot, rpmpath)
         return pkgpath
 
@@ -491,7 +489,7 @@ class Zypp(BackendPlugin):
             dirn = os.path.dirname(filename)
             if not os.path.exists(dirn):
                 os.makedirs(dirn)
-            baseurl = po.repoInfo().baseUrls()[0].__str__()
+            baseurl = str(po.repoInfo().baseUrls()[0])
             index = baseurl.find("?")
             if index > -1:
                 baseurl = baseurl[:index]
@@ -501,7 +499,7 @@ class Zypp(BackendPlugin):
                 proxies = {str(proxy.split(":")[0]):str(proxy)}
 
             location = zypp.asKindPackage(po).location()
-            location = location.filename().__str__()
+            location = str(location.filename())
             if location.startswith("./"):
                 location = location[2:]
             url = baseurl + "/%s" % location
@@ -530,10 +528,10 @@ class Zypp(BackendPlugin):
                 rpmpath = self.getLocalPkgPath(po)
             if not os.path.exists(rpmpath):
                 """ Maybe it is a local repo """
-                baseurl = po.repoInfo().baseUrls()[0].__str__()
+                baseurl = str(po.repoInfo().baseUrls()[0])
                 baseurl = baseurl.strip()
                 location = zypp.asKindPackage(po).location()
-                location = location.filename().__str__()
+                location = str(location.filename())
                 if baseurl.startswith("file:/"):
                     rpmpath = baseurl[5:] + "/%s" % (location)
             if not os.path.exists(rpmpath):
@@ -611,5 +609,5 @@ class Zypp(BackendPlugin):
         if proxy:
             return proxy
         else:
-            repourl = repoinfo.baseUrls()[0].__str__()
+            repourl = str(repoinfo.baseUrls()[0])
             return get_proxy_for(repourl)
