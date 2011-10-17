@@ -729,7 +729,7 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
     for _pkg in pkgs:
         srcpkg_name = get_source_name(_pkg, repometadata)
         if not srcpkg_name:
-            return None
+            continue
         srcpkgset.add(srcpkg_name)
 
     for pkg in list(srcpkgset):
