@@ -170,7 +170,7 @@ class Zypp(BackendPlugin):
             q.setMatchExact()
             q.addAttribute(zypp.SolvAttr.name,pkg)
 
-        for item in q.queryResults(self.Z.pool()):
+        for item in sorted(q.queryResults(self.Z.pool()), key=lambda item:item.edition().__str__(), reverse=True):
             if item.name() in self.excpkgs.keys() and self.excpkgs[item.name()] == item.repoInfo().name():
                 continue
             if item.name() in self.incpkgs.keys() and self.incpkgs[item.name()] != item.repoInfo().name():
@@ -189,7 +189,7 @@ class Zypp(BackendPlugin):
         if found == False and not ispattern:
             q.addAttribute(zypp.SolvAttr.provides, pkg)
             q.addAttribute(zypp.SolvAttr.name,'')
-            for item in q.queryResults(self.Z.pool()):
+            for item in sorted(q.queryResults(self.Z.pool()), key=lambda item:item.edition().__str__(), reverse=True):
                 if item.name() in self.excpkgs.keys() and self.excpkgs[item.name()] == item.repoInfo().name():
                     continue
                 if item.name() in self.incpkgs.keys() and self.incpkgs[item.name()] != item.repoInfo().name():
