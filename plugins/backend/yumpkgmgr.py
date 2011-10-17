@@ -403,7 +403,8 @@ class Yum(BackendPlugin, yum.YumBase):
             self._cleanupRpmdbLocks(self.conf.installroot)
             msger.disable_logstderr()
             return ret
-
+        except rpmUtils.RpmUtilsError, e:
+            raise CreatorError("%s, notice: mic doesn't support delta rpm, please check whether all the packages have .rpm available" % e)
         except yum.Errors.RepoError, e:
             raise CreatorError("Unable to download from repo : %s" % (e,))
         except yum.Errors.YumBaseError, e:
