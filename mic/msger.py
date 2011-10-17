@@ -56,12 +56,22 @@ LOG_LEVELS = {
 
 LOG_FILE_FP = None
 LOG_CONTENT = ''
+CATCHERR_BUFFILE_FD = -1
+CATCHERR_BUFFILE_PATH = None
+CATCHERR_SAVED_2 = -1
 
 def _general_print(head, color, msg = None, stream = sys.stdout, level = 'normal'):
     global LOG_CONTENT
     if LOG_LEVELS[level] > LOG_LEVEL:
         # skip
         return
+
+    if CATCHERR_BUFFILE_FD > 0:
+        size = os.lseek(CATCHERR_BUFFILE_FD , 0, os.SEEK_END)
+        os.lseek(CATCHERR_BUFFILE_FD, 0, os.SEEK_SET)
+        errormsg = os.read(CATCHERR_BUFFILE_FD, size)
+        os.ftruncate(CATCHERR_BUFFILE_FD, 0)
+        msg += errormsg
 
     if LOG_FILE_FP:
         save_msg = msg.strip()
@@ -223,3 +233,28 @@ def set_logfile(fpath):
 
     import atexit
     atexit.register(_savelogf)
+
+def enable_logstderr(fpath):
+    global CATCHERR_BUFFILE_FD
+    global CATCHERR_BUFFILE_PATH
+    global CATCHERR_SAVED_2
+
+    if os.path.exists(fpath):
+        os.remove(fpath)
+    CATCHERR_BUFFILE_PATH = fpath
+    CATCHERR_BUFFILE_FD = os.open(CATCHERR_BUFFILE_PATH, os.O_RDWR|os.O_CREAT)
+    CATCHERR_SAVED_2 = os.dup(2)
+    os.dup2(CATCHERR_BUFFILE_FD, 2)
+
+def disable_logstderr():
+    global CATCHERR_BUFFILE_FD
+    global CATCHERR_BUFFILE_PATH
+    global CATCHERR_SAVED_2
+
+    os.dup2(CATCHERR_SAVED_2, 2)
+    os.close(CATCHERR_SAVED_2)
+    os.close(CATCHERR_BUFFILE_FD)
+    os.unlink(CATCHERR_BUFFILE_PATH)
+    CATCHERR_BUFFILE_FD = -1
+    CATCHERR_BUFFILE_PATH = None
+    CATCHERR_SAVED_2 = -1

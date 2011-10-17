@@ -526,6 +526,8 @@ class Zypp(BackendPlugin):
         if not unresolved_dependencies:
             self.ts.order()
             cb = rpmmisc.RPMInstallCallback(self.ts)
+            installlogfile = "%s/__catched_stderr.buf" % (self.creator._instroot)
+            msger.enable_logstderr(installlogfile)
             errors = self.ts.run(cb.callback, '')
             if errors is None:
                 pass
@@ -535,7 +537,8 @@ class Zypp(BackendPlugin):
                 for e in errors:
                     msger.warning(e[0])
                 msger.error('Could not run transaction.')
-             
+            msger.disable_logstderr()
+
             self.ts.closeDB()
             self.ts = None
         else:

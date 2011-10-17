@@ -397,8 +397,11 @@ class Yum(BackendPlugin, yum.YumBase):
             cb.filelog = False
 
             msger.warning('\nCaution, do NOT interrupt the installation, else mic cannot finish the cleanup.')
+            installlogfile = "%s/__catched_stderr.buf" % (self.creator._instroot)
+            msger.enable_logstderr(installlogfile)
             ret = self.runTransaction(cb)
             self._cleanupRpmdbLocks(self.conf.installroot)
+            msger.disable_logstderr()
             return ret
 
         except yum.Errors.RepoError, e:
