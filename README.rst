@@ -55,8 +55,7 @@ Fedora Installation
   > name=Tools for Fedora
   > baseurl=http://download.meego.com/live/devel:/tools:/building/Fedora_<VERSION>
   > enabled=1
-  > gpgcheck =1
-  > gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-meego
+  > gpgcheck=0
   > REPO
 
 Also you can take the repo file on devel:tools:building as example. For example,
@@ -66,7 +65,7 @@ Fedora 13 can use:
 2. Update repolist:
 ::
 
-  $ sudo yum update
+  $ sudo yum makecache
 
 3. Install mic:
 ::
@@ -103,6 +102,8 @@ Ubuntu/Debian Installation
   $ sudo cat <<REPO >> /etc/apt-sources.list
   > deb http://download.meego.com/live/devel:/tools:/building/<Ubuntu/Debian>_<VERSION>/ /
   > REPO
+
+*Tips*: for Ubuntu 10.10, you should use xUbuntu_10.10 to replace <Ubuntu/Debian>_<VERSIN>.
 
 2. Update repolist:
 ::
@@ -225,6 +226,9 @@ by all image types, see following table:
 +------------------+----------------------------------------------------------+
 | --pkgmgr         | specify backend package manager                          |
 +------------------+----------------------------------------------------------+
+| --record-pkgs    | record specified infomation of installed packages,       |
+|                  | include name, licence, content.                          |
++------------------+----------------------------------------------------------+
 
 *Tips*: the common options can be normally put before sub-sub command, but also
 can be after them, such as: ::
@@ -234,6 +238,8 @@ can be after them, such as: ::
 or ::
 
   $ sudo mic cr fs test.ks --outdir output
+
+*Tips*: if you failed to create armv7* image, the reason may be qemu/qemu-arm on your host is lower than required, please update qemu/qemu-arm higher than 0.13.0.
 
 Running 'mic chroot'
 --------------------
