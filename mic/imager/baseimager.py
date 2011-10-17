@@ -702,6 +702,8 @@ class BaseImageCreator(object):
         except OSError:
             pass
 
+        self._undo_bindmounts()
+
         """ Clean up yum garbage """
         try:
             instroot_pdir = os.path.dirname(self._instroot + self._instroot)
@@ -716,7 +718,6 @@ class BaseImageCreator(object):
         except OSError:
             pass
 
-        self._undo_bindmounts()
         self._unmount_instroot()
 
     def cleanup(self):
