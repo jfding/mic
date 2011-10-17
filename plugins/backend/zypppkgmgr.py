@@ -162,11 +162,12 @@ class Zypp(BackendPlugin):
             found = True
             obspkg = self.whatObsolete(item.name())
             if len(sp) == 2:
-                if item.arch() == sp[1]:
+                pkgarch = "%s" % (item.arch())
+                if pkgarch == sp[1]:
                     item.status().setToBeInstalled (zypp.ResStatus.USER)
             else:
                 markPoolItem(obspkg, item)
-            if len(sp) == 1 and not ispattern:
+            if not ispattern:
                 break
         # Can't match using package name, then search from packge provides infomation
         if found == False and not ispattern:
@@ -185,8 +186,10 @@ class Zypp(BackendPlugin):
             return None
         else:
             raise CreatorError("Unable to find package: %s" % (pkg,))
-    def inDeselectPackages(self, name):
+    def inDeselectPackages(self, item):
         """check if specified pacakges are in the list of inDeselectPackages"""
+        name = item.name()
+        arch = "%s" % (item.arch())
         for pkg in self.to_deselect:
             startx = pkg.startswith("*")
             endx = pkg.endswith("*")
@@ -194,16 +197,15 @@ class Zypp(BackendPlugin):
             sp = pkg.rsplit(".", 2)
             if not ispattern:
                 if len(sp) == 2:
-                    arch = "%s" % item.arch()
                     if name == sp[0] and arch == sp[1]:
                         return True;
                 else:
                     if name == sp[0]:
                         return True;
             else:
-                if startx and name.endswith(sp[0][1:]):
+                if startx and name.endswith(pkg[1:]):
                         return True;
-                if endx and name.startswith(sp[0][:-1]):
+                if endx and name.startswith(pkg[:-1]):
                         return True;
         return False;
 
@@ -298,7 +300,7 @@ class Zypp(BackendPlugin):
         installed_pkgs = todo._toInstall
         dlpkgs = []
         for item in installed_pkgs:
-            if not zypp.isKindPattern(item) and not self.inDeselectPackages(item.name()):
+            if not zypp.isKindPattern(item) and not self.inDeselectPackages(item):
                 dlpkgs.append(item)
 
         # record the total size of installed pkgs
