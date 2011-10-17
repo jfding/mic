@@ -326,11 +326,6 @@ class DesktopConfig(KickstartConfig):
             f = open(self.path("/etc/sysconfig/desktop"), "a+")
             f.write("AUTOLOGIN_USER=" + ksdesktop.autologinuser + "\n")
             f.close()
-            if ksdesktop.session:
-                if os.path.exists(self.path("/etc/sysconfig/uxlaunch")):
-                    f = open(self.path("/etc/sysconfig/uxlaunch"), "a+")
-                    f.write("user="+ksdesktop.autologinuser+"\n")
-                    f.close()
             if os.path.exists(self.path("/etc/gdm/custom.conf")):
                 f = open(self.path("/etc/gdm/custom.conf"), "w")
                 f.write("[daemon]\n")

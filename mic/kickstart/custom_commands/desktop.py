@@ -22,7 +22,7 @@ from pykickstart.errors import *
 from pykickstart.options import *
 
 class Moblin_Desktop(KickstartCommand):
-    def __init__(self, writePriority=0, defaultdesktop=None, defaultdm=None, autologinuser="meego", session="/usr/bin/mutter --sm-disable"):
+    def __init__(self, writePriority=0, defaultdesktop=None, defaultdm=None, autologinuser="meego", session=None):
         KickstartCommand.__init__(self, writePriority)
 
         self.__new_version = False
