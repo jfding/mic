@@ -119,6 +119,22 @@ class Zypp(BackendPlugin):
             return pi
         return None
 
+    def _splitPkgString(self, pkg):
+        sp = pkg.rsplit(".",1)
+        name = sp[0]
+        arch = None
+        if len(sp) == 2:
+            arch = sp[1]
+            if self.creator.target_arch == None:
+                # TODO, get the default_arch from conf or detected from global settings
+                sysarch = zypp.Arch('i686')
+            else:
+                sysarch = zypp.Arch(self.creator.target_arch)
+            if not zypp.Arch(arch).compatible_with (sysarch):
+                arch = None
+                name = ".".join(sp)
+        return name, arch
+
     def selectPackage(self, pkg):
         """ Select a given package or package pattern, can be specified with name.arch or name* or *name """
         if not self.Z:
@@ -134,7 +150,7 @@ class Zypp(BackendPlugin):
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
         ispattern = startx or endx
-        sp = pkg.rsplit(".", 1)
+        name, arch = self._splitPkgString(pkg)
 
         q = zypp.PoolQuery()
         q.addKind(zypp.ResKind.package)
@@ -147,9 +163,9 @@ class Zypp(BackendPlugin):
                 pattern = '%s' % (pkg[1:-1])
             q.setMatchRegex()
             q.addAttribute(zypp.SolvAttr.name,pattern)
-        elif len(sp) == 2:
+        elif arch:
             q.setMatchExact()
-            q.addAttribute(zypp.SolvAttr.name,sp[0])
+            q.addAttribute(zypp.SolvAttr.name,name)
         else:
             q.setMatchExact()
             q.addAttribute(zypp.SolvAttr.name,pkg)
@@ -161,9 +177,9 @@ class Zypp(BackendPlugin):
                 continue
             found = True
             obspkg = self.whatObsolete(item.name())
-            if len(sp) == 2:
+            if arch:
                 pkgarch = "%s" % (item.arch())
-                if pkgarch == sp[1]:
+                if pkgarch == arch:
                     item.status().setToBeInstalled (zypp.ResStatus.USER)
             else:
                 markPoolItem(obspkg, item)
@@ -186,6 +202,7 @@ class Zypp(BackendPlugin):
             return None
         else:
             raise CreatorError("Unable to find package: %s" % (pkg,))
+
     def inDeselectPackages(self, item):
         """check if specified pacakges are in the list of inDeselectPackages"""
         name = item.name()
@@ -194,13 +211,13 @@ class Zypp(BackendPlugin):
             startx = pkg.startswith("*")
             endx = pkg.endswith("*")
             ispattern = startx or endx
-            sp = pkg.rsplit(".", 2)
+            pkgname, pkgarch = self._splitPkgString(pkg)
             if not ispattern:
-                if len(sp) == 2:
-                    if name == sp[0] and arch == sp[1]:
+                if pkgarch:
+                    if name == pkgname and arch == pkgarch:
                         return True;
                 else:
-                    if name == sp[0]:
+                    if name == pkgname:
                         return True;
             else:
                 if startx and name.endswith(pkg[1:]):
