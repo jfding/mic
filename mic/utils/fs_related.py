@@ -209,18 +209,7 @@ class LoopbackMount:
         if self.losetup:
             return
 
-        rc, losetupOutput  = runner.runtool([self.losetupcmd, "-f"])
-        if rc != 0:
-            raise MountError("Failed to allocate loop device for '%s'" %
-                             self.lofile)
-
-        self.loopdev = losetupOutput.split()[0]
-
-        rc = runner.show([self.losetupcmd, self.loopdev, self.lofile])
-        if rc != 0:
-            raise MountError("Failed to allocate loop device for '%s'" %
-                             self.lofile)
-
+        self.loopdev = get_loop_device(self.losetupcmd, self.lofile)
         self.losetup = True
 
     def mount(self):
@@ -328,19 +317,7 @@ class LoopbackDisk(Disk):
         if self.device is not None:
             return
 
-        rc, losetupOutput  = runner.runtool([self.losetupcmd, "-f"])
-        if rc != 0:
-            raise MountError("Failed to allocate loop device for '%s'" %
-                             self.lofile)
-
-        device = losetupOutput.split()[0]
-
-        msger.debug("Losetup add %s mapping to %s"  % (device, self.lofile))
-        rc = runner.show([self.losetupcmd, device, self.lofile])
-        if rc != 0:
-            raise MountError("Failed to allocate loop device for '%s'" %
-                             self.lofile)
-        self.device = device
+        self.device = get_loop_device(self.losetupcmd, self.lofile)
 
     def cleanup(self):
         if self.device is None:
@@ -900,3 +877,51 @@ def myurlgrab(url, filename, proxies, progress_obj = None):
             raise CreatorError("URLGrabber error: %s" % url)
 
     return filename
+
+def get_loop_device(losetupcmd, lofile):
+    """ Get a lock to synchronize getting a loopback device """
+
+    # internal class for simple lock
+    class FileLock(object):
+        def __init__(self, filename):
+            self.filename = filename
+            self.fd = None
+
+        def acquire(self):
+            try:
+                self.fd = os.open(self.filename, os.O_CREAT | os.O_EXCL)
+                return True
+            except OSError:
+                return False
+
+        def release(self):
+            try:
+                os.close(self.fd)
+                os.remove(self.filename)
+            except:
+                pass
+
+    lock = FileLock("/var/lock/mic2-loopdev-lock")
+    timeout = 30
+    while not lock.acquire():
+        if timeout == 0:
+            raise MountError("Time Out! Failed to find a free loop device")
+        time.sleep(2)
+        timeout -= 2
+
+    losetupProc = subprocess.Popen([losetupcmd, "-f"],
+                                   stdout=subprocess.PIPE)
+    losetupOutput = losetupProc.communicate()[0]
+
+    if losetupProc.returncode:
+        lock.release()
+        raise MountError("Failed to allocate loop device for '%s'" % lofile)
+
+    loopdev = losetupOutput.split()[0]
+
+    rc = subprocess.call([losetupcmd, loopdev, lofile])
+    lock.release()
+
+    if rc != 0:
+        raise MountError("Failed to allocate loop device for '%s'" % lofile)
+    return loopdev
