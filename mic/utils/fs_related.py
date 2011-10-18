@@ -901,27 +901,26 @@ def get_loop_device(losetupcmd, lofile):
             except:
                 pass
 
-    lock = FileLock("/var/lock/mic2-loopdev-lock")
+    lock = FileLock("/var/lock/._mic_loopdev.lock")
     timeout = 30
     while not lock.acquire():
         if timeout == 0:
-            raise MountError("Time Out! Failed to find a free loop device")
+            raise MountError("Timeout! Failed to find a free loop device")
         time.sleep(2)
         timeout -= 2
 
-    losetupProc = subprocess.Popen([losetupcmd, "-f"],
-                                   stdout=subprocess.PIPE)
-    losetupOutput = losetupProc.communicate()[0]
+    rc, losetupOutput  = runner.runtool([self.losetupcmd, "-f"])
 
-    if losetupProc.returncode:
+    if rc != 0:
         lock.release()
         raise MountError("Failed to allocate loop device for '%s'" % lofile)
 
     loopdev = losetupOutput.split()[0]
 
-    rc = subprocess.call([losetupcmd, loopdev, lofile])
+    rc = runner.show([self.losetupcmd, self.loopdev, self.lofile])
     lock.release()
 
     if rc != 0:
         raise MountError("Failed to allocate loop device for '%s'" % lofile)
+
     return loopdev
