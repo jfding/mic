@@ -57,7 +57,7 @@ class LoopPlugin(ImagerPlugin):
                 recording_pkgs.append('name')
             ksconf = misc.save_ksconf_file(ksconf, creatoropts['release'])
             name = os.path.splitext(os.path.basename(ksconf))[0]
-            createopts['outdir'] = "%s/%s/images/%s/" % (createopts['outdir'], createopts['release'], name)
+            creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'], creatoropts['release'], name)
         cfgmgr._ksconf = ksconf
 
         # try to find the pkgmgr
