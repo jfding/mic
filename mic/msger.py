@@ -114,7 +114,10 @@ def _color_print(head, color, msg, stream, level):
     stream.flush()
 
 def _color_perror(head, color, msg, level = 'normal'):
-    _general_print(head, color, msg, sys.stderr, level)
+    if CATCHERR_BUFFILE_FD > 0:
+        _general_print(head, color, msg, sys.stdout, level)
+    else:
+        _general_print(head, color, msg, sys.stderr, level)
 
 def _split_msg(head, msg):
     if isinstance(msg, list):
