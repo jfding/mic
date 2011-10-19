@@ -58,6 +58,7 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help=SUPPRESS_HELP)
         optparser.add_option('', '--logfile', type='string', dest='logfile', default=None, help='Path of logfile')
         optparser.add_option('-c', '--config', type='string', dest='config', default=None, help='Specify config file for mic')
+        optparser.add_option('-k', '--cachedir', type='string', action='store', dest='cachedir', default=None, help='Cache directory to store the downloaded')
         optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='Output directory')
         optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
         optparser.add_option('', '--release', type='string', dest='release', default=None, metavar='RID', help='Generate a release of RID with all neccessary files ')
@@ -117,6 +118,8 @@ class Creator(cmdln.Cmdln):
 
         if self.options.outdir is not None:
             self.configmgr.create['outdir'] = self.options.outdir
+        if self.options.cachedir is not None:
+            self.configmgr.create['cachedir'] = self.options.cachedir
         if self.options.local_pkgs_path is not None:
             self.configmgr.create['local_pkgs_path'] = self.options.local_pkgs_path
 
