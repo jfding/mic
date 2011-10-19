@@ -887,17 +887,22 @@ def get_loop_device(losetupcmd, lofile):
             self.filename = filename
             self.fd = None
 
+            import atexit
+            atexit.register(self.release)
+
         def acquire(self):
             try:
                 self.fd = os.open(self.filename, os.O_CREAT | os.O_EXCL)
                 return True
             except OSError:
+                self.fd = None
                 return False
 
         def release(self):
             try:
-                os.close(self.fd)
-                os.remove(self.filename)
+                if self.fd is not None:
+                    os.close(self.fd)
+                    os.remove(self.filename)
             except:
                 pass
 
@@ -909,7 +914,7 @@ def get_loop_device(losetupcmd, lofile):
         time.sleep(2)
         timeout -= 2
 
-    rc, losetupOutput  = runner.runtool([self.losetupcmd, "-f"])
+    rc, losetupOutput  = runner.runtool([losetupcmd, "-f"])
 
     if rc != 0:
         lock.release()
@@ -917,7 +922,7 @@ def get_loop_device(losetupcmd, lofile):
 
     loopdev = losetupOutput.split()[0]
 
-    rc = runner.show([self.losetupcmd, self.loopdev, self.lofile])
+    rc = runner.show([losetupcmd, loopdev, lofile])
     lock.release()
 
     if rc != 0:
