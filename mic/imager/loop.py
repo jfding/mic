@@ -256,7 +256,7 @@ class LoopImageCreator(BaseImageCreator):
                 msger.verbose('Mounting image "%s" on "%s"' %(imgname, mp))
                 fs.makedirs(mp)
                 loop['loop'].mount()
-            except errors.MountError, e:
+            except MountError, e:
                 raise
 
     def _unmount_instroot(self):
