@@ -48,6 +48,9 @@ class RawPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         ksconf = args[0]
 
+        if not os.path.exists(ksconf):
+            raise errors.CreatorError("Can't find the file: %s" % ksconf)
+
         recording_pkgs = []
         if len(creatoropts['record_pkgs']) > 0:
             recording_pkgs = creatoropts['record_pkgs']
