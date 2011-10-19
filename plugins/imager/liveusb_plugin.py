@@ -47,6 +47,9 @@ class LiveUSBPlugin(ImagerPlugin):
         creatoropts = cfgmgr.create
         ksconf = args[0]
 
+        if not os.path.exists(ksconf):
+            raise errors.CreatorError("Can't find the file: %s" % ksconf)
+
         if creatoropts['arch'] and creatoropts['arch'].startswith('arm'):
             msger.warning('liveusb cannot support arm images, Quit')
             return
