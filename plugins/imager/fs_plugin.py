@@ -41,41 +41,41 @@ class FsPlugin(ImagerPlugin):
             raise errors.Usage("Extra arguments given")
 
         cfgmgr = configmgr.getConfigMgr()
-        createopts = cfgmgr.create
+        creatoropts = cfgmgr.create
         ksconf = args[0]
 
         if not os.path.exists(ksconf):
             raise errors.CreatorError("Can't find the file: %s" % ksconf)
 
         recording_pkgs = []
-        if len(createopts['record_pkgs']) > 0:
-            recording_pkgs = createopts['record_pkgs']
-        if createopts['release'] is not None:
+        if len(creatoropts['record_pkgs']) > 0:
+            recording_pkgs = creatoropts['record_pkgs']
+        if creatoropts['release'] is not None:
             if 'name' not in recording_pkgs:
                 recording_pkgs.append('name')
-            ksconf = misc.save_ksconf_file(ksconf, createopts['release'])
+            ksconf = misc.save_ksconf_file(ksconf, creatoropts['release'])
             name = os.path.splitext(os.path.basename(ksconf))[0]
-            createopts['outdir'] = "%s/%s/images/%s/" % (createopts['outdir'], createopts['release'], name)
+            creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'], creatoropts['release'], name)
         cfgmgr._ksconf = ksconf
 
         # try to find the pkgmgr
         pkgmgr = None
         for (key, pcls) in pluginmgr.PluginMgr().get_plugins('backend').iteritems():
-            if key == createopts['pkgmgr']:
+            if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
         if not pkgmgr:
             pkgmgrs = pluginmgr.PluginMgr().get_plugins('backend').keys()
-            raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (createopts['pkgmgr'], ', '.join(pkgmgrs)))
+            raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
 
-        creator = fs.FsImageCreator(createopts, pkgmgr)
+        creator = fs.FsImageCreator(creatoropts, pkgmgr)
         creator._include_src = opts.include_src
 
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
-        destdir = os.path.abspath(os.path.expanduser(createopts["outdir"]))
+        destdir = os.path.abspath(os.path.expanduser(creatoropts["outdir"]))
         fsdir = os.path.join(destdir, creator.name)
 
         if not os.path.exists(destdir):
@@ -87,21 +87,21 @@ class FsPlugin(ImagerPlugin):
 
         try:
             creator.check_depend_tools()
-            creator.mount(None, createopts["cachedir"])
+            creator.mount(None, creatoropts["cachedir"])
             creator.install()
             #Download the source packages ###private options
             if opts.include_src:
                 installed_pkgs =  creator.get_installed_packages()
                 msger.info('--------------------------------------------------')
                 msger.info('Generating the image with source rpms included, The number of source packages is %d.' %(len(installed_pkgs)))
-                if not misc.SrcpkgsDownload(installed_pkgs, createopts["repomd"], creator._instroot, createopts["cachedir"]):
+                if not misc.SrcpkgsDownload(installed_pkgs, creatoropts["repomd"], creator._instroot, creatoropts["cachedir"]):
                     msger.warning("Source packages can't be downloaded")
 
-            creator.configure(createopts["repomd"])
+            creator.configure(creatoropts["repomd"])
             creator.unmount()
             creator.package(destdir)
-            if createopts['release'] is not None:
-                creator.release_output(ksconf, createopts['outdir'], createopts['name'], createopts['release'])
+            if creatoropts['release'] is not None:
+                creator.release_output(ksconf, creatoropts['outdir'], creatoropts['name'], creatoropts['release'])
             creator.print_outimage_info()
         except errors.CreatorError:
             raise
