@@ -85,7 +85,7 @@ def get_image_type(path):
     if os.path.isdir(path):
         if _ismeego(path):
             return "fs"
-        return None
+        raise CreatorError("Directory %s is not a MeeGo/Tizen chroot env" % path)
 
     maptab = {
               "raw":"raw",
@@ -123,7 +123,7 @@ def get_image_type(path):
     elif ext3fsimgptn.match(output):
         return "ext3fsimg"
     else:
-        return None
+        raise CreatorError("Cannot detect the type of image: %s" % path)
 
 def get_file_size(file):
     """Return size in MB unit"""
