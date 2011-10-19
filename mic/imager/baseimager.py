@@ -1082,7 +1082,72 @@ class BaseImageCreator(object):
             self.outimage = [dst]
 
     def release_output(self, config, destdir, name, release):
-        self.outimage = misc.create_release(config, destdir, name, self.outimage, release)
+        outimages = self.outimage
+
+        # For virtual machine images, we have a subdir for it, this is unnecessary
+        # for release
+        thatsubdir = None
+        for i in range(len(outimages)):
+            file = outimages[i]
+            if not os.path.isdir(file) and \
+              os.path.realpath(os.path.dirname(file)) != os.path.realpath(destdir):
+                thatsubdir = os.path.dirname(file)
+                newfile = os.path.join(destdir, os.path.basename(file))
+                shutil.move(file, newfile)
+                outimages[i] = newfile
+        if thatsubdir:
+            shutil.rmtree(thatsubdir, ignore_errors = True)
+
+        # Create release directory and files
+        runner.show("cp %s %s/%s.ks" % (config, destdir, name))
+        # When building a release we want to make sure the .ks
+        # file generates the same build even when --release= is not used.
+        fd = open(config, "r")
+        kscont = fd.read()
+        fd.close()
+        kscont = kscont.replace("@BUILD_ID@",release)
+        fd = open("%s/%s.ks" % (destdir,name), "w")
+        fd.write(kscont)
+        fd.close()
+        outimages.append("%s/%s.ks" % (destdir,name))
+
+        # Using system + mv, because of * in filename.
+        runner.show("mv %s/*-pkgs.txt %s/%s.packages" % (destdir, destdir, name))
+        outimages.append("%s/%s.packages" % (destdir,name))
+
+        for f in os.listdir(destdir):
+            if f.endswith(".iso"):
+                ff = f.replace(".iso", ".img")
+                os.rename("%s/%s" %(destdir, f ), "%s/%s" %(destdir, ff))
+                outimages.append("%s/%s" %(destdir, ff))
+            elif f.endswith(".usbimg"):
+                ff = f.replace(".usbimg", ".img")
+                os.rename("%s/%s" %(destdir, f ), "%s/%s" %(destdir, ff))
+                outimages.append("%s/%s" %(destdir, ff))
+
+        with open(destdir + "/MANIFEST", "w") as wf:
+            if os.path.exists("/usr/bin/md5sum"):
+                for f in os.listdir(destdir):
+                    if f == "MANIFEST": continue
+
+                    rc, md5sum = runner.runtool(["/usr/bin/md5sum", "-b", "%s/%s" %(destdir, f)])
+                    if rc != 0:
+                        msger.warning("Can't generate md5sum for image %s/%s" %(destdir, f))
+                    else:
+                        md5sum = md5sum.lstrip().split()[0]
+                        wf.write(md5sum+" "+f+"\n")
+            else:
+                msger.warning('no md5sum tool found, no checksum string in MANIFEST')
+                wf.write('\n'.join(os.listdir(destdir)))
+
+        outimages.append("%s/MANIFEST" % destdir)
+
+        # Filter out the nonexist file
+        for file in outimages[:]:
+            if not os.path.exists("%s" % file):
+                outimages.remove(file)
+
+        self.outimage = outimages
 
     def save_kernel(self, destdir):
         if not os.path.exists(destdir):
