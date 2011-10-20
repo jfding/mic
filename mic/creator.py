@@ -61,7 +61,7 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('-k', '--cachedir', type='string', action='store', dest='cachedir', default=None, help='Cache directory to store the downloaded')
         optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='Output directory')
         optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
-        optparser.add_option('', '--release', type='string', dest='release', default=None, metavar='RID', help='Generate a release of RID with all neccessary files ')
+        optparser.add_option('', '--release', type='string', dest='release', default=None, metavar='RID', help='Generate a release of RID with all neccessary files,when @BUILD_ID is contained in kickstart file, it will be replaced by RID')
         optparser.add_option("", "--record-pkgs", type="string", dest="record_pkgs", default=None,
                              help='Record the info of installed packages, multiple values can be specified which joined by ",", valid values: "name", "content", "license"')
         optparser.add_option('', '--pkgmgr', type='string', dest='pkgmgr', default=None, help='Specify backend package manager')
