@@ -112,6 +112,10 @@ class Creator(cmdln.Cmdln):
         if self.options.debug:
             msger.set_loglevel('debug')
 
+        if self.options.logfile:
+            msger.set_interactive(False)
+            msger.set_logfile(self.options.logfile)
+
         if self.options.config:
             self.configmgr.reset()
             self.configmgr._siteconf = self.options.config
@@ -139,10 +143,6 @@ class Creator(cmdln.Cmdln):
 
         if self.options.pkgmgr is not None:
             self.configmgr.create['pkgmgr'] = self.options.pkgmgr
-
-        if self.options.logfile:
-            msger.set_interactive(False)
-            msger.set_logfile(self.options.logfile)
 
     def main(self, argv=None):
         if argv is None:
