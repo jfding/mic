@@ -330,18 +330,18 @@ arches = {
 def isMultiLibArch(arch=None):
     """returns true if arch is a multilib arch, false if not"""
     if arch is None:
-        arch = canonArch
+        arch = getCanonArch()
 
     if not arches.has_key(arch): # or we could check if it is noarch
-        return 0
+        return False
 
     if multilibArches.has_key(arch):
-        return 1
+        return True
 
     if multilibArches.has_key(arches[arch]):
-        return 1
+        return True
 
-    return 0
+    return False
 
 def getBaseArch():
     myarch = getCanonArch()
