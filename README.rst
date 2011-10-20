@@ -214,7 +214,7 @@ by all image types, see following table:
 +==================+==========================================================+
 | -o/--outdir      | specify directory where the images reside                |
 +------------------+----------------------------------------------------------+
-| -a/--arch        | specify repo architecture, like i586, armv7l, etc        |
+| -A/--arch        | specify repo architecture, like i586, armv7l, etc        |
 +------------------+----------------------------------------------------------+
 | -c/--config      | specify the custom configure file for mic                |
 +------------------+----------------------------------------------------------+
