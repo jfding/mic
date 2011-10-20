@@ -55,11 +55,10 @@ from mic.pluginbase import BackendPlugin
 class Zypp(BackendPlugin):
     name = 'zypp'
 
-    def __init__(self, creator = None, recording_pkgs=None):
+    def __init__(self, creator = None):
         if not isinstance(creator, BaseImageCreator):
             raise CreatorError("Invalid argument: creator")
 
-        self.__recording_pkgs = recording_pkgs
         self.__pkgs_license = {}
         self.__pkgs_content = {}
         self.creator = creator
@@ -325,24 +324,23 @@ class Zypp(BackendPlugin):
         if checksize and pkgs_total_size > checksize:
             raise CreatorError("Size of specified root partition in kickstart file is too small to install all selected packages.")
 
-        if self.__recording_pkgs:
-            # record all pkg and the content
-            localpkgs = self.localpkgs.keys()
-            for pkg in dlpkgs:
-                license = ''
-                if pkg.name() in localpkgs:
-                    hdr = rpmmisc.readRpmHeader(self.ts, self.localpkgs[pkg.name()])
-                    pkg_long_name = "%s-%s-%s.%s.rpm" % (hdr['name'], hdr['version'], hdr['release'], hdr['arch'])
-                    license = hdr['license']
-                else:
-                    pkg_long_name = "%s-%s.%s.rpm" % (pkg.name(), pkg.edition(), pkg.arch())
-                    package = zypp.asKindPackage(pkg)
-                    license = package.license()
-                self.__pkgs_content[pkg_long_name] = {} #TBD: to get file list
-                if license in self.__pkgs_license.keys():
-                    self.__pkgs_license[license].append(pkg_long_name)
-                else:
-                    self.__pkgs_license[license] = [pkg_long_name]
+        # record all pkg and the content
+        localpkgs = self.localpkgs.keys()
+        for pkg in dlpkgs:
+            license = ''
+            if pkg.name() in localpkgs:
+                hdr = rpmmisc.readRpmHeader(self.ts, self.localpkgs[pkg.name()])
+                pkg_long_name = "%s-%s-%s.%s.rpm" % (hdr['name'], hdr['version'], hdr['release'], hdr['arch'])
+                license = hdr['license']
+            else:
+                pkg_long_name = "%s-%s.%s.rpm" % (pkg.name(), pkg.edition(), pkg.arch())
+                package = zypp.asKindPackage(pkg)
+                license = package.license()
+            self.__pkgs_content[pkg_long_name] = {} #TBD: to get file list
+            if license in self.__pkgs_license.keys():
+                self.__pkgs_license[license].append(pkg_long_name)
+            else:
+                self.__pkgs_license[license] = [pkg_long_name]
 
         total_count = len(dlpkgs)
         cached_count = 0

@@ -827,11 +827,7 @@ class BaseImageCreator(object):
 
         yum_conf = self._mktemp(prefix = "yum.conf-")
 
-        keep_record = []
-        if len(self._recording_pkgs) > 0:
-            keep_record = self._recording_pkgs
-
-        pkg_manager = self.get_pkg_manager(keep_record)
+        pkg_manager = self.get_pkg_manager()
         pkg_manager.setup(yum_conf, self._instroot)
 
         for repo in kickstart.get_repos(self.ks, repo_urls):
@@ -862,9 +858,8 @@ class BaseImageCreator(object):
             except CreatorError, e:
                 raise
         finally:
-            if len(keep_record):
-                self._pkgs_content = pkg_manager.getAllContent()
-                self._pkgs_license = pkg_manager.getPkgsLicense()
+            self._pkgs_content = pkg_manager.getAllContent()
+            self._pkgs_license = pkg_manager.getPkgsLicense()
 
             pkg_manager.closeRpmDB()
             pkg_manager.close()
@@ -1168,5 +1163,5 @@ class BaseImageCreator(object):
 
         self.__img_compression_method = compression_method
 
-    def get_pkg_manager(self, recording_pkgs=None):
-        return self.pkgmgr(creator = self, recording_pkgs = recording_pkgs)
+    def get_pkg_manager(self):
+        return self.pkgmgr(creator = self)

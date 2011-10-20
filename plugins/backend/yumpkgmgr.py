@@ -137,7 +137,7 @@ from mic.pluginbase import BackendPlugin
 class Yum(BackendPlugin, yum.YumBase):
     name = 'yum'
 
-    def __init__(self, creator = None, recording_pkgs=None):
+    def __init__(self, creator = None):
         if not isinstance(creator, BaseImageCreator):
             raise CreatorError("Invalid argument: creator")
         yum.YumBase.__init__(self)
@@ -153,7 +153,6 @@ class Yum(BackendPlugin, yum.YumBase):
                 rpmUtils.arch.arches["armv7nhl"] = "armv7hl"
             self.arch.setup_arch(self.creator.target_arch)
 
-        self.__recording_pkgs = recording_pkgs
         self.__pkgs_license = {}
         self.__pkgs_content = {}
 
@@ -352,16 +351,15 @@ class Yum(BackendPlugin, yum.YumBase):
         if checksize and pkgs_total_size > checksize:
             raise CreatorError("Size of specified root partition in kickstart file is too small to install all selected packages.")
 
-        if self.__recording_pkgs:
-            # record all pkg and the content
-            for pkg in dlpkgs:
-                pkg_long_name = "%s-%s.%s.rpm" % (pkg.name, pkg.printVer(), pkg.arch)
-                self.__pkgs_content[pkg_long_name] = pkg.files
-                license = pkg.license
-                if license in self.__pkgs_license.keys():
-                    self.__pkgs_license[license].append(pkg_long_name)
-                else:
-                    self.__pkgs_license[license] = [pkg_long_name]
+        # record all pkg and the content
+        for pkg in dlpkgs:
+            pkg_long_name = "%s-%s.%s.rpm" % (pkg.name, pkg.printVer(), pkg.arch)
+            self.__pkgs_content[pkg_long_name] = pkg.files
+            license = pkg.license
+            if license in self.__pkgs_license.keys():
+                self.__pkgs_license[license].append(pkg_long_name)
+            else:
+                self.__pkgs_license[license] = [pkg_long_name]
 
         total_count = len(dlpkgs)
         cached_count = 0
