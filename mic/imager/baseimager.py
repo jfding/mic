@@ -73,7 +73,7 @@ class BaseImageCreator(object):
 
             self.destdir = createopts['outdir']
 
-            target_arch = createopts['arch']
+            self.target_arch = createopts['arch']
             self._local_pkgs_path = createopts['local_pkgs_path']
 
         else:
@@ -82,7 +82,7 @@ class BaseImageCreator(object):
             self.tmpdir = "/var/tmp/mic"
             self.cachedir = "/var/tmp/mic/cache"
             self.destdir = "."
-            target_arch = "noarch"
+            self.target_arch = "noarch"
             self._local_pkgs_path = None
 
         self.__builddir = None
@@ -126,40 +126,28 @@ class BaseImageCreator(object):
                     self._dep_checks.append("mkfs.btrfs")
                     break
 
-        if target_arch.startswith("arm"):
-            if not self.set_target_arch(target_arch):
-                raise CreatorError('arch "%s" can not be supported' % target_arch)
-        else:
-            self.target_arch = None
+        if self.target_arch.startswith("arm"):
+            for dep in self._dep_checks:
+                if dep == "extlinux":
+                    self._dep_checks.remove(dep)
+
+            if not os.path.exists("/usr/bin/qemu-arm") or not misc.is_statically_linked("/usr/bin/qemu-arm"):
+                self._dep_checks.append("qemu-arm-static")
+
+            if os.path.exists("/proc/sys/vm/vdso_enabled"):
+                vdso_fh = open("/proc/sys/vm/vdso_enabled","r")
+                vdso_value = vdso_fh.read().strip()
+                vdso_fh.close()
+                if (int)(vdso_value) == 1:
+                    msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n"
+                                  "\tYou can disable vdso with following command before starting image build:\n"
+                                  "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
 
         # make sure the specified tmpdir and cachedir exist
         if not os.path.exists(self.tmpdir):
             os.makedirs(self.tmpdir)
         if not os.path.exists(self.cachedir):
             os.makedirs(self.cachedir)
-
-    def set_target_arch(self, arch):
-        if arch not in rpmmisc.arches:
-            return False
-
-        self.target_arch = arch
-        for dep in self._dep_checks:
-            if dep == "extlinux":
-                self._dep_checks.remove(dep)
-
-        if not os.path.exists("/usr/bin/qemu-arm") or not misc.is_statically_linked("/usr/bin/qemu-arm"):
-            self._dep_checks.append("qemu-arm-static")
-
-        if os.path.exists("/proc/sys/vm/vdso_enabled"):
-            vdso_fh = open("/proc/sys/vm/vdso_enabled","r")
-            vdso_value = vdso_fh.read().strip()
-            vdso_fh.close()
-            if (int)(vdso_value) == 1:
-                msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n"
-                              "\tYou can disable vdso with following command before starting image build:\n"
-                              "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
-
-        return True
 
     def __del__(self):
         self.cleanup()
