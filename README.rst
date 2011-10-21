@@ -227,7 +227,7 @@ by all image types, see following table:
 | --pkgmgr         | specify backend package manager                          |
 +------------------+----------------------------------------------------------+
 | --record-pkgs    | record specified infomation of installed packages,       |
-|                  | include name, licence, content.                          |
+|                  | include name, license, content.                          |
 +------------------+----------------------------------------------------------+
 
 *Tips*: the common options can be normally put before sub-sub command, but also
