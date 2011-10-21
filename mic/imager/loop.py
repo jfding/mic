@@ -237,7 +237,9 @@ class LoopImageCreator(BaseImageCreator):
             size = loop['size'] * 1024L * 1024L
             imgname = loop['name']
 
-            if fstype in ("ext2", "ext3", "ext4"):
+            if fstype == "swap":
+                continue
+            elif fstype in ("ext2", "ext3", "ext4"):
                 MyDiskMount = fs.ExtDiskMount
             elif fstype == "btrfs":
                 MyDiskMount = fs.BtrfsDiskMount
