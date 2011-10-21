@@ -85,7 +85,7 @@ class LoopPlugin(ImagerPlugin):
             creator.package(creatoropts["outdir"])
 
             if creatoropts['release'] is not None:
-                creator.release_output(ksconf, creatoropts['outdir'], creatoropts['name'], creatoropts['release'])
+                creator.release_output(ksconf, creatoropts['outdir'], creatoropts['release'])
             creator.print_outimage_info()
 
         except errors.CreatorError:
