@@ -56,10 +56,9 @@ def save_ksconf_file(ksconf, release="latest", arch = "ia32", oldconf = None):
         kscont.replace("@ARCH@", arch)
     if kscont.find("/@BUILD_ID@/") != -1:
         kscont = kscont.replace("@BUILD_ID@", release)
-        ksconf = "/var/tmp/%s" % ksconf
-        fd = open(ksconf, "w")
-        fd.write(kscont)
-        fd.close()
+        fd, ksconf = tempfile.mkstemp(prefix=os.path.basename(ksconf)+"-", dir="/var/tmp/mic/") 
+        os.write(fd, kscont)
+        os.close(fd)
 
     return ksconf
 
