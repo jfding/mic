@@ -42,23 +42,21 @@ import runner
 
 from mic import msger
 
-def save_ksconf_file(ksconf, release="latest", arch = "ia32", oldconf = None):
+def save_ksconf_file(ksconf, release="latest", arch="ia32"):
     if not os.path.exists(ksconf):
         return
 
-    if oldconf is not None:
-        oldconf = ksconf
-    fd = open(ksconf, 'r')
-    kscont = fd.read()
-    fd.close()
+    with open(ksconf) as f:
+        ksc = f.read()
 
-    if kscont.find("/@ARCH@") != -1:
-        kscont.replace("@ARCH@", arch)
-    if kscont.find("/@BUILD_ID@/") != -1:
-        kscont = kscont.replace("@BUILD_ID@", release)
-        fd, ksconf = tempfile.mkstemp(prefix=os.path.basename(ksconf)+"-", dir="/var/tmp/mic/") 
-        os.write(fd, kscont)
+    if "@ARCH@" in ksc or "@BUILD_ID@" in ksc:
+        ksc = ksc.replace("@ARCH@", arch)
+        ksc = ksc.replace("@BUILD_ID@", release)
+        fd, ksconf = tempfile.mkstemp(prefix=os.path.basename(ksconf), dir="/tmp/")
+        os.write(fd, ksc)
         os.close(fd)
+
+        msger.debug('new ks path %s' % ksconf)
 
     return ksconf
 
@@ -125,7 +123,7 @@ def get_image_type(path):
         raise CreatorError("Cannot detect the type of image: %s" % path)
 
 def get_file_size(file):
-    """Return size in MB unit"""
+    """ Return size in MB unit, TODO: rewrite """
     rc, duOutput  = runner.runtool(['du', "-s", "-b", "-B", "1M", file])
     if rc != 0:
         raise CreatorError("Failed to run %s" % du)
