@@ -126,7 +126,7 @@ class BaseImageCreator(object):
                     self._dep_checks.append("mkfs.btrfs")
                     break
 
-        if self.target_arch.startswith("arm"):
+        if self.target_arch and self.target_arch.startswith("arm"):
             for dep in self._dep_checks:
                 if dep == "extlinux":
                     self._dep_checks.remove(dep)
