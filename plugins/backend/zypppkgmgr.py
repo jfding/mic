@@ -412,20 +412,8 @@ class Zypp(BackendPlugin):
         zconfig = zypp.ZConfig_instance()
 
         """ Set system architecture """
-        if self.creator.target_arch and self.creator.target_arch.startswith("arm"):
-            arches = ["armv7l", "armv7nhl", "armv7hl", "armv5tel"]
-            if self.creator.target_arch not in arches:
-                raise CreatorError("Invalid architecture: %s" % self.creator.target_arch)
-
-            arch_map = {}
-            try:
-                arch_map[self.creator.target_arch] = zypp.Arch(self.creator.target_arch)
-            except AttributeError:
-                msger.error('libzypp/python-zypp in host system cannot support arch %s, please'
-                            ' update it to enhanced version which can be found in repo.meego.com/tools'\
-                            % self.creator.target_arch)
-
-            zconfig.setSystemArchitecture(arch_map[self.creator.target_arch])
+        if self.creator.target_arch:
+            zconfig.setSystemArchitecture(zypp.Arch(self.creator.target_arch))
 
         msger.info("zypp architecture is <%s>" % zconfig.systemArchitecture())
 

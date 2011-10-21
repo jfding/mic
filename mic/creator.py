@@ -19,7 +19,7 @@ import os, sys
 from optparse import SUPPRESS_HELP
 
 from mic import configmgr, pluginmgr, msger
-from mic.utils import cmdln, errors
+from mic.utils import cmdln, errors, rpmmisc
 
 class Creator(cmdln.Cmdln):
     """${name}: create an image
@@ -139,7 +139,11 @@ class Creator(cmdln.Cmdln):
                 self.configmgr.create['record_pkgs'].append(infotype)
 
         if self.options.arch is not None:
-            self.configmgr.create['arch'] = self.options.arch
+            supported_arch = sorted(rpmmisc.archPolicies.keys(), reverse=True)
+            if self.options.arch in supported_arch:
+                self.configmgr.create['arch'] = self.options.arch
+            else:
+                raise errors.Usage("Invalid architecture: %s.\nSupported architectures are: %s" % (self.options.arch, ','.join(supported_arch)))
 
         if self.options.pkgmgr is not None:
             self.configmgr.create['pkgmgr'] = self.options.pkgmgr
