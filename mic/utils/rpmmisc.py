@@ -256,37 +256,29 @@ def getCanonArch():
 
     return arch
 
-# Copy from libsatsolver:poolarch.c
+# Copy from libsatsolver:poolarch.c, with cleanup
 archPolicies = {
-    "x86_64":"x86_64:i686:i586:i486:i386",
-    "i686":"i686:i586:i486:i386",
-    "i586":"i586:i486:i386",
-    "i486":"i486:i386",
-    "i386":"i386",
-    "ia64":"ia64:i686:i586:i486:i386",
-    "armv7tnhl":"armv7tnhl:armv7thl:armv7nhl:armv7hl",
-    "armv7thl":"armv7thl:armv7hl",
-    "armv7nhl":"armv7nhl:armv7hl",
-    "armv7hl":"armv7hl",
-    "armv7l":"armv7l:armv6l:armv5tejl:armv5tel:armv5l:armv4tl:armv4l:armv3l",
-    "armv6l":"armv6l:armv5tejl:armv5tel:armv5l:armv4tl:armv4l:armv3l",
-    "armv5tejl":"armv5tejl:armv5tel:armv5l:armv4tl:armv4l:armv3l",
-    "armv5tel":"armv5tel:armv5l:armv4tl:armv4l:armv3l",
-    "armv5l":"armv5l:armv4tl:armv4l:armv3l",
-    "armv4tl":"armv4tl:armv4l:armv3l",
-    "armv4l":"armv4l:armv3l",
-    "armv3l":"armv3l",
-};
+    "x86_64":       "x86_64:i686:i586:i486:i386",
+    "i686":         "i686:i586:i486:i386",
+    "i586":         "i586:i486:i386",
+    "ia64":         "ia64:i686:i586:i486:i386",
+    "armv7tnhl":    "armv7tnhl:armv7thl:armv7nhl:armv7hl",
+    "armv7thl":     "armv7thl:armv7hl",
+    "armv7nhl":     "armv7nhl:armv7hl",
+    "armv7hl":      "armv7hl",
+    "armv7l":       "armv7l:armv6l:armv5tejl:armv5tel:armv5l:armv4tl:armv4l:armv3l",
+    "armv6l":       "armv6l:armv5tejl:armv5tel:armv5l:armv4tl:armv4l:armv3l",
+    "armv5tejl":    "armv5tejl:armv5tel:armv5l:armv4tl:armv4l:armv3l",
+    "armv5tel":     "armv5tel:armv5l:armv4tl:armv4l:armv3l",
+    "armv5l":       "armv5l:armv4tl:armv4l:armv3l",
+}
 
 # dict mapping arch -> ( multicompat, best personality, biarch personality )
 multilibArches = {
-                   "x86_64":  ( "athlon", "x86_64", "athlon" ),
-                   "sparc64v": ( "sparc", "sparcv9v", "sparc64v" ),
-                   "sparc64": ( "sparc", "sparcv9", "sparc64" ),
-                   "ppc64":   ( "ppc", "ppc", "ppc64" ),
-                   "s390x":   ( "s390", "s390x", "s390" ),
-                 }
+    "x86_64":  ( "athlon", "x86_64", "athlon" ),
+}
 
+# from yumUtils.py
 arches = {
     # ia32
     "athlon": "i686",
@@ -301,37 +293,6 @@ arches = {
     "amd64": "x86_64",
     "ia32e": "x86_64",
 
-    # ppc
-    "ppc64pseries": "ppc64",
-    "ppc64iseries": "ppc64",
-    "ppc64": "ppc",
-    "ppc": "noarch",
-
-    # s390{,x}
-    "s390x": "s390",
-    "s390": "noarch",
-
-    # sparc
-    "sparc64v": "sparc64",
-    "sparc64v": "sparcv9v",
-    "sparc64": "sparcv9",
-    "sparcv9v": "sparcv9",
-    "sparcv9": "sparcv8",
-    "sparcv8": "sparc",
-    "sparc": "noarch",
-
-    # alpha
-    "alphaev7":   "alphaev68",
-    "alphaev68":  "alphaev67",
-    "alphaev67":  "alphaev6",
-    "alphaev6":   "alphapca56",
-    "alphapca56": "alphaev56",
-    "alphaev56":  "alphaev5",
-    "alphaev5":   "alphaev45",
-    "alphaev45":  "alphaev4",
-    "alphaev4":   "alpha",
-    "alpha":      "noarch",
-
     # arm
     "armv7tnhl": "armv7nhl",
     "armv7nhl": "armv7hl",
@@ -341,14 +302,9 @@ arches = {
     "armv5tejl": "armv5tel",
     "armv5tel": "noarch",
 
-    # super-h
-    "sh4a": "sh4",
-    "sh4": "noarch",
-    "sh3": "noarch",
-
     #itanium
     "ia64": "noarch",
-    }
+}
 
 def isMultiLibArch(arch=None):
     """returns true if arch is a multilib arch, false if not"""

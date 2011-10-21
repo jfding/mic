@@ -143,7 +143,9 @@ class Creator(cmdln.Cmdln):
             if self.options.arch in supported_arch:
                 self.configmgr.create['arch'] = self.options.arch
             else:
-                raise errors.Usage("Invalid architecture: %s.\nSupported architectures are: %s" % (self.options.arch, ','.join(supported_arch)))
+                raise errors.Usage('Invalid architecture: "%s".\n' \
+                                   '  Supported architectures are: \n' \
+                                   '  %s\n' % (self.options.arch, ', '.join(supported_arch)))
 
         if self.options.pkgmgr is not None:
             self.configmgr.create['pkgmgr'] = self.options.pkgmgr
