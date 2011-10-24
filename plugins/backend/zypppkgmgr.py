@@ -19,11 +19,12 @@ import os
 import shutil
 import urlparse
 import rpm
+from mic.utils import runner, fs_related
 
 import zypp
-if not hasattr(zypp, 'PoolQuery'):
-    raise ImportError("python-zypp in host system cannot support PoolQuery interface, please "
-                      "update it to enhanced version which can be found in repo.meego.com/tools")
+if not hasattr(zypp, 'PoolQuery') or not hasattr(zypp.RepoManager, 'loadSolvFile'):
+    raise ImportError("python-zypp in host system cannot support PoolQuery or loadSolvFile interface,"
+                      "please update it to enhanced version which can be found in repo.meego.com/tools")
 
 from mic import msger
 from mic.kickstart import ksparser
@@ -447,6 +448,18 @@ class Zypp(BackendPlugin):
     def installLocal(self, pkg, po=None, updateonly=False):
         if not self.ts:
             self.__initialize_transaction()
+        solvfile = "%s/.solv" % (self.creator.cachedir)
+        rc, out = runner.runtool([fs_related.find_binary_path("rpms2solv"), pkg])
+        if rc == 0:
+            f = open(solvfile, "w+")
+            f.write(out)
+            f.close()
+            warnmsg = self.repo_manager.loadSolvFile(solvfile , os.path.basename(pkg))
+            if warnmsg:
+                msger.warning(warnmsg)
+            os.unlink(solvfile)
+        else:
+            msger.warning('Can not get %s solv data.' % pkg)
         hdr = rpmmisc.readRpmHeader(self.ts, pkg)
         arch = zypp.Arch(hdr['arch'])
         if self.creator.target_arch == None:
