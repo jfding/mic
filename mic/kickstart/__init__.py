@@ -121,6 +121,10 @@ class KickstartConfig(object):
     def path(self, subpath):
         return self.instroot + subpath
 
+    def _check_sysconfig(self):
+        if not os.path.exists(self.path("/etc/sysconfig")):
+            fs.makedirs(self.path("/etc/sysconfig"))
+
     def chroot(self):
         os.chroot(self.instroot)
         os.chdir("/")
@@ -137,8 +141,7 @@ class KickstartConfig(object):
 class LanguageConfig(KickstartConfig):
     """A class to apply a kickstart language configuration to a system."""
     def apply(self, kslang):
-        if not os.path.exists(self.path("/etc/sysconfig")):
-            os.mkdir(self.path("/etc/sysconfig"))
+        self._check_sysconfig()
         if kslang.lang:
             f = open(self.path("/etc/sysconfig/i18n"), "w+")
             f.write("LANG=\"" + kslang.lang + "\"\n")
@@ -161,8 +164,7 @@ class KeyboardConfig(KickstartConfig):
 class TimezoneConfig(KickstartConfig):
     """A class to apply a kickstart timezone configuration to a system."""
     def apply(self, kstimezone):
-        if not os.path.exists(self.path("/etc/sysconfig")):
-            os.mkdir(self.path("/etc/sysconfig"))
+        self._check_sysconfig()
         tz = kstimezone.timezone or "America/New_York"
         utc = str(kstimezone.isUtc)
 
@@ -293,7 +295,7 @@ class ServicesConfig(KickstartConfig):
 class XConfig(KickstartConfig):
     """A class to apply a kickstart X configuration to a system."""
     def apply(self, ksxconfig):
-        if ksxconfig.startX:
+        if ksxconfig.startX and os.path.exists(self.path("/etc/inittab")):
             f = open(self.path("/etc/inittab"), "rw+")
             buf = f.read()
             buf = buf.replace("id:3:initdefault", "id:5:initdefault")
@@ -301,6 +303,7 @@ class XConfig(KickstartConfig):
             f.write(buf)
             f.close()
         if ksxconfig.defaultdesktop:
+            self._check_sysconfig()
             f = open(self.path("/etc/sysconfig/desktop"), "w")
             f.write("DESKTOP="+ksxconfig.defaultdesktop+"\n")
             f.close()
@@ -309,6 +312,7 @@ class DesktopConfig(KickstartConfig):
     """A class to apply a kickstart desktop configuration to a system."""
     def apply(self, ksdesktop):
         if ksdesktop.defaultdesktop:
+            self._check_sysconfig()
             f = open(self.path("/etc/sysconfig/desktop"), "w")
             f.write("DESKTOP="+ksdesktop.defaultdesktop+"\n")
             f.close()
@@ -323,6 +327,7 @@ class DesktopConfig(KickstartConfig):
                 f.write("session="+ksdesktop.session.lower()+"\n")
                 f.close()
         if ksdesktop.autologinuser:
+            self._check_sysconfig()
             f = open(self.path("/etc/sysconfig/desktop"), "a+")
             f.write("AUTOLOGIN_USER=" + ksdesktop.autologinuser + "\n")
             f.close()
