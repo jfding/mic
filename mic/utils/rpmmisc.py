@@ -418,6 +418,7 @@ def checkRepositoryEULA(name, repo):
     import shutil
     import urlparse
     import urllib2 as u2
+    import httplib
     from errors import CreatorError
 
     def _check_and_download_url(u2opener, url, savepath):
@@ -443,6 +444,8 @@ def checkRepositoryEULA(name, repo):
                 raise CreatorError(oserr)
         except u2.URLError, err:
             raise CreatorError(err)
+        except httplib.HTTPException, e:
+            raise CreatorError(e)
 
         # save to file
         licf = open(savepath, "w")
