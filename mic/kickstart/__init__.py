@@ -172,11 +172,12 @@ class TimezoneConfig(KickstartConfig):
         f.write("ZONE=\"" + tz + "\"\n")
         f.write("UTC=" + utc + "\n")
         f.close()
+        tz_source = self.path("/usr/share/zoneinfo/%s" % (tz))
+        tz_dest = self.path("/etc/localtime")
         try:
-            shutil.copyfile(self.path("/usr/share/zoneinfo/%s" %(tz,)),
-                            self.path("/etc/localtime"))
+            shutil.copyfile(tz_source, tz_dest)
         except (IOError, OSError), (errno, msg):
-            raise errors.KsError("Error copying timezone info: %s" %(msg,))
+            raise errors.KickstartError("Error copying timezone info from '%s' to '%s': %s" %(tz_source, tz_dest, msg))
 
 
 class AuthConfig(KickstartConfig):
