@@ -75,15 +75,12 @@ class FsPlugin(ImagerPlugin):
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
-        destdir = os.path.abspath(os.path.expanduser(creatoropts["outdir"]))
-        fsdir = os.path.join(destdir, creator.name)
-
-        if not os.path.exists(destdir):
-            os.makedirs(destdir)
-        elif os.path.exists(fsdir):
-            if msger.ask('The target dir: %s already exists, need to delete it?' % fsdir):
-                import shutil
-                shutil.rmtree(fsdir)
+        if creatoropts['release'] is None:
+            fsdir = os.path.join(creator.destdir, creator.name)
+            if os.path.exists(fsdir):
+                if msger.ask('The target dir: %s already exists, need to delete it?' % fsdir):
+                    import shutil
+                    shutil.rmtree(fsdir)
 
         try:
             creator.check_depend_tools()
@@ -99,7 +96,7 @@ class FsPlugin(ImagerPlugin):
 
             creator.configure(creatoropts["repomd"])
             creator.unmount()
-            creator.package(destdir)
+            creator.package(creatoropts["outdir"])
             if creatoropts['release'] is not None:
                 creator.release_output(ksconf, creatoropts['outdir'], creatoropts['release'])
             creator.print_outimage_info()

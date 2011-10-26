@@ -78,14 +78,11 @@ class RawPlugin(ImagerPlugin):
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
-        destdir = os.path.abspath(os.path.expanduser(creatoropts["outdir"]))
-        imagefile = "%s-sda.raw" % os.path.join(destdir, creator.name)
-
-        if not os.path.exists(destdir):
-            os.makedirs(destdir)
-        elif os.path.exists(imagefile):
-            if msger.ask('The target image: %s already exists, need to delete it?' % imagefile):
-                os.unlink(imagefile)
+        if creatoropts['release'] is None:
+            imagefile = "%s-sda.raw" % os.path.join(creator.destdir, creator.name)
+            if os.path.exists(imagefile):
+                if msger.ask('The target image: %s already exists, need to delete it?' % imagefile):
+                    os.unlink(imagefile)
 
         try:
             creator.check_depend_tools()

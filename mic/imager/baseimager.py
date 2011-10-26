@@ -63,17 +63,20 @@ class BaseImageCreator(object):
             # A pykickstart.KickstartParser instance."""
             self.ks = createopts['ks']
 
+            self.destdir = os.path.abspath(os.path.expanduser(createopts["outdir"]))
+
             # A name for the image."""
             self.name = createopts['name']
             if createopts['release']:
                 self.name += '-' + createopts['release']
+                if os.path.exists(self.destdir) and msger.ask('Image dir: %s already exists, '\
+                                                           'need to delete it?' % self.destdir):
+                    shutil.rmtree(self.destdir, ignore_errors = True)
 
             # The directory in which all temporary files will be created."""
             self.tmpdir = createopts['tmpdir']
 
             self.cachedir = createopts['cachedir']
-
-            self.destdir = createopts['outdir']
 
             self.target_arch = createopts['arch']
             self._local_pkgs_path = createopts['local_pkgs_path']
