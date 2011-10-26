@@ -81,6 +81,18 @@ class LiveUSBPlugin(ImagerPlugin):
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
+        destdir = os.path.abspath(os.path.expanduser(creatoropts["outdir"]))
+        if creatoropts['release'] is not None:
+            imagefile = "%s.img" % os.path.join(destdir, creator.name)
+        else:
+            imagefile = "%s.usbimg" % os.path.join(destdir, creator.name)
+
+        if not os.path.exists(destdir):
+            os.makedirs(destdir)
+        elif os.path.exists(imagefile):
+            if msger.ask('The target image: %s already exists, need to delete it?' % imagefile):
+                os.unlink(imagefile)
+
         try:
             creator.check_depend_tools()
             creator.mount(None, creatoropts["cachedir"])

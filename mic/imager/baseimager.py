@@ -1090,7 +1090,7 @@ class BaseImageCreator(object):
             if f.endswith(".iso"):
                 newf = f[:-4] + '.img'
             elif f.endswith(".usbimg"):
-                newf = f[:-6] + '.img'
+                newf = f[:-7] + '.img'
             else:
                 continue
             os.rename(_rpath(f), _rpath(newf))
