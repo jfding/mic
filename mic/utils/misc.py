@@ -23,6 +23,7 @@ import re
 import shutil
 import glob
 import hashlib
+import rpmmisc
 
 try:
     import sqlite3 as sqlite
@@ -585,7 +586,7 @@ def setup_qemu_emulator(rootdir, arch):
         raise CreatorError("Please install a statically-linked qemu-arm")
 
     # qemu emulator version check
-    armv7_list = ["armv7hl", "armv7thl", "armv7nhl", "armv7tnhl"]
+    armv7_list = [arch for arch in rpmmisc.archPolicies.keys() if arch.startswith('armv7')]
     if arch in armv7_list:  # need qemu (>=0.13.0)
         qemuout = runner.outs([qemu_emulator, "-h"])
         m = re.search("version\s*([.\d]+)", qemuout)
