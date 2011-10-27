@@ -36,6 +36,7 @@ class RPMInstallCallback:
         self.lastmsg = None
         self.tsInfo = None # this needs to be set for anything else to work
         self.ts = ts
+        self.filelog = False
         self.logString = []
 
     def _dopkgtup(self, hdr):
@@ -97,8 +98,12 @@ class RPMInstallCallback:
             self.lastmsg = None
             hdr = None
             if h is not None:
-                rpmloc = h
-                hdr = readRpmHeader(self.ts, h)
+                try:
+                    hdr, rpmloc = h
+                except:
+                    rpmloc = h
+                    hdr = readRpmHeader(self.ts, h)
+
                 handle = self._makeHandle(hdr)
                 fd = os.open(rpmloc, os.O_RDONLY)
                 self.callbackfilehandles[handle]=fd
@@ -111,8 +116,12 @@ class RPMInstallCallback:
         elif what == rpm.RPMCALLBACK_INST_CLOSE_FILE:
             hdr = None
             if h is not None:
-                rpmloc = h
-                hdr = readRpmHeader(self.ts, h)
+                try:
+                    hdr, rpmloc = h
+                except:
+                    rpmloc = h
+                    hdr = readRpmHeader(self.ts, h)
+
                 handle = self._makeHandle(hdr)
                 os.close(self.callbackfilehandles[handle])
                 fd = 0
@@ -125,11 +134,16 @@ class RPMInstallCallback:
             if h is not None:
                 percent = (self.total_installed*100L)/self.total_actions
                 if total > 0:
-                    m = re.match("(.*)-(\d+.*)-(\d+\.\d+)\.(.+)\.rpm", os.path.basename(h))
+                    try:
+                        hdr, rpmloc = h
+                    except:
+                        rpmloc = h
+
+                    m = re.match("(.*)-(\d+.*)-(\d+\.\d+)\.(.+)\.rpm", os.path.basename(rpmloc))
                     if m:
                         pkgname = m.group(1)
                     else:
-                        pkgname = os.path.basename(h)
+                        pkgname = os.path.basename(rpmloc)
                 if self.output and (sys.stdout.isatty() or self.total_installed == self.total_actions):
                     fmt = self._makefmt(percent)
                     msg = fmt % ("Installing", pkgname)
