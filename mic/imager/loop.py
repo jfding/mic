@@ -216,8 +216,8 @@ class LoopImageCreator(BaseImageCreator):
 
         return minsize
 
-    def _base_on(self, base_on):
-        if base_on is not None:
+    def _base_on(self, base_on=None):
+        if base_on and self._image != base_on:
             shutil.copyfile(base_on, self._image)
 
     def _check_imgdir(self):
@@ -228,8 +228,22 @@ class LoopImageCreator(BaseImageCreator):
     # Actual implementation
     #
     def _mount_instroot(self, base_on = None):
+
+        if base_on and os.path.isfile(base_on):
+            self.__imgdir = os.path.dirname(base_on)
+            imgname = os.path.basename(base_on)
+            self._base_on(base_on)
+            self._set_image_size(misc.get_file_size(self._image))
+            self._instloops.append({
+                 "mountpoint": "/",
+                 "label": self.name,
+                 "name": imgname,
+                 "size": self.__image_size or 4096L * 1024 * 1024,
+                 "fstype": self.__fstype or "ext3",
+                 "loop": None
+                 })
+
         self._check_imgdir()
-        self._base_on(base_on)
 
         for loop in self._instloops:
             fstype = loop['fstype']

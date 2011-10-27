@@ -159,13 +159,10 @@ class LiveCDPlugin(ImagerPlugin):
                raise errors.CreatorError("Failed to run post cleanups: %s" % msg)
 
         convertor = livecd.LiveCDImageCreator()
-        srcimgsize = (misc.get_file_size(base_on)) * 1024L * 1024L
-        base_on_dir = os.path.dirname(base_on)
-        convertor._LoopImageCreator__imgdir = base_on_dir
+        convertor.name = os.path.splitext(os.path.basename(base_on))[0]
         convertor._set_fstype("ext3")
-        convertor._set_image_size(srcimgsize)
         try:
-            convertor.mount()
+            convertor.mount(base_on)
             __mkinitrd(convertor)
             convertor._create_bootconfig()
             __run_post_cleanups(convertor)
@@ -173,7 +170,7 @@ class LiveCDPlugin(ImagerPlugin):
             convertor.package()
             convertor.print_outimage_info()
         finally:
-            shutil.rmtree(base_on_dir, ignore_errors = True)
+            shutil.rmtree(os.path.dirname(base_on), ignore_errors = True)
 
     @classmethod
     def do_unpack(cls, srcimg):
@@ -208,7 +205,8 @@ class LiveCDPlugin(ImagerPlugin):
                 raise errors.CreatorError("'%s' is not a valid live CD ISO : neither "
                                           "LiveOS/ext3fs.img nor os.img exist" %img)
 
-            rtimage = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "target.img")
+            imgname = os.path.basename(srcimg)
+            rtimage = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), imgname)
             shutil.copyfile(os_image, rtimage)
 
         finally:
