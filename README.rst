@@ -1,6 +1,11 @@
-***********************
- User Guide of **mic**
-***********************
+=====
+ mic
+=====
+-------------------------------------
+image creator for Linux distributions
+-------------------------------------
+:Copyright: GPLv2
+:Manual section: 1
 
 Overview
 ========
