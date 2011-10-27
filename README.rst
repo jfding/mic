@@ -1,6 +1,6 @@
-======================
+***********************
  User Guide of **mic**
-======================
+***********************
 
 Overview
 ========
@@ -12,11 +12,11 @@ corresponding subcommand. (Details in the following sections)
 
 It supports native running in many mainstream Linux distributions, including:
 
- * Fedora (13 and above)
- * openSUSE (11.3 and above)
- * Ubuntu (10.04 and above)
- * Debian (5.0 and above)
- * MeeGo
+* Fedora (13 and above)
+* openSUSE (11.3 and above)
+* Ubuntu (10.04 and above)
+* Debian (5.0 and above)
+* MeeGo
 
 Installation
 ============
@@ -31,14 +31,14 @@ please see the following list. And you can get the corresponding repository on
 If there is no the distribution you want in the list, please install it from
 source code.
 
- * Debian 5.0
- * Fedora 13
- * Fedora 14
- * Fedora 15
- * openSUSE 11.3
- * openSUSE 11.4
- * Ubuntu 10.04
- * Ubuntu 10.10
+* Debian 5.0
+* Fedora 13
+* Fedora 14
+* Fedora 15
+* openSUSE 11.3
+* openSUSE 11.4
+* Ubuntu 10.04
+* Ubuntu 10.10
 
 *Tips*: Debian 6.0 can use the repository of Debian 5.0.
 
@@ -139,9 +139,9 @@ to process the installation.
 
 Configuration file
 ==================
-A global configure file for mic is provided as `/etc/mic/mic.conf`, where you
-can specify the program options statically.
-Below is a sample file which is presented in the source: ::
+The configure file for mic can be provided as `/etc/mic/mic.conf`, where you
+can specify the global settings. 
+The blow is the content of one sample file: ::
 
   [common]
   ; general settings
@@ -162,26 +162,23 @@ Below is a sample file which is presented in the source: ::
   [chroot]
   ; settings for chroot subcommand
 
-For the further development, there are four sections on mic.conf, and [common]
-is for general setting, [create], [convert], and [chroot] are prepared for the
-options of mic subcommands: create, convert, and chroot.
+In this configuration file, there are four sections: [common] is for general
+setting, and [create] [convert] [chroot] sections are for the options of 
+corresponding mic subcommands: create, convert, and chroot.
 
-While you only need set [create] section properly for practice, since other
-section would be not effective currently.
+In the [create] section, the following values can be specified:
 
-+---------+-------------------------------------------------------------------+
-| Option  | Usage                                                             |
-+=========+===================================================================+
-| tmpdir  | temporary directory used to put _instroot and others              |
-+---------+-------------------------------------------------------------------+
-| cachedir| directory where cached repos will reside also downloaded packages |
-+---------+-------------------------------------------------------------------+
-| outdir  | where your images will reside once they are created               |
-+---------+-------------------------------------------------------------------+
-| pkgmgr  | default backend package manager, including yum/zypp               |
-+---------+-------------------------------------------------------------------+
-| arch    | default repo architecture, like i586, armv7l                      |
-+---------+-------------------------------------------------------------------+
+tmpdir
+  Temporary directory used in the image creation
+
+cachedir
+  Directory to store cached repos and downloaded rpm files
+
+outdir
+  Output directory
+
+pkgmgr
+  Default backend package manager: yum or zypp
 
 Usages
 ======
@@ -207,28 +204,28 @@ The supported image types can be listed using `mic create --help` ::
 
 For each image type, you can get their own options by `--help` option, like
 `mic cr fs --help`. Meanwhile, there are some common options that can be used
-by all image types, see following table:
+by all image types, as the following ::
 
-+------------------+----------------------------------------------------------+
-| Option           | Usage                                                    |
-+==================+==========================================================+
-| -o/--outdir      | specify directory where the images reside                |
-+------------------+----------------------------------------------------------+
-| -A/--arch        | specify repo architecture, like i586, armv7l, etc        |
-+------------------+----------------------------------------------------------+
-| -c/--config      | specify the custom configure file for mic                |
-+------------------+----------------------------------------------------------+
-| --release        | generate release package: image, ks, pkg-list, MANIFEST  |
-+------------------+----------------------------------------------------------+
-| --logfile        | specify log file to record the output                    |
-+------------------+----------------------------------------------------------+
-| --local-pkgs-path| directory where local packages can be used when creating |
-+------------------+----------------------------------------------------------+
-| --pkgmgr         | specify backend package manager                          |
-+------------------+----------------------------------------------------------+
-| --record-pkgs    | record specified infomation of installed packages,       |
-|                  | include name, license, content.                          |
-+------------------+----------------------------------------------------------+
+  -h, --help          show this help message and exit
+  --logfile=LOGFILE   Path of logfile
+  -c CONFIG, --config=CONFIG
+                      Specify config file for mic
+  -k CACHEDIR, --cachedir=CACHEDIR
+                      Cache directory to store the downloaded
+  -o OUTDIR, --outdir=OUTDIR
+                      Output directory
+  -A ARCH, --arch=ARCH
+                      Specify repo architecture
+  --release=RID       Generate a release of RID with all neccessary
+                      files,when @BUILD_ID@ is contained in kickstart file,
+                      it will be replaced by RID
+  --record-pkgs=RECORD_PKGS
+                      Record the info of installed packages, multiple values
+                      can be specified which joined by ",", valid values:
+                      "name", "content", "license"
+  --pkgmgr=PKGMGR     Specify backend package manager
+  --local-pkgs-path=LOCAL_PKGS_PATH
+                      Path for local pkgs(rpms) to be installed
 
 *Tips*: the common options can be normally put before sub-sub command, but also
 can be after them, such as: ::
