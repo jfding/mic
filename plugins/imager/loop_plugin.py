@@ -82,8 +82,10 @@ class LoopPlugin(ImagerPlugin):
             else:
                 imagefile = "%s.img" % os.path.join(creator.destdir, creator.name)
             if os.path.exists(imagefile):
-                if msger.ask('The target image: %s already exists, need to delete it?' % imagefile):
+                if msger.ask('The target image: %s already exists, cleanup and continue?' % imagefile):
                     os.unlink(imagefile)
+                else:
+                    raise errors.Abort('Canceled')
 
         try:
             creator.check_depend_tools()

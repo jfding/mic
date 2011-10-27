@@ -32,6 +32,9 @@ class Usage(CreatorError):
     def __str__(self):
         return self.keyword + str(self.msg) + ', please use "--help" for more info'
 
+class Abort(CreatorError):
+    keyword = ''
+
 class ConfigError(CreatorError):
     keyword = '<config>'
 

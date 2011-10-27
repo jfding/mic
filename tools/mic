@@ -170,6 +170,9 @@ if __name__ == "__main__":
     except errors.Usage, usage:
         msger.error(str(usage))
 
+    except errors.Abort, msg:
+        msger.info(str(msg))
+
     except errors.CreatorError, err:
         if msger.get_loglevel() == 'debug':
             import traceback

@@ -78,9 +78,11 @@ class FsPlugin(ImagerPlugin):
         if creatoropts['release'] is None:
             fsdir = os.path.join(creator.destdir, creator.name)
             if os.path.exists(fsdir):
-                if msger.ask('The target dir: %s already exists, need to delete it?' % fsdir):
+                if msger.ask('The target dir: %s already exists, cleanup and continue?' % fsdir):
                     import shutil
                     shutil.rmtree(fsdir)
+                else:
+                    raise errors.Abort('Canceled')
 
         try:
             creator.check_depend_tools()

@@ -29,7 +29,7 @@ import rpm
 
 from mic import kickstart
 from mic import msger
-from mic.utils.errors import CreatorError
+from mic.utils.errors import CreatorError, Abort
 from mic.utils import misc, rpmmisc, runner, fs_related as fs
 
 class BaseImageCreator(object):
@@ -59,6 +59,9 @@ class BaseImageCreator(object):
         """
         self.pkgmgr = pkgmgr
 
+        self.__builddir = None
+        self.__bindmounts = []
+
         if createopts:
             # A pykickstart.KickstartParser instance."""
             self.ks = createopts['ks']
@@ -72,8 +75,10 @@ class BaseImageCreator(object):
 
                 # check whether destine dir exist
                 if os.path.exists(self.destdir):
-                    if msger.ask('Image dir: %s already exists, need to delete it?' % self.destdir):
+                    if msger.ask('Image dir: %s already exists, cleanup and continue?' % self.destdir):
                         shutil.rmtree(self.destdir, ignore_errors = True)
+                    else:
+                        raise Abort('Canceled')
 
                 # save log by default for --release
                 if not createopts['logfile']:
@@ -94,9 +99,6 @@ class BaseImageCreator(object):
             self.destdir = "."
             self.target_arch = "noarch"
             self._local_pkgs_path = None
-
-        self.__builddir = None
-        self.__bindmounts = []
 
         self._dep_checks = ["ls", "bash", "cp", "echo", "modprobe", "passwd"]
 
