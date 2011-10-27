@@ -115,6 +115,7 @@ class Creator(cmdln.Cmdln):
         if self.options.logfile:
             msger.set_interactive(False)
             msger.set_logfile(self.options.logfile)
+            self.configmgr.create['logfile'] = self.options.logfile
 
         if self.options.config:
             self.configmgr.reset()

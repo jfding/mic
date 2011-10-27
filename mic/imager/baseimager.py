@@ -69,15 +69,20 @@ class BaseImageCreator(object):
             self.name = createopts['name']
             if createopts['release']:
                 self.name += '-' + createopts['release']
-                if os.path.exists(self.destdir) and msger.ask('Image dir: %s already exists, '\
-                                                           'need to delete it?' % self.destdir):
-                    shutil.rmtree(self.destdir, ignore_errors = True)
+
+                # check whether destine dir exist
+                if os.path.exists(self.destdir):
+                    if msger.ask('Image dir: %s already exists, need to delete it?' % self.destdir):
+                        shutil.rmtree(self.destdir, ignore_errors = True)
+
+                # save log by default for --release
+                if not createopts['logfile']:
+                    msger.set_interactive(False)
+                    msger.set_logfile(os.path.join(self.destdir, self.name+'.log'))
 
             # The directory in which all temporary files will be created."""
             self.tmpdir = createopts['tmpdir']
-
             self.cachedir = createopts['cachedir']
-
             self.target_arch = createopts['arch']
             self._local_pkgs_path = createopts['local_pkgs_path']
 
@@ -95,8 +100,8 @@ class BaseImageCreator(object):
 
         self._dep_checks = ["ls", "bash", "cp", "echo", "modprobe", "passwd"]
 
-        #FIXME to be obsolete
-        self.distro_name = "MeeGo"
+        #FIXME to be obsolete, make it configurable
+        self.distro_name = "Tizen"
 
         # Output image file names"""
         self.outimage = []

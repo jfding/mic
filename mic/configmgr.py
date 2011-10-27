@@ -41,6 +41,7 @@ DEFAULT_CREATE = {
     "repomd": None,
     "local_pkgs_path": None,
     "release": None,
+    "logfile": None,
     "record_pkgs": [],
 }
 
