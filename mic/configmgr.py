@@ -20,7 +20,7 @@ import ConfigParser
 
 from mic import kickstart
 from mic import msger
-from mic.utils import misc
+from mic.utils import misc, runner
 from mic.utils import errors
 
 DEFAULT_GSITECONF='/etc/mic/mic.conf'
@@ -111,6 +111,35 @@ class ConfigMgr(object):
             value = siteconf_parser.get('chroot', option)
             self.chroot[option] = value
 
+    def selinux_check(self, arch, ks):
+        """ If a user needs to use btrfs or creates ARM image, selinux must be disabled at start """
+
+        paths = ["/usr/sbin/getenforce",
+                 "/usr/bin/getenforce",
+                 "/sbin/getenforce",
+                 "/bin/getenforce",
+                 "/usr/local/sbin/getenforce",
+                 "/usr/locla/bin/getenforce"
+                ]
+
+        for path in paths:
+            if os.path.exists(path):
+                selinux_status = runner.outs([path])
+                if  arch and arch.startswith("arm") and selinux_status == "Enforcing":
+                    raise errors.ConfigError("Can't create arm image if selinux is enabled, please disbale it and try again")
+
+                use_btrfs = False
+                parts = ks.handler.partition.partitions
+                for part in ks.handler.partition.partitions:
+                    if part.fstype == "btrfs":
+                        use_btrfs = True
+                        break
+
+                if use_btrfs and selinux_status == "Enforcing":
+                    raise errors.ConfigError("Can't create image useing btrfs filesystem if selinux is enabled, please disbale it and try again")
+
+                break
+
     def parse_kickstart(self, ksconf=None):
         if not ksconf:
             return
@@ -119,6 +148,8 @@ class ConfigMgr(object):
 
         self.create['ks'] = ks
         self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
+
+        self.selinux_check (self.create['arch'], ks)
 
         msger.info("Retrieving repo metadata:")
         ksrepos = misc.get_repostrs_from_ks(ks)
