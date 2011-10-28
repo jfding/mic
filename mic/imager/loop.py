@@ -60,8 +60,10 @@ class LoopImageCreator(BaseImageCreator):
             allloops = []
             for part in sorted(kickstart.get_partitions(self.ks),
                                key = lambda p: p.mountpoint):
-                label = part.label
+                if part.fstype == "swap":
+                    continue
 
+                label = part.label
                 mp = part.mountpoint
                 if mp == '/':
                     # the base image
@@ -234,6 +236,8 @@ class LoopImageCreator(BaseImageCreator):
             imgname = os.path.basename(base_on)
             self._base_on(base_on)
             self._set_image_size(misc.get_file_size(self._image))
+
+            # here, self._instloops must be []
             self._instloops.append({
                  "mountpoint": "/",
                  "label": self.name,
@@ -251,9 +255,7 @@ class LoopImageCreator(BaseImageCreator):
             size = loop['size'] * 1024L * 1024L
             imgname = loop['name']
 
-            if fstype == "swap":
-                continue
-            elif fstype in ("ext2", "ext3", "ext4"):
+            if fstype in ("ext2", "ext3", "ext4"):
                 MyDiskMount = fs.ExtDiskMount
             elif fstype == "btrfs":
                 MyDiskMount = fs.BtrfsDiskMount
