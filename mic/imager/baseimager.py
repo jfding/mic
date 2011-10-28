@@ -55,8 +55,8 @@ class BaseImageCreator(object):
 
         name -- a name for the image; used for e.g. image filenames or
                 filesystem labels
-
         """
+
         self.pkgmgr = pkgmgr
 
         self.__builddir = None
@@ -80,10 +80,7 @@ class BaseImageCreator(object):
                     else:
                         raise Abort('Canceled')
 
-                # save log by default for --release
-                if not createopts['logfile']:
-                    msger.set_interactive(False)
-                    msger.set_logfile(os.path.join(self.destdir, self.name+'.log'))
+                # pending FEA: save log by default for --release
 
             # The directory in which all temporary files will be created."""
             self.tmpdir = createopts['tmpdir']
