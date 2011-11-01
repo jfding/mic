@@ -320,6 +320,49 @@ def get_metadata_from_repos(repostrs, cachedir):
 
     return my_repo_metadata
 
+def get_arch(repometadata):
+    archlist = []
+    for repo in repometadata:
+        if repo["primary"].endswith(".xml"):
+            root = xmlparse(repo["primary"])
+            ns = root.getroot().tag
+            ns = ns[0:ns.rindex("}")+1]
+            for elm in root.getiterator("%spackage" % ns):
+                if elm.find("%sarch" % ns).text not in ("noarch", "src"):
+                    arch = elm.find("%sarch" % ns).text
+                    if arch not in archlist:
+                        archlist.append(arch)
+        elif repo["primary"].endswith(".sqlite"):
+            con = sqlite.connect(repo["primary"])
+            for row in con.execute("select arch from packages where arch not in (\"src\", \"noarch\")"):
+                if row[0] not in archlist:
+                    archlist.append(row[0])
+
+            con.close()
+
+    uniq_arch = []
+    for i in range(len(archlist)):
+        if archlist[i] not in rpmmisc.archPolicies.keys():
+            continue
+        need_append = True
+        j = 0
+        while j < len(uniq_arch):
+            if archlist[i] in rpmmisc.archPolicies[uniq_arch[j]].split(':'):
+                need_append = False
+                break
+            if uniq_arch[j] in rpmmisc.archPolicies[archlist[i]].split(':'):
+                if need_append:
+                    uniq_arch[j] = archlist[i]
+                    need_append = False
+                else:
+                    uniq_arch.remove(uniq_arch[j])
+                    continue
+            j += 1
+        if need_append:
+             uniq_arch.append(archlist[i])
+
+    return uniq_arch
+
 def get_package(pkg, repometadata, arch = None):
     ver = ""
     target_repo = None
