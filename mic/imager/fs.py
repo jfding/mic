@@ -29,6 +29,8 @@ class FsImageCreator(BaseImageCreator):
         self._include_src = False
 
     def package(self, destdir = "."):
+        if not os.path.exists(destdir):
+            os.makedirs(destdir)
         fsdir = os.path.join(destdir, self.name)
 
         if self._recording_pkgs:
