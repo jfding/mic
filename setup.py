@@ -30,21 +30,19 @@ except IOError:
     print 'WARNING: Cannot write version number file'
     pass
 
+# --install-layout is recognized after 2.5
 if sys.version_info[:2] > (2, 5):
     if len(sys.argv) > 1 and 'install' in sys.argv:
-        lsbcmd = None
-        if os.path.exists('/usr/bin/lsb_release'):
-            lsbcmd = '/usr/bin/lsb_release'
-        elif os.path.exists('/bin/lsb_release'):
-            lsbcmd = '/bin/lsb_release'
+        dist=None
+        import platform
+        try:
+            (dist, ver, id) = platform.linux_distribution()
+        except:
+            pass
 
-        if lsbcmd:
-            import subprocess
-            res = subprocess.Popen([lsbcmd, '-i'],
-                                   stdout=subprocess.PIPE
-                                  ).communicate()[0]
-            if 'Debian' in res or 'Ubuntu' in res:
-                sys.argv.append('--install-layout=deb')
+        # for debian-like distros, set deb-layout py-lib 
+        if dist in ('debian', 'Ubuntu'):
+            sys.argv.append('--install-layout=deb')
 
 PACKAGES = [MOD_NAME,
             MOD_NAME + '/utils',
@@ -57,6 +55,9 @@ PACKAGES = [MOD_NAME,
             MOD_NAME + '/3rdparty/pykickstart/urlgrabber',
            ]
 
+IMAGER_PLUGINS = glob.glob(os.path.join("plugins", "imager", "*.py"))
+BACKEND_PLUGINS = glob.glob(os.path.join("plugins", "backend", "*.py"))
+
 setup(name=MOD_NAME,
       version = version,
       description = 'New MeeGo Image Creator',
@@ -67,15 +68,8 @@ setup(name=MOD_NAME,
           'tools/mic',
           ],
       packages = PACKAGES,
-      data_files = [("/usr/lib/mic/plugins/imager", ["plugins/imager/fs_plugin.py",
-                                                     "plugins/imager/livecd_plugin.py",
-                                                     "plugins/imager/liveusb_plugin.py",
-                                                     "plugins/imager/loop_plugin.py",
-                                                     "plugins/imager/raw_plugin.py",
-                                                    ]),
-                    ("/usr/lib/mic/plugins/backend", ["plugins/backend/zypppkgmgr.py",
-                                                      "plugins/backend/yumpkgmgr.py",
-                                                     ]),
+      data_files = [("/usr/lib/mic/plugins/imager", IMAGER_PLUGINS),
+                    ("/usr/lib/mic/plugins/backend", BACKEND_PLUGINS),
                     ("/etc/mic", ["distfiles/mic.conf"])]
 )
 
