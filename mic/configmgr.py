@@ -25,7 +25,7 @@ from mic.utils import errors
 
 DEFAULT_GSITECONF = '/etc/mic/mic.conf'
 
-DEFAULT_OUTDIR = '.'
+DEFAULT_OUTDIR = './mic-output'
 DEFAULT_TMPDIR = '/var/tmp/mic'
 DEFAULT_CACHEDIR = DEFAULT_TMPDIR + '/cache'
 
