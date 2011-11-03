@@ -21,6 +21,7 @@ import struct
 import termios
 import rpm
 from mic import msger
+from .errors import CreatorError
 import runner
 
 def myurlgrab(url, filename, proxies, progress_obj = None):
