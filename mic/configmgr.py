@@ -23,11 +23,11 @@ from mic import msger
 from mic.utils import misc, runner
 from mic.utils import errors
 
-DEFAULT_GSITECONF='/etc/mic/mic.conf'
+DEFAULT_GSITECONF = '/etc/mic/mic.conf'
 
-DEFAULT_OUTDIR='.'
-DEFAULT_TMPDIR='/var/tmp/mic'
-DEFAULT_CACHEDIR='/var/tmp/mic/cache'
+DEFAULT_OUTDIR = '.'
+DEFAULT_TMPDIR = '/var/tmp/mic'
+DEFAULT_CACHEDIR = DEFAULT_TMPDIR + '/cache'
 
 DEFAULT_CREATE = {
     "tmpdir": DEFAULT_TMPDIR,
