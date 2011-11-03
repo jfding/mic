@@ -28,21 +28,20 @@ try:
     ver_file.close()
 except IOError:
     print 'WARNING: Cannot write version number file'
-    pass
 
 # --install-layout is recognized after 2.5
 if sys.version_info[:2] > (2, 5):
     if len(sys.argv) > 1 and 'install' in sys.argv:
-        dist=None
-        import platform
         try:
+            import platform
             (dist, ver, id) = platform.linux_distribution()
+
+            # for debian-like distros, mods will be installed to
+            # ${PYTHONLIB}/dist-packages
+            if dist in ('debian', 'Ubuntu'):
+                sys.argv.append('--install-layout=deb')
         except:
             pass
-
-        # for debian-like distros, set deb-layout py-lib 
-        if dist in ('debian', 'Ubuntu'):
-            sys.argv.append('--install-layout=deb')
 
 PACKAGES = [MOD_NAME,
             MOD_NAME + '/utils',
