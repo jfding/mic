@@ -567,7 +567,7 @@ class KickstartParser:
         """
         try:
             fn()
-        except Exception as msg:
+        except Exception, msg:
             if self.errorsAreFatal:
                 raise
             else:
