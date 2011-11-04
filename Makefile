@@ -11,10 +11,13 @@ else
 endif
 
 ifndef PREFIX
-    PREFIX = "/usr/local"
+    PREFIX = "/usr"
 endif
 
-all:
+all: build
+
+build:
+	rm -f mic/__version__.*
 	$(PYTHON) setup.py build
 
 dist-common: man
@@ -33,15 +36,20 @@ dist-gz: dist-common
 man: README.rst
 	rst2man $< >mic.1
 
-install: all
+installman: man
+	mkdir -p $(DESTDIR)/$(PREFIX)/share/man/man1
+	install -m644 mic.1 $(DESTDIR)/$(PREFIX)/share/man/man1
+
+install: 
 	$(PYTHON) setup.py install  --prefix=$(DESTDIR)/$(PREFIX)
 
-develop: all
+develop: 
 	$(PYTHON) setup.py develop
 
 clean:
 	rm -f *.tar.gz
 	rm -f *.tar.bz2
+	rm -f mic/__version__.*
 	rm -f tools/*.py[co]
 	rm -f mic.1
 	rm -rf *.egg-info
