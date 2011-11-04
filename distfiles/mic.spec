@@ -7,7 +7,7 @@
 
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 Name:       mic
-Summary:    image creator for Linux distributions
+Summary:    Image Creator for Linux Distributions
 Version:    0.1
 Release:    1
 Group:      System/Base
@@ -78,7 +78,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 # >> install post
-make DESTDIR=%{buildroot} installman
+# install man page
+mkdir -p %{buildroot}/%{_prefix}/share/man/man1
+install -m644 doc/mic.1 %{buildroot}/%{_prefix}/share/man/man1
 # << install post
 
 
@@ -90,7 +92,7 @@ make DESTDIR=%{buildroot} installman
 %defattr(-,root,root,-)
 # >> files
 %doc README.rst
-%{_mandir}/man1/*.1.gz
+%{_mandir}/man1/*
 %dir %{_sysconfdir}/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
 %{python_sitelib}/*

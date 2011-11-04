@@ -17,7 +17,6 @@ endif
 all: build
 
 build:
-	rm -f mic/__version__.*
 	$(PYTHON) setup.py build
 
 dist-common: man
@@ -36,14 +35,10 @@ dist-gz: dist-common
 man: README.rst
 	rst2man $< >mic.1
 
-installman: man
-	mkdir -p $(DESTDIR)/$(PREFIX)/share/man/man1
-	install -m644 mic.1 $(DESTDIR)/$(PREFIX)/share/man/man1
-
-install: 
+install: build
 	$(PYTHON) setup.py install  --prefix=$(DESTDIR)/$(PREFIX)
 
-develop: 
+develop: build
 	$(PYTHON) setup.py develop
 
 clean:
