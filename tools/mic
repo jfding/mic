@@ -38,7 +38,7 @@ class Mic(cmdln.Cmdln):
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self, version=self.version)
         optparser.add_option('-d', '--debug', action='store_true', dest='debug', help='print debug message')
-        optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='verbose infomation')
+        optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='verbose information')
         return optparser
 
     def postoptparse(self):
@@ -80,7 +80,7 @@ class Mic(cmdln.Cmdln):
     def do_convert(self, subcmd, opts, *args):
         """${cmd_name}: convert image format
 
-        usage:
+        Usage:
             mic convert <imagefile> <destformat>
 
         ${cmd_option_list}
@@ -124,7 +124,7 @@ class Mic(cmdln.Cmdln):
     def do_chroot(self, subcmd, opts, *args):
         """${cmd_name}: chroot into an image
 
-        usage:
+        Usage:
             mic chroot <imagefile>
 
         ${cmd_option_list}

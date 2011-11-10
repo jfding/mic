@@ -924,7 +924,7 @@ class BaseImageCreator(object):
         This method applies the (e.g. keyboard or network) configuration
         specified in the kickstart and executes the kickstart %post scripts.
 
-        If neccessary, it also prepares the image to be bootable by e.g.
+        If necessary, it also prepares the image to be bootable by e.g.
         creating an initrd and bootloader configuration.
 
         """

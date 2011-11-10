@@ -221,7 +221,7 @@ by all image types, as the following ::
                       Output directory
   -A ARCH, --arch=ARCH
                       Specify repo architecture
-  --release=RID       Generate a release of RID with all neccessary
+  --release=RID       Generate a release of RID with all necessary
                       files,when @BUILD_ID@ is contained in kickstart file,
                       it will be replaced by RID
   --record-pkgs=RECORD_PKGS
