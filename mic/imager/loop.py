@@ -242,7 +242,7 @@ class LoopImageCreator(BaseImageCreator):
                  "mountpoint": "/",
                  "label": self.name,
                  "name": imgname,
-                 "size": self.__image_size or 4096L * 1024 * 1024,
+                 "size": self.__image_size or 4096L,
                  "fstype": self.__fstype or "ext3",
                  "loop": None
                  })
@@ -293,9 +293,11 @@ class LoopImageCreator(BaseImageCreator):
             if not tarfile_name.endswith('.tar'):
                 tarfile_name += ".tar"
 
+            msger.info("Tar all loop images together to %s" % tarfile_name)
             tar = tarfile.open(os.path.join(self._outdir, tarfile_name), 'w')
             for item in self._instloops:
-                runner.show('/sbin/tune2fs -O ^huge_file,extents,uninit_bg ' + item['name'])
+                if item['fstype'] == "ext4":
+                    runner.show('/sbin/tune2fs -O ^huge_file,extents,uninit_bg ' + item['name'])
                 tar.add(item['name'])
 
             tar.close()

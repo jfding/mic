@@ -110,7 +110,7 @@ class LoopPlugin(ImagerPlugin):
     @classmethod
     def do_chroot(cls, target):#chroot.py parse opts&args
         img = target
-        imgsize = misc.get_file_size(img)
+        imgsize = misc.get_file_size(img) * 1024L * 1024L
         extmnt = misc.mkdtemp()
         extloop = fs_related.ExtDiskMount(fs_related.SparseLoopbackDisk(img, imgsize),
                                                          extmnt,
