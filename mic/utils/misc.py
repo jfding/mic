@@ -62,6 +62,19 @@ def save_ksconf_file(ksconf, release="latest", arch="ia32"):
 
     return ksconf
 
+def check_meego_chroot(rootdir):
+    if not os.path.exists(rootdir + "/etc/moblin-release") \
+        and not os.path.exists(rootdir + "/etc/meego-release"):
+        raise CreatorError("Directory %s is not a MeeGo/Tizen chroot env" \
+                           % rootdir)
+    if not os.path.exists(rootdir + "/etc/inittab") \
+        or not os.path.exists(rootdir + "/etc/rc.sysinit"):
+        raise CreatorError("Lack of init scripts under %s: /etc/inittab, " \
+                           "/etc/rc.sysinit" % rootdir)
+    if not glob.glob(rootdir + "/boot/vmlinuz-*"):
+        raise CreatorError("Failed to find kernel module under %s" % rootdir)
+    return
+
 def get_image_type(path):
 
     def _get_extension_name(path):
@@ -71,20 +84,9 @@ def get_image_type(path):
         else:
             return None
 
-    def _ismeego(rootdir):
-        if (os.path.exists(rootdir + "/etc/moblin-release") \
-            or os.path.exists(rootdir + "/etc/meego-release")) \
-            and os.path.exists(rootdir + "/etc/inittab") \
-            and os.path.exists(rootdir + "/etc/rc.sysinit") \
-            and glob.glob(rootdir + "/boot/vmlinuz-*"):
-            return True
-        else:
-            return False
-
     if os.path.isdir(path):
-        if _ismeego(path):
-            return "fs"
-        raise CreatorError("Directory %s is not a MeeGo/Tizen chroot env" % path)
+        check_meego_chroot(path):
+        return "fs"
 
     maptab = {
               "raw":"raw",
