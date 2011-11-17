@@ -111,12 +111,22 @@ class LoopPlugin(ImagerPlugin):
     def do_chroot(cls, target):#chroot.py parse opts&args
         img = target
         imgsize = misc.get_file_size(img) * 1024L * 1024L
+        imgtype = misc.get_image_type(img)
+        if imgtype == "btrfsimg":
+            fstype = "btrfs"
+            myDiskMount = fs_related.BtrfsDiskMount
+        elif imgtype in ("ext3fsimg", "ext4fsimg"):
+            fstype = imgtype[:4]
+            myDiskMount = fs_related.ExtDiskMount
+        else:
+            raise errors.CreatorError("Unsupported filesystem type: %s" % imgtype)
+
         extmnt = misc.mkdtemp()
-        extloop = fs_related.ExtDiskMount(fs_related.SparseLoopbackDisk(img, imgsize),
+        extloop = myDiskMount(fs_related.SparseLoopbackDisk(img, imgsize),
                                                          extmnt,
-                                                         "ext3",
+                                                         fstype,
                                                          4096,
-                                                         "ext3 label")
+                                                         "%s label" % fstype)
         try:
             extloop.mount()
 

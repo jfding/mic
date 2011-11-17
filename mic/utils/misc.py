@@ -111,6 +111,8 @@ def get_image_type(path):
     rawptn = re.compile(r".*x86 boot sector.*")
     vmdkptn = re.compile(r".*VMware. disk image.*")
     ext3fsimgptn = re.compile(r".*Linux.*ext3 filesystem data.*")
+    ext4fsimgptn = re.compile(r".*Linux.*ext4 filesystem data.*")
+    btrfsimgptn = re.compile(r".*BTRFS.*")
     if isoptn.match(output):
         return maptab["iso"]
     elif usbimgptn.match(output):
@@ -121,6 +123,10 @@ def get_image_type(path):
         return maptab["vmdk"]
     elif ext3fsimgptn.match(output):
         return "ext3fsimg"
+    elif ext4fsimgptn.match(output):
+        return "ext4fsimg"
+    elif btrfsimgptn.match(output):
+        return "btrfsimg"
     else:
         raise CreatorError("Cannot detect the type of image: %s" % path)
 

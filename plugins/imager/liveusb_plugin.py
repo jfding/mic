@@ -113,18 +113,25 @@ class LiveUSBPlugin(ImagerPlugin):
         os_image = cls.do_unpack(target)
         os_image_dir = os.path.dirname(os_image)
 
-        #unpack image to target dir
+        # unpack image to target dir
         imgsize = misc.get_file_size(os_image) * 1024L * 1024L
-        extmnt = misc.mkdtemp()
-        tfstype = "ext3"
-        tlabel = "ext3 label"
+        imgtype = misc.get_image_type(os_image)
+        if imgtype == "btrfsimg":
+            fstype = "btrfs"
+            myDiskMount = fs_related.BtrfsDiskMount
+        elif imgtype in ("ext3fsimg", "ext4fsimg"):
+            fstype = imgtype[:4]
+            myDiskMount = fs_related.ExtDiskMount
+        else:
+            raise errors.CreatorError("Unsupported filesystem type: %s" % fstype)
 
-        MyDiskMount = fs_related.ExtDiskMount
+        extmnt = misc.mkdtemp()
         extloop = MyDiskMount(fs_related.SparseLoopbackDisk(os_image, imgsize),
                               extmnt,
-                              tfstype,
+                              fstype,
                               4096,
-                              tlabel)
+                              "%s label" % fstype)
+
         try:
             extloop.mount()
 
@@ -164,7 +171,14 @@ class LiveUSBPlugin(ImagerPlugin):
 
         convertor = liveusb.LiveUSBImageCreator()
         convertor.name = os.path.splitext(os.path.basename(base_on))[0]
-        convertor._set_fstype("ext3")
+        imgtype = misc.get_image_type(base_on)
+        if imgtype == "btrfsimg":
+            fstype = "btrfs"
+        elif imgtype in ("ext3fsimg", "ext4fsimg"):
+            fstype = imgtype[:4]
+        else:
+            raise errors.CreatorError("Unsupported filesystem type: %s" % fstyp)
+        convertor._set_fstype(fstype)
         try:
             convertor.mount(base_on)
             __mkinitrd(convertor)
@@ -212,6 +226,7 @@ class LiveUSBPlugin(ImagerPlugin):
                 raise errors.CreatorError("'%s' is not a valid live CD ISO : neither "
                                           "LiveOS/ext3fs.img nor os.img exist" %img)
             imgname = os.path.basename(srcimg)
+            imgname = os.path.splitext(imgname)[0] + ".img"
             rtimage = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), imgname)
             shutil.copyfile(os_image, rtimage)
 

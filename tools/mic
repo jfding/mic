@@ -145,7 +145,7 @@ class Mic(cmdln.Cmdln):
         self._root_confirm()
 
         imagetype = misc.get_image_type(targetimage)
-        if imagetype == "ext3fsimg":
+        if imagetype in ("ext3fsimg", "ext4fsimg", "btrfsimg"):
             imagetype = "loop"
 
         chrootclass = None
