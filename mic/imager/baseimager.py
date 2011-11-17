@@ -1110,6 +1110,8 @@ class BaseImageCreator(object):
             if os.path.exists("/usr/bin/md5sum"):
                 for f in os.listdir(destdir):
                     if f == "MANIFEST": continue
+                    if os.path.isdir(os.path.join(destdir,f)):
+                        continue
 
                     rc, md5sum = runner.runtool(["/usr/bin/md5sum", "-b", _rpath(f)])
                     if rc != 0:
