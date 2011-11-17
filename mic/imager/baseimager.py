@@ -835,6 +835,7 @@ class BaseImageCreator(object):
 
         if kickstart.exclude_docs(self.ks):
             rpm.addMacro("_excludedocs", "1")
+        rpm.addMacro("_dbpath", "/var/lib/rpm")
         rpm.addMacro("__file_context_path", "%{nil}")
         if kickstart.inst_langs(self.ks) != None:
             rpm.addMacro("_install_langs", kickstart.inst_langs(self.ks))
