@@ -126,7 +126,7 @@ class LiveUSBPlugin(ImagerPlugin):
             raise errors.CreatorError("Unsupported filesystem type: %s" % fstype)
 
         extmnt = misc.mkdtemp()
-        extloop = MyDiskMount(fs_related.SparseLoopbackDisk(os_image, imgsize),
+        extloop = myDiskMount(fs_related.SparseLoopbackDisk(os_image, imgsize),
                               extmnt,
                               fstype,
                               4096,
