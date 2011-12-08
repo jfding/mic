@@ -24,6 +24,7 @@ try:
     from M2Crypto import httpslib
     from M2Crypto import m2urllib2
 
+    SSL.Connection.clientPostConnectionCheck = None
     have_m2crypto = True
 except ImportError:
     have_m2crypto = False
@@ -48,7 +49,7 @@ if have_m2crypto:
             if ssl_ca_cert:
                 context = SSL.Context()
                 context.load_verify_locations(ssl_ca_cert)
-                context.set_verify(SSL.verify_peer, -1)
+                context.set_verify(SSL.verify_none, -1)
                 return context
             else:
                 return ssl_context
