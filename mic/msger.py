@@ -60,8 +60,11 @@ CATCHERR_BUFFILE_FD = -1
 CATCHERR_BUFFILE_PATH = None
 CATCHERR_SAVED_2 = -1
 
-def _general_print(head, color, msg = None, stream = sys.stdout, level = 'normal'):
+def _general_print(head, color, msg = None, stream = None, level = 'normal'):
     global LOG_CONTENT
+    if not stream:
+        stream = sys.stdout
+
     if LOG_LEVELS[level] > LOG_LEVEL:
         # skip
         return
