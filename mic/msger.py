@@ -66,18 +66,24 @@ def _general_print(head, color, msg = None, stream = sys.stdout, level = 'normal
         # skip
         return
 
+    errormsg = ''
     if CATCHERR_BUFFILE_FD > 0:
         size = os.lseek(CATCHERR_BUFFILE_FD , 0, os.SEEK_END)
         os.lseek(CATCHERR_BUFFILE_FD, 0, os.SEEK_SET)
         errormsg = os.read(CATCHERR_BUFFILE_FD, size)
         os.ftruncate(CATCHERR_BUFFILE_FD, 0)
-        msg += errormsg
 
     if LOG_FILE_FP:
+        if errormsg:
+            LOG_CONTENT += errormsg
+
         save_msg = msg.strip()
         if save_msg:
             timestr = datetime.now().strftime('[%m/%d %H:%M:%S] ')
             LOG_CONTENT += timestr + save_msg + '\n'
+
+    if errormsg:
+        _color_print('', NO_COLOR, errormsg, stream, level)
 
     _color_print(head, color, msg, stream, level)
 
