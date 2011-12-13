@@ -23,7 +23,7 @@ from mic.utils import runner, fs_related
 
 import zypp
 if not hasattr(zypp, 'PoolQuery') or not hasattr(zypp.RepoManager, 'loadSolvFile'):
-    raise ImportError("python-zypp in host system cannot support PoolQuery or loadSolvFile interface,"
+    raise ImportError("python-zypp in host system cannot support PoolQuery or loadSolvFile interface, "
                       "please update it to enhanced version which can be found in repo.meego.com/tools")
 
 from mic import msger

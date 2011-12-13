@@ -18,59 +18,61 @@
 import os, sys
 import ConfigParser
 
-from mic import kickstart
-from mic import msger
-from mic.utils import misc, runner
-from mic.utils import errors
+import msger
+import kickstart
+from .utils import misc, runner, errors
 
 DEFAULT_GSITECONF = '/etc/mic/mic.conf'
 
-DEFAULT_OUTDIR = './mic-output'
-DEFAULT_TMPDIR = '/var/tmp/mic'
-DEFAULT_CACHEDIR = DEFAULT_TMPDIR + '/cache'
-
-DEFAULT_CREATE = {
-    "tmpdir": DEFAULT_TMPDIR,
-    "cachedir": DEFAULT_CACHEDIR,
-    "outdir": DEFAULT_OUTDIR,
-    "arch": None,
-    "pkgmgr": "yum",
-    "name": "output",
-    "ksfile": None,
-    "ks": None,
-    "repomd": None,
-    "local_pkgs_path": None,
-    "release": None,
-    "logfile": None,
-    "record_pkgs": [],
-}
-
 class ConfigMgr(object):
+    DEFAULTS = {'common': {},
+                'create': {
+                    "tmpdir": '/var/tmp/mic',
+                    "cachedir": '/var/tmp/mic/cache',
+                    "outdir": './mic-output',
+                    "arch": None, # None means auto-detect
+                    "pkgmgr": "yum",
+                    "name": "output",
+                    "ksfile": None,
+                    "ks": None,
+                    "repomd": None,
+                    "local_pkgs_path": None,
+                    "release": None,
+                    "logfile": None,
+                    "record_pkgs": [],
+                },
+                'chroot': {},
+                'convert': {},
+               }
+
+    # make the manager class as singleton
+    _instance = None
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(ConfigMgr, cls).__new__(cls, *args, **kwargs)
+
+        return cls._instance
+
     def __init__(self, ksconf=None, siteconf=None):
         # reset config options
         self.reset()
 
-        # initial options from siteconf
-        self._siteconf = siteconf
-        if not self.__siteconf:
+        if not siteconf:
+            # initial options from siteconf
             self._siteconf = DEFAULT_GSITECONF
 
     def reset(self):
-        self.common = {}
-        self.create = {}
-        self.convert = {}
-        self.chroot = {}
         self.__ksconf = None
         self.__siteconf = None
 
-        # initial create
-        for key in DEFAULT_CREATE.keys():
-            self.create[key] = DEFAULT_CREATE[key]
+        # initialize the values with defaults
+        for sec, vals in self.DEFAULTS.iteritems():
+            setattr(self, sec, vals)
 
     def __set_siteconf(self, siteconf):
         try:
             self.__siteconf = siteconf
-            self.parse_siteconf(siteconf)
+            self._parse_siteconf(siteconf)
         except ConfigParser.Error, error:
             raise errors.ConfigError("%s" % error)
     def __get_siteconf(self):
@@ -82,48 +84,35 @@ class ConfigMgr(object):
             msger.error('Cannot find ks file: %s' % ksconf)
 
         self.__ksconf = ksconf
-        self.parse_kickstart(ksconf)
+        self._parse_kickstart(ksconf)
     def __get_ksconf(self):
         return self.__ksconf
     _ksconf = property(__get_ksconf, __set_ksconf)
-    def parse_siteconf(self, siteconf = None):
+
+    def _parse_siteconf(self, siteconf):
         if not siteconf:
             return
 
-        from ConfigParser import SafeConfigParser
-        siteconf_parser = SafeConfigParser()
         if not os.path.exists(siteconf):
             raise errors.ConfigError("Failed to find config file: %s" % siteconf)
-        siteconf_parser.read(siteconf)
 
-        for option in siteconf_parser.options('common'):
-            value = siteconf_parser.get('common', option)
-            self.common[option] = value
+        parser = ConfigParser.SafeConfigParser()
+        parser.read(siteconf)
 
-        for option in siteconf_parser.options('create'):
-            value = siteconf_parser.get('create', option)
-            self.create[option] = value
+        for section in parser.sections():
+            if section in self.DEFAULTS.keys():
+                getattr(self, section).update(dict(parser.items(section)))
 
-        for option in siteconf_parser.options('convert'):
-            value = siteconf_parser.get('convert', option)
-            self.convert[option] = value
-
-        for option in siteconf_parser.options('chroot'):
-            value = siteconf_parser.get('chroot', option)
-            self.chroot[option] = value
-
-    def selinux_check(self, arch, ks):
+    def _selinux_check(self, arch, ks):
         """ If a user needs to use btrfs or creates ARM image, selinux must be disabled at start """
 
-        paths = ["/usr/sbin/getenforce",
-                 "/usr/bin/getenforce",
-                 "/sbin/getenforce",
-                 "/bin/getenforce",
-                 "/usr/local/sbin/getenforce",
-                 "/usr/locla/bin/getenforce"
-                ]
-
-        for path in paths:
+        for path in ["/usr/sbin/getenforce",
+                     "/usr/bin/getenforce",
+                     "/sbin/getenforce",
+                     "/bin/getenforce",
+                     "/usr/local/sbin/getenforce",
+                     "/usr/locla/bin/getenforce"
+                     ]:
             if os.path.exists(path):
                 selinux_status = runner.outs([path])
                 if  arch and arch.startswith("arm") and selinux_status == "Enforcing":
@@ -141,7 +130,7 @@ class ConfigMgr(object):
 
                 break
 
-    def parse_kickstart(self, ksconf=None):
+    def _parse_kickstart(self, ksconf=None):
         if not ksconf:
             return
 
@@ -150,7 +139,7 @@ class ConfigMgr(object):
         self.create['ks'] = ks
         self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
 
-        self.selinux_check (self.create['arch'], ks)
+        self._selinux_check (self.create['arch'], ks)
 
         msger.info("Retrieving repo metadata:")
         ksrepos = misc.get_repostrs_from_ks(ks)
@@ -167,12 +156,9 @@ class ConfigMgr(object):
                 self.create['arch'] = str(target_archlist[0])
                 msger.info("\nUse detected arch %s." % target_archlist[0])
             else:
-                raise errors.ConfigError("Please specify a valid arch, "\
+                raise errors.ConfigError("Please specify a valid arch, "
                                          "your choise can be: " % ', '.join(target_archlist))
 
         kickstart.resolve_groups(self.create, self.create['repomd'])
-
-def getConfigMgr():
-    return configmgr
 
 configmgr = ConfigMgr()

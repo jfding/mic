@@ -18,8 +18,9 @@
 import os, sys
 from optparse import SUPPRESS_HELP
 
-from mic import configmgr, pluginmgr, msger
+from mic import pluginmgr, msger
 from mic.utils import cmdln, errors, rpmmisc
+from conf import configmgr
 
 class Creator(cmdln.Cmdln):
     """${name}: create an image
@@ -36,12 +37,8 @@ class Creator(cmdln.Cmdln):
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, *args, **kwargs)
 
-        # load configmgr
-        self.configmgr = configmgr.getConfigMgr()
-
-        # load pluginmgr
-        self.pluginmgr = pluginmgr.PluginMgr()
-        self.plugincmds = self.pluginmgr.get_plugins('imager')
+        # get cmds from pluginmgr
+        self.plugincmds = pluginmgr.PluginMgr().get_plugins('imager')
 
         # mix-in do_subcmd interface
         for subcmd, klass in self.plugincmds.iteritems():
@@ -115,41 +112,41 @@ class Creator(cmdln.Cmdln):
         if self.options.logfile:
             msger.set_interactive(False)
             msger.set_logfile(self.options.logfile)
-            self.configmgr.create['logfile'] = self.options.logfile
+            configmgr.create['logfile'] = self.options.logfile
 
         if self.options.config:
-            self.configmgr.reset()
-            self.configmgr._siteconf = self.options.config
+            configmgr.reset()
+            configmgr._siteconf = self.options.config
 
         if self.options.outdir is not None:
-            self.configmgr.create['outdir'] = self.options.outdir
+            configmgr.create['outdir'] = self.options.outdir
         if self.options.cachedir is not None:
-            self.configmgr.create['cachedir'] = self.options.cachedir
+            configmgr.create['cachedir'] = self.options.cachedir
         if self.options.local_pkgs_path is not None:
-            self.configmgr.create['local_pkgs_path'] = self.options.local_pkgs_path
+            configmgr.create['local_pkgs_path'] = self.options.local_pkgs_path
 
         if self.options.release:
-            self.configmgr.create['release'] = self.options.release
+            configmgr.create['release'] = self.options.release
 
         if self.options.record_pkgs:
-            self.configmgr.create['record_pkgs'] = []
+            configmgr.create['record_pkgs'] = []
             for infotype in self.options.record_pkgs.split(','):
                 if infotype not in ('name', 'content', 'license'):
                     raise errors.Usage('Invalid pkg recording: %s, valid ones: "name", "content", "license"' % infotype)
 
-                self.configmgr.create['record_pkgs'].append(infotype)
+                configmgr.create['record_pkgs'].append(infotype)
 
         if self.options.arch is not None:
             supported_arch = sorted(rpmmisc.archPolicies.keys(), reverse=True)
             if self.options.arch in supported_arch:
-                self.configmgr.create['arch'] = self.options.arch
+                configmgr.create['arch'] = self.options.arch
             else:
                 raise errors.Usage('Invalid architecture: "%s".\n' \
                                    '  Supported architectures are: \n' \
                                    '  %s\n' % (self.options.arch, ', '.join(supported_arch)))
 
         if self.options.pkgmgr is not None:
-            self.configmgr.create['pkgmgr'] = self.options.pkgmgr
+            configmgr.create['pkgmgr'] = self.options.pkgmgr
 
     def main(self, argv=None):
         if argv is None:

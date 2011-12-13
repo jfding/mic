@@ -16,7 +16,7 @@
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os, sys
-from mic import msger, creator, configmgr, pluginmgr
+from mic import msger, creator, pluginmgr
 from mic.utils import cmdln, misc, errors
 from mic.__version__ import VERSION
 

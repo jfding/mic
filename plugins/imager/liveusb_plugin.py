@@ -19,9 +19,10 @@ import os
 import shutil
 import tempfile
 
-from mic import configmgr, pluginmgr, chroot, msger
+from mic import pluginmgr, chroot, msger
 from mic.utils import misc, fs_related, errors
 from mic.utils.partitionedfs import PartitionedMount
+from mic.conf import configmgr
 
 import mic.imager.liveusb as liveusb
 
@@ -43,8 +44,7 @@ class LiveUSBPlugin(ImagerPlugin):
         if len(args) != 1:
             raise errors.Usage("Extra arguments given")
 
-        cfgmgr = configmgr.getConfigMgr()
-        creatoropts = cfgmgr.create
+        creatoropts = configmgr.create
         ksconf = args[0]
 
         if not os.path.exists(ksconf):
@@ -63,7 +63,7 @@ class LiveUSBPlugin(ImagerPlugin):
             ksconf = misc.save_ksconf_file(ksconf, creatoropts['release'])
             name = os.path.splitext(os.path.basename(ksconf))[0]
             creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'], creatoropts['release'], name)
-        cfgmgr._ksconf = ksconf
+        configmgr._ksconf = ksconf
 
         # try to find the pkgmgr
         pkgmgr = None
