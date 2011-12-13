@@ -19,9 +19,10 @@ import os
 import shutil
 import tempfile
 
-from mic import pluginmgr, chroot, msger
+from mic import chroot, msger
 from mic.utils import misc, fs_related, errors, cmdln
 from mic.conf import configmgr
+from mic.plugin import pluginmgr
 import mic.imager.loop as loop
 
 from mic.pluginbase import ImagerPlugin
@@ -62,13 +63,13 @@ class LoopPlugin(ImagerPlugin):
 
         # try to find the pkgmgr
         pkgmgr = None
-        for (key, pcls) in pluginmgr.PluginMgr().get_plugins('backend').iteritems():
+        for (key, pcls) in pluginmgr.get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
         if not pkgmgr:
-            pkgmgrs = pluginmgr.PluginMgr().get_plugins('backend').keys()
+            pkgmgrs = pluginmgr.get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
 
         creator = loop.LoopImageCreator(creatoropts, pkgmgr, opts.taring_to)

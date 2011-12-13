@@ -16,15 +16,16 @@
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os, sys
-from mic import msger, creator, pluginmgr
+from mic import msger, creator
 from mic.utils import cmdln, misc, errors
+from mic.plugin import pluginmgr
 from mic.__version__ import VERSION
 
-class Mic(cmdln.Cmdln):
+class MicCmd(cmdln.Cmdln):
     """
     Usage: mic SUBCOMMAND [OPTS] [ARGS...]
 
-    Mic Image Creation Tool.
+    mic Means the Image Creation tool
     Try 'mic help SUBCOMAND' for help on a specific subcommand.
 
     ${command_list}
@@ -108,7 +109,7 @@ class Mic(cmdln.Cmdln):
 
         srcimager = None
         destimager = None
-        for iname, icls in pluginmgr.PluginMgr().get_plugins('imager').iteritems():
+        for iname, icls in pluginmgr.get_plugins('imager').iteritems():
            if iname == srcformat and hasattr(icls, "do_unpack"):
                srcimager = icls
            if iname == destformat and hasattr(icls, "do_pack"):
@@ -149,7 +150,7 @@ class Mic(cmdln.Cmdln):
             imagetype = "loop"
 
         chrootclass = None
-        for pname, pcls in pluginmgr.PluginMgr().get_plugins('imager').iteritems():
+        for pname, pcls in pluginmgr.get_plugins('imager').iteritems():
             if pname == imagetype and hasattr(pcls, "do_chroot"):
                 chrootclass = pcls
                 break
@@ -161,7 +162,7 @@ class Mic(cmdln.Cmdln):
 
 if __name__ == "__main__":
     try:
-        mic = Mic()
+        mic = MicCmd()
         sys.exit(mic.main())
 
     except KeyboardInterrupt:

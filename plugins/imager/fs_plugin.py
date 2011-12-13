@@ -17,10 +17,11 @@
 
 import os
 
-from mic import pluginmgr, chroot, msger
+from mic import chroot, msger
 from mic.utils import cmdln, misc, errors
 from mic.imager import fs
 from mic.conf import configmgr
+from mic.plugin import pluginmgr
 
 from mic.pluginbase import ImagerPlugin
 class FsPlugin(ImagerPlugin):
@@ -60,13 +61,13 @@ class FsPlugin(ImagerPlugin):
 
         # try to find the pkgmgr
         pkgmgr = None
-        for (key, pcls) in pluginmgr.PluginMgr().get_plugins('backend').iteritems():
+        for (key, pcls) in pluginmgr.get_plugins('backend').iteritems():
             if key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
         if not pkgmgr:
-            pkgmgrs = pluginmgr.PluginMgr().get_plugins('backend').keys()
+            pkgmgrs = pluginmgr.get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
 
         creator = fs.FsImageCreator(creatoropts, pkgmgr)

@@ -18,9 +18,10 @@
 import os, sys
 from optparse import SUPPRESS_HELP
 
-from mic import pluginmgr, msger
+from mic import msger
 from mic.utils import cmdln, errors, rpmmisc
 from conf import configmgr
+from plugin import pluginmgr
 
 class Creator(cmdln.Cmdln):
     """${name}: create an image
@@ -38,10 +39,8 @@ class Creator(cmdln.Cmdln):
         cmdln.Cmdln.__init__(self, *args, **kwargs)
 
         # get cmds from pluginmgr
-        self.plugincmds = pluginmgr.PluginMgr().get_plugins('imager')
-
         # mix-in do_subcmd interface
-        for subcmd, klass in self.plugincmds.iteritems():
+        for subcmd, klass in pluginmgr.get_plugins('imager').iteritems():
             if not hasattr(klass, 'do_create'):
                 msger.warning("Unsurpport subcmd: %s" % subcmd)
                 continue
@@ -141,8 +140,8 @@ class Creator(cmdln.Cmdln):
             if self.options.arch in supported_arch:
                 configmgr.create['arch'] = self.options.arch
             else:
-                raise errors.Usage('Invalid architecture: "%s".\n' \
-                                   '  Supported architectures are: \n' \
+                raise errors.Usage('Invalid architecture: "%s".\n'
+                                   '  Supported architectures are: \n'
                                    '  %s\n' % (self.options.arch, ', '.join(supported_arch)))
 
         if self.options.pkgmgr is not None:

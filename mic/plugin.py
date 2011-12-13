@@ -16,8 +16,10 @@
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os, sys
-from mic import msger
-from mic import pluginbase
+import msger
+import pluginbase
+
+__ALL__ = ['PluginMgr', 'pluginmgr']
 
 DEFAULT_PLUGIN_LOCATION = "/usr/lib/mic/plugins"
 
@@ -34,27 +36,28 @@ class PluginMgr(object):
 
         return cls._instance
 
-    def __init__(self, plugin_dirs=[]):
+    def __init__(self):
 
         # default plugin directory
         for pt in PLUGIN_TYPES:
             self._add_plugindir(os.path.join(DEFAULT_PLUGIN_LOCATION, pt))
 
-        for dir in plugin_dirs:
-            self._add_plugindir(dir)
+    def append_dirs(self, dirs):
+        for path in dirs:
+            self._add_plugindir(path)
 
-        # load all the plugins
+        # load all the plugins AGAIN
         self._load_all()
 
-    def _add_plugindir(self, dir):
-        dir = os.path.abspath(os.path.expanduser(dir))
+    def _add_plugindir(self, path):
+        path = os.path.abspath(os.path.expanduser(path))
 
-        if not os.path.isdir(dir):
-            msger.warning("Plugin dir is not a directory or does not exist: %s" % dir)
+        if not os.path.isdir(path):
+            msger.warning("Plugin dir is not a directory or does not exist: %s" % path)
             return
 
-        if dir not in self.plugin_dirs:
-            self.plugin_dirs[dir] = False
+        if path not in self.plugin_dirs:
+            self.plugin_dirs[path] = False
             # the value True/False means "loaded"
 
     def _load_all(self):
@@ -65,7 +68,8 @@ class PluginMgr(object):
             for mod in [x[:-3] for x in os.listdir(pdir) if x.endswith(".py")]:
                 if mod and mod != '__init__':
                     if mod in sys.modules:
-                        msger.debug("Module %s already exists, skip" % mod)
+                        #self.plugin_dirs[pdir] = True
+                        msger.warning("Module %s already exists, skip" % mod)
                     else:
                         try:
                             pymod = __import__(mod)
@@ -78,4 +82,10 @@ class PluginMgr(object):
 
     def get_plugins(self, ptype):
         """ the return value is dict of name:class pairs """
+
+        # good place to load all the plugins
+        self._load_all()
+
         return pluginbase.get_plugins(ptype)
+
+pluginmgr = PluginMgr()
