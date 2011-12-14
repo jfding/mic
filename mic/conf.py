@@ -157,7 +157,7 @@ class ConfigMgr(object):
                 msger.info("\nUse detected arch %s." % target_archlist[0])
             else:
                 raise errors.ConfigError("Please specify a valid arch, "
-                                         "your choise can be: " % ', '.join(target_archlist))
+                                         "your choise can be: %s" % ', '.join(target_archlist))
 
         kickstart.resolve_groups(self.create, self.create['repomd'])
 
