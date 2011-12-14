@@ -373,7 +373,7 @@ def get_arch(repometadata):
         if need_append:
              uniq_arch.append(archlist[i])
 
-    return uniq_arch
+    return uniq_arch, archlist
 
 def get_package(pkg, repometadata, arch = None):
     ver = ""
