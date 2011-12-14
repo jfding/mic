@@ -146,18 +146,18 @@ class ConfigMgr(object):
         self.create['repomd'] = misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
         msger.raw(" DONE")
 
-        target_archlist = misc.get_arch(self.create['repomd'])
+        target_archlist, archlist = misc.get_arch(self.create['repomd'])
         if self.create['arch']:
-            if self.create['arch'] not in target_archlist:
+            if self.create['arch'] not in archlist:
                 raise errors.ConfigError("Invalid arch %s for repository. Valid arches: %s"\
-                                         % (self.create['arch'], ', '.join(target_archlist)))
+                                         % (self.create['arch'], ', '.join(archlist)))
         else:
             if len(target_archlist) == 1:
                 self.create['arch'] = str(target_archlist[0])
                 msger.info("\nUse detected arch %s." % target_archlist[0])
             else:
-                raise errors.ConfigError("Please specify a valid arch, "
-                                         "your choise can be: " % ', '.join(target_archlist))
+                raise errors.ConfigError("Please specify a valid arch, "\
+                                         "your choise can be: %s" % ', '.join(archlist))
 
         kickstart.resolve_groups(self.create, self.create['repomd'])
 
