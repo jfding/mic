@@ -249,7 +249,9 @@ class Zypp(BackendPlugin):
         else:
             raise CreatorError("Unable to find pattern: %s" % (grp,))
 
-    def addRepository(self, name, url = None, mirrorlist = None, proxy = None, proxy_username = None, proxy_password = None, inc = None, exc = None):
+    def addRepository(self, name, url = None, mirrorlist = None, proxy = None,
+                      proxy_username = None, proxy_password = None,
+                      inc = None, exc = None, ssl_verify = True):
         if not self.repo_manager:
             self.__initialize_repo_manager()
 
@@ -259,6 +261,7 @@ class Zypp(BackendPlugin):
         repo.proxy = proxy
         repo.proxy_username = proxy_username
         repo.proxy_password = proxy_password
+        repo.ssl_verify = ssl_verify
         repo.baseurl.append(url)
         if inc:
             for pkg in inc:
@@ -287,6 +290,8 @@ class Zypp(BackendPlugin):
             repo_info.setAutorefresh(repo.autorefresh)
             repo_info.setKeepPackages(repo.keeppackages)
             baseurl = zypp.Url(repo.baseurl[0])
+            if not ssl_verify:
+                baseurl.setQueryParam("ssl_verify", "no")
             if proxy:
                 (scheme, host, path, parm, query, frag) = urlparse.urlparse(proxy)
                 proxyinfo = host.split(":")

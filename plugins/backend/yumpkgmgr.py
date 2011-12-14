@@ -28,16 +28,27 @@ from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
 
 class MyYumRepository(yum.yumRepo.YumRepository):
-    def __init__(self, repoid):
-        yum.yumRepo.YumRepository.__init__(self, repoid)
-        self.sslverify = False
-
-    def _setupGrab(self):
-        self.sslverify = False
-        yum.yumRepo.YumRepository._setupGrab(self)
 
     def __del__(self):
         pass
+
+    def _getFile(self, url=None, relative=None, local=None, start=None, end=None,
+            copy_local=None, checkfunc=None, text=None, reget='simple',
+            cache=True, size=None):
+
+        m2c_connection = None
+        if not self.sslverify:
+            import M2Crypto
+            m2c_connection = M2Crypto.SSL.Connection.clientPostConnectionCheck
+            M2Crypto.SSL.Connection.clientPostConnectionCheck = None
+
+        rvalue = super(MyYumRepository, self)._getFile(url, relative, local,
+            start, end, copy_local, checkfunc, text, reget, cache, size)
+
+        if m2c_connection and not M2Crypto.SSL.Connection.clientPostConnectionCheck:
+            M2Crypto.SSL.Connection.clientPostConnectionCheck = m2c_connection
+
+        return rvalue
 
 from mic.pluginbase import BackendPlugin
 class Yum(BackendPlugin, yum.YumBase):
@@ -96,7 +107,7 @@ class Yum(BackendPlugin, yum.YumBase):
         conf += "reposdir=\n"
         conf += "failovermethod=priority\n"
         conf += "http_caching=packages\n"
-        conf += "sslverify=0\n"
+        conf += "sslverify=1\n"
 
         f = file(confpath, "w+")
         f.write(conf)
@@ -177,7 +188,9 @@ class Yum(BackendPlugin, yum.YumBase):
         except yum.Errors.YumBaseError, e:
             raise CreatorError("Unable to install: %s" % (e,))
 
-    def addRepository(self, name, url = None, mirrorlist = None, proxy = None, proxy_username = None, proxy_password = None, inc = None, exc = None):
+    def addRepository(self, name, url = None, mirrorlist = None, proxy = None,
+                      proxy_username = None, proxy_password = None,
+                      inc = None, exc = None, ssl_verify=True):
         def _varSubstitute(option):
             # takes a variable and substitutes like yum configs do
             option = option.replace("$basearch", rpmUtils.arch.getBaseArch())
@@ -185,7 +198,6 @@ class Yum(BackendPlugin, yum.YumBase):
             return option
 
         repo = MyYumRepository(name)
-        repo.sslverify = False
 
         """Set proxy"""
         repo.proxy = proxy
@@ -207,6 +219,8 @@ class Yum(BackendPlugin, yum.YumBase):
         for k, v in conf.iteritems():
             if v or not hasattr(repo, k):
                 repo.setAttribute(k, v)
+
+        repo.sslverify = ssl_verify
 
         repo.basecachedir = self.conf.cachedir
         repo.base_persistdir = self.conf.persistdir

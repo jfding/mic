@@ -829,9 +829,12 @@ class BaseImageCreator(object):
         pkg_manager.setup(yum_conf, self._instroot)
 
         for repo in kickstart.get_repos(self.ks, repo_urls):
-            (name, baseurl, mirrorlist, inc, exc, proxy, proxy_username, proxy_password, debuginfo, source, gpgkey, disable) = repo
+            (name, baseurl, mirrorlist, inc, exc,
+             proxy, proxy_username, proxy_password, debuginfo,
+             source, gpgkey, disable, ssl_verify) = repo
 
-            yr = pkg_manager.addRepository(name, baseurl, mirrorlist, proxy, proxy_username, proxy_password, inc, exc)
+            yr = pkg_manager.addRepository(name, baseurl, mirrorlist, proxy,
+                        proxy_username, proxy_password, inc, exc, ssl_verify)
 
         if kickstart.exclude_docs(self.ks):
             rpm.addMacro("_excludedocs", "1")
