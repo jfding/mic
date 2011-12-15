@@ -1,4 +1,7 @@
 *.py[oc]
 *~
 *.swp
-micng/__version__.py
+mic/__version__.py
+build/
+dist/
+mic.egg-info/
