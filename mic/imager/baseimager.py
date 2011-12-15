@@ -63,6 +63,14 @@ class BaseImageCreator(object):
         self.__builddir = None
         self.__bindmounts = []
 
+        # Eeach image type can change these values as they might be image type
+        # specific
+        if not hasattr(self, "_valid_compression_methods"):
+            self._valid_compression_methods = ['bz2']
+
+        # The compression method for disk image.
+        self._img_compression_method = None
+
         if createopts:
             # A pykickstart.KickstartParser instance."""
             self.ks = createopts['ks']
@@ -88,6 +96,7 @@ class BaseImageCreator(object):
             self.cachedir = createopts['cachedir']
             self.target_arch = createopts['arch']
             self._local_pkgs_path = createopts['local_pkgs_path']
+            self._img_compression_method = createopts['compress_disk_image']
 
         else:
             self.ks = None
@@ -103,34 +112,30 @@ class BaseImageCreator(object):
         #FIXME to be obsolete, make it configurable
         self.distro_name = "Tizen"
 
-        # Output image file names"""
+        # Output image file names
         self.outimage = []
 
-        # A flag to generate checksum"""
+        # A flag to generate checksum
         self._genchecksum = False
 
         self._alt_initrd_name = None
-
-        # the disk image after creation, e.g., bz2.
-        # This value is set with compression_method function. """
-        self.__img_compression_method = None
 
         self._recording_pkgs = []
 
         # available size in root fs, init to 0
         self._root_fs_avail = 0
 
-        # Name of the disk image file that is created. """
+        # Name of the disk image file that is created.
         self._img_name = None
 
         self.image_format = None
 
-        # Save qemu emulator file name in order to clean up it finally """
+        # Save qemu emulator file name in order to clean up it finally
         self.qemu_emulator = None
 
-        # No ks provided when called by convertor, so skip the dependency check """
+        # No ks provided when called by convertor, so skip the dependency check
         if self.ks:
-            # If we have btrfs partition we need to check that we have toosl for those """
+            # If we have btrfs partition we need to check that we have toosl for those
             for part in self.ks.handler.partition.partitions:
                 if part.fstype and part.fstype == "btrfs":
                     self._dep_checks.append("mkfs.btrfs")
@@ -158,6 +163,9 @@ class BaseImageCreator(object):
             os.makedirs(self.tmpdir)
         if not os.path.exists(self.cachedir):
             os.makedirs(self.cachedir)
+
+        if self._img_compression_method != None and self._img_compression_method not in self._valid_compression_methods:
+            raise CreatorError("Given disk image compression method ('%s') is not valid. Valid values are '%s'." % (self._img_compression_method, ' '.join(self._valid_compression_methods)))
 
     def __del__(self):
         self.cleanup()
@@ -998,22 +1006,22 @@ class BaseImageCreator(object):
 
         if not os.path.exists(destdir):
             fs.makedirs(destdir)
-        if self.__img_compression_method:
+        if self._img_compression_method:
             if not self._img_name:
                 raise CreatorError("Image name not set.")
             rc = None
             img_location = os.path.join(self._outdir,self._img_name)
-            if self.__img_compression_method == "bz2":
+            if self._img_compression_method == "bz2":
                 bzip2 = fs.find_binary_path('bzip2')
                 msger.info("Compressing %s with bzip2. Please wait..." % img_location)
                 rc = runner.show([bzip2, "-f", img_location])
                 if rc:
-                    raise CreatorError("Failed to compress image %s with %s." % (img_location, self.__img_compression_method))
+                    raise CreatorError("Failed to compress image %s with %s." % (img_location, self._img_compression_method))
                 for bootimg in glob.glob(os.path.dirname(img_location) + "/*-boot.bin"):
                     msger.info("Compressing %s with bzip2. Please wait..." % bootimg)
                     rc = runner.show([bzip2, "-f", bootimg])
                     if rc:
-                        raise CreatorError("Failed to compress image %s with %s." % (bootimg, self.__img_compression_method))
+                        raise CreatorError("Failed to compress image %s with %s." % (bootimg, self._img_compression_method))
 
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
@@ -1136,17 +1144,6 @@ class BaseImageCreator(object):
             kernelfilename = "%s/%s-%s" % (destdir, self.name, os.path.basename(kernel))
             shutil.copy(kernel, kernelfilename)
             self.outimage.append(kernelfilename)
-
-    def compress_disk_image(self, compression_method):
-        """
-        With this you can set the method that is used to compress the disk
-        image after it is created.
-        """
-
-        if compression_method not in ('bz2'):
-            raise CreatorError("Given disk image compression method ('%s') is not valid." % (compression_method))
-
-        self.__img_compression_method = compression_method
 
     def get_pkg_manager(self):
         return self.pkgmgr(creator = self)

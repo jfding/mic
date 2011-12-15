@@ -40,6 +40,7 @@ class ConfigMgr(object):
                     "release": None,
                     "logfile": None,
                     "record_pkgs": [],
+                    "compress_disk_image": None,
                 },
                 'chroot': {},
                 'convert': {},
@@ -115,8 +116,8 @@ class ConfigMgr(object):
                      ]:
             if os.path.exists(path):
                 selinux_status = runner.outs([path])
-                if  arch and arch.startswith("arm") and selinux_status == "Enforcing":
-                    raise errors.ConfigError("Can't create arm image if selinux is enabled, please disbale it and try again")
+                if arch and arch.startswith("arm") and selinux_status == "Enforcing":
+                    raise errors.ConfigError("Can't create arm image if selinux is enabled, please disable it and try again")
 
                 use_btrfs = False
                 parts = ks.handler.partition.partitions
@@ -126,7 +127,7 @@ class ConfigMgr(object):
                         break
 
                 if use_btrfs and selinux_status == "Enforcing":
-                    raise errors.ConfigError("Can't create image useing btrfs filesystem if selinux is enabled, please disbale it and try again")
+                    raise errors.ConfigError("Can't create image useing btrfs filesystem if selinux is enabled, please disable it and try again")
 
                 break
 
