@@ -40,6 +40,7 @@ class ConfigMgr(object):
                     "release": None,
                     "logfile": None,
                     "record_pkgs": [],
+                    "compress_disk_image": None,
                 },
                 'chroot': {},
                 'convert': {},

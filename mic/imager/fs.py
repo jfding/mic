@@ -20,27 +20,58 @@ import os, sys
 from baseimager import BaseImageCreator
 from mic import msger
 from mic.utils import runner
+from mic.utils.fs_related import *
+from subprocess import call
 
 class FsImageCreator(BaseImageCreator):
     def __init__(self, cfgmgr = None, pkgmgr = None):
+        self._valid_compression_methods = ["tar.bz2"]
         BaseImageCreator.__init__(self, cfgmgr, pkgmgr)
         self._fstype = None
         self._fsopts = None
         self._include_src = False
 
     def package(self, destdir = "."):
+        
+        ignores = ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]
+
         if not os.path.exists(destdir):
             os.makedirs(destdir)
-        fsdir = os.path.join(destdir, self.name)
-
+        
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
 
-        msger.info("Copying %s to %s ..." % (self._instroot, fsdir))
-        runner.show(['cp', "-af", self._instroot, fsdir])
+        if self._img_compression_method == None:
+            fsdir = os.path.join(destdir, self.name)
 
-        for exclude in ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]:
-            if os.path.exists(fsdir + exclude):
-                os.unlink(fsdir + exclude)
+            msger.info("Copying %s to %s ..." % (self._instroot, fsdir))
+            runner.show(['cp', "-af", self._instroot, fsdir])
 
-        self.outimage.append(fsdir)
+            for exclude in ignores:
+                if os.path.exists(fsdir + exclude):
+                    os.unlink(fsdir + exclude)
+
+            self.outimage.append(fsdir)
+        
+        elif self._img_compression_method == "tar.bz2":
+            dst = "%s/%s.tar.bz2" % (destdir, self.name)
+            msger.info("Creating %s (compressing %s with %s). Please wait..." % (dst, self._instroot, self._img_compression_method))
+
+            tar = find_binary_path('tar')
+            tar_cmdline = [tar, "--numeric-owner", "--preserve-permissions", "--preserve-order", "--one-file-system", "--directory", self._instroot]
+            for ignore_entry in ignores:
+                if ignore_entry.startswith('/'):
+                    ignore_entry = ignore_entry[1:]
+                
+                tar_cmdline.append("--exclude=%s" % (ignore_entry))
+            
+            tar_cmdline.extend(["-cjf", dst, "."])
+            
+            rc = call(tar_cmdline)
+            if rc:
+                raise CreatorError("Failed compress image with tar.bz2. Cmdline: %s" % (" ".join(tar_cmdline)))
+
+            self.outimage.append(dst)
+
+        else:
+            raise CreatorError("Compression method '%s' not supported for 'fs' image format." % (self._img_compression_method))
