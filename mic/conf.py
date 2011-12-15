@@ -41,6 +41,7 @@ class ConfigMgr(object):
                     "logfile": None,
                     "record_pkgs": [],
                     "compress_disk_image": None,
+                    "distro_name": "Default Distribution",
                 },
                 'chroot': {},
                 'convert': {},
