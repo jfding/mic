@@ -58,9 +58,15 @@ class ConfigMgr(object):
         # reset config options
         self.reset()
 
-        if not siteconf:
-            # initial options from siteconf
+        # initial options from siteconf
+        if siteconf:
+            self._siteconf = siteconf
+        else:
+            # use default site config
             self._siteconf = DEFAULT_GSITECONF
+
+        if ksconf:
+            self._ksconf = ksconf
 
     def reset(self):
         self.__ksconf = None
