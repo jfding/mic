@@ -1,0 +1,1 @@
+mic create raw --pkgmgr=zypp --record-pkgs=name

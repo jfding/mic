@@ -1,0 +1,1 @@
+mic create livecd  --pkgmgr=zypp --local-pkgs-path=package_mixed

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import os 
+import sys
 import subprocess, re, shutil, glob
 import gettext
 
@@ -27,11 +28,13 @@ def PrepEnv(cases_dir, case, work_env):
 def ImgCheck(work_env):
     """check image generate"""
     genImage = False
-    for file in os.listdir(work_env):
-        m = re.match(r'.*\.(img|raw|iso|usbimg)', file)
-        if m:
-            genImage = True
-            break
+    for root, dirs, files in os.walk(work_env):
+        for name in files:
+            #add raw check support and  XXX.tar file check support
+            m = re.match(r'.*\.(img|raw|iso|usbimg|tar)', name) or re.match(r'system-release',name)
+            if m:
+                genImage = True
+                break
     return genImage
 
 def RunandCheck(object, work_env):
@@ -53,9 +56,8 @@ def RunandCheck(object, work_env):
     opt_f = open('options','r')
     args = opt_f.read().strip()+' test.ks'
     
-    dev_null = os.open('/dev/null',os.O_WRONLY)
-    proc = subprocess.Popen(args,stdout = dev_null,stderr=subprocess.PIPE,shell=True)
-    os.close(dev_null)
+    print args
+    proc = subprocess.Popen(args,stdout = sys.stdout ,stderr=subprocess.PIPE,shell=True)
     errorinfo = proc.communicate()[1]
     #check    
     if expect:

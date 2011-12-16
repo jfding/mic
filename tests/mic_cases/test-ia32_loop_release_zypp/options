@@ -1,0 +1,1 @@
+mic create loop --pkgmgr=zypp --release=XXX

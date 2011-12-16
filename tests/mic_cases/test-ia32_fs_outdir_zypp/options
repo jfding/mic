@@ -1,0 +1,1 @@
+mic create fs  --pkgmgr=zypp -o outdir1
