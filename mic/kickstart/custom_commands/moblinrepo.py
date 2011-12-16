@@ -25,7 +25,8 @@ from pykickstart.commands.repo import *
 class Moblin_RepoData(F8_RepoData):
     def __init__(self, baseurl="", mirrorlist="", name="", priority=None,
                  includepkgs=[], excludepkgs=[], save=False, proxy=None,
-                 proxy_username=None, proxy_password=None, debuginfo=False, source=False, gpgkey=None, disable=False):
+                 proxy_username=None, proxy_password=None, debuginfo=False,
+                 source=False, gpgkey=None, disable=False, ssl_verify="yes"):
         F8_RepoData.__init__(self, baseurl=baseurl, mirrorlist=mirrorlist,
                              name=name,  includepkgs=includepkgs,
                              excludepkgs=excludepkgs)
@@ -37,6 +38,8 @@ class Moblin_RepoData(F8_RepoData):
         self.disable = disable
         self.source = source
         self.gpgkey = gpgkey
+        self.ssl_verify = ssl_verify.lower()
+        self.priority = priority
 
     def _getArgsAsStr(self):
         retval = F8_RepoData._getArgsAsStr(self)
@@ -57,6 +60,10 @@ class Moblin_RepoData(F8_RepoData):
             retval += " --gpgkey=%s" % self.gpgkey
         if self.disable:
             retval += " --disable"
+        if self.ssl_verify:
+            retval += " --ssl_verify=%s" % self.ssl_verify
+        if self.priority:
+            retval += " --priority=%s" % self.priority
 
         return retval
 
@@ -93,4 +100,8 @@ class Moblin_Repo(F8_Repo):
                       default=False)
         op.add_option("--gpgkey", type="string", action="store", dest="gpgkey",
                       default=None, nargs=1)
+        op.add_option("--ssl_verify", type="string", action="store", dest="ssl_verify",
+                      default="yes")
+        op.add_option("--priority", type="int", action="store", dest="priority",
+                      default=None)
         return op

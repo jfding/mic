@@ -145,7 +145,7 @@ to process the installation.
 Configuration file
 ==================
 The configure file for mic can be provided as `/etc/mic/mic.conf`, where you
-can specify the global settings. 
+can specify the global settings.
 The blow is the content of one sample file: ::
 
   [common]
@@ -160,7 +160,8 @@ The blow is the content of one sample file: ::
   
   ; proxy = http://proxy.yourcompany.com:8080/
   ; no_proxy = localhost,127.0.0.0/8,.yourcompany.com
-  
+  ; ssl_verify = no
+
   [convert]
   ; settings for convert subcommand
   
@@ -168,7 +169,7 @@ The blow is the content of one sample file: ::
   ; settings for chroot subcommand
 
 In this configuration file, there are four sections: [common] is for general
-setting, and [create] [convert] [chroot] sections are for the options of 
+setting, and [create] [convert] [chroot] sections are for the options of
 corresponding mic subcommands: create, convert, and chroot.
 
 In the [create] section, the following values can be specified:

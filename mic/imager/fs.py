@@ -32,12 +32,12 @@ class FsImageCreator(BaseImageCreator):
         self._include_src = False
 
     def package(self, destdir = "."):
-        
+
         ignores = ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]
 
         if not os.path.exists(destdir):
             os.makedirs(destdir)
-        
+
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
 
@@ -52,7 +52,7 @@ class FsImageCreator(BaseImageCreator):
                     os.unlink(fsdir + exclude)
 
             self.outimage.append(fsdir)
-        
+
         elif self._img_compression_method == "tar.bz2":
             dst = "%s/%s.tar.bz2" % (destdir, self.name)
             msger.info("Creating %s (compressing %s with %s). Please wait..." % (dst, self._instroot, self._img_compression_method))
@@ -62,11 +62,11 @@ class FsImageCreator(BaseImageCreator):
             for ignore_entry in ignores:
                 if ignore_entry.startswith('/'):
                     ignore_entry = ignore_entry[1:]
-                
+
                 tar_cmdline.append("--exclude=%s" % (ignore_entry))
-            
+
             tar_cmdline.extend(["-cjf", dst, "."])
-            
+
             rc = call(tar_cmdline)
             if rc:
                 raise CreatorError("Failed compress image with tar.bz2. Cmdline: %s" % (" ".join(tar_cmdline)))

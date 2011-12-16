@@ -45,6 +45,7 @@ class RepositoryStub:
         self.enabled = True
         self.autorefresh = True
         self.keeppackages = True
+        self.priority = None
 
 class RepoError(CreatorError):
     pass
@@ -145,7 +146,7 @@ class Zypp(BackendPlugin):
                 pi.status().setToBeInstalled (zypp.ResStatus.USER)
             else:
                 obs.status().setToBeInstalled (zypp.ResStatus.USER)
-                
+
         found = False
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
@@ -249,7 +250,11 @@ class Zypp(BackendPlugin):
         else:
             raise CreatorError("Unable to find pattern: %s" % (grp,))
 
-    def addRepository(self, name, url = None, mirrorlist = None, proxy = None, proxy_username = None, proxy_password = None, inc = None, exc = None):
+    def addRepository(self, name, url = None, mirrorlist = None, proxy = None,
+                      proxy_username = None, proxy_password = None,
+                      inc = None, exc = None, ssl_verify = True, cost=None,
+                      priority=None):
+        # TODO: Handle cost attribute for repos
         if not self.repo_manager:
             self.__initialize_repo_manager()
 
@@ -259,6 +264,7 @@ class Zypp(BackendPlugin):
         repo.proxy = proxy
         repo.proxy_username = proxy_username
         repo.proxy_password = proxy_password
+        repo.ssl_verify = ssl_verify
         repo.baseurl.append(url)
         if inc:
             for pkg in inc:
@@ -277,6 +283,8 @@ class Zypp(BackendPlugin):
 
         # Enable gpg check for verifying corrupt packages
         repo.gpgcheck = 1
+        if priority:
+            repo.priority = priority
         self.repos.append(repo)
 
         try:
@@ -287,6 +295,8 @@ class Zypp(BackendPlugin):
             repo_info.setAutorefresh(repo.autorefresh)
             repo_info.setKeepPackages(repo.keeppackages)
             baseurl = zypp.Url(repo.baseurl[0])
+            if not ssl_verify:
+                baseurl.setQueryParam("ssl_verify", "no")
             if proxy:
                 (scheme, host, path, parm, query, frag) = urlparse.urlparse(proxy)
                 proxyinfo = host.split(":")
@@ -296,6 +306,8 @@ class Zypp(BackendPlugin):
                     port = proxyinfo[1]
                 baseurl.setQueryParam ("proxyport", port)
             repo_info.addBaseUrl(baseurl)
+            if repo.priority:
+                repo_info.setPriority(repo.priority)
             self.repo_manager.addRepository(repo_info)
             self.__build_repo_cache(name)
         except RuntimeError, e:
