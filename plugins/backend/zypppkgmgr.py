@@ -145,7 +145,7 @@ class Zypp(BackendPlugin):
                 pi.status().setToBeInstalled (zypp.ResStatus.USER)
             else:
                 obs.status().setToBeInstalled (zypp.ResStatus.USER)
-                
+
         found = False
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
