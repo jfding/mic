@@ -190,7 +190,9 @@ class Yum(BackendPlugin, yum.YumBase):
 
     def addRepository(self, name, url = None, mirrorlist = None, proxy = None,
                       proxy_username = None, proxy_password = None,
-                      inc = None, exc = None, ssl_verify=True):
+                      inc = None, exc = None, ssl_verify=True, cost = None,
+                      priority=None):
+        # TODO: Handle priority attribute for repos
         def _varSubstitute(option):
             # takes a variable and substitutes like yum configs do
             option = option.replace("$basearch", rpmUtils.arch.getBaseArch())
@@ -231,6 +233,8 @@ class Yum(BackendPlugin, yum.YumBase):
         repo.enable()
         repo.setup(0)
         self.repos.add(repo)
+        if cost:
+            repo.cost = cost
 
         msger.verbose('repo: %s was added' % name)
         return repo

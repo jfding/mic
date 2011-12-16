@@ -688,10 +688,16 @@ def get_repos(ks, repo_urls = {}):
         ssl_verify = True
         if hasattr(repo, "ssl_verify"):
             ssl_verify = repo.ssl_verify == "yes"
+        cost = None
+        if hasattr(repo, "cost"):
+            cost = repo.cost
+        priority = None
+        if hasattr(repo, "priority"):
+            priority = repo.priority
 
         repos[repo.name] = (repo.name, baseurl, mirrorlist, inc, exc,
                             proxy, proxy_username, proxy_password, debuginfo,
-                            source, gpgkey, disable, ssl_verify)
+                            source, gpgkey, disable, ssl_verify, cost, priority)
 
     return repos.values()
 

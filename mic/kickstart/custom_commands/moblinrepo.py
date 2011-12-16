@@ -39,6 +39,7 @@ class Moblin_RepoData(F8_RepoData):
         self.source = source
         self.gpgkey = gpgkey
         self.ssl_verify = ssl_verify.lower()
+        self.priority = priority
 
     def _getArgsAsStr(self):
         retval = F8_RepoData._getArgsAsStr(self)
@@ -61,6 +62,8 @@ class Moblin_RepoData(F8_RepoData):
             retval += " --disable"
         if self.ssl_verify:
             retval += " --ssl_verify=%s" % self.ssl_verify
+        if self.priority:
+            retval += " --priority=%s" % self.priority
 
         return retval
 
@@ -99,4 +102,6 @@ class Moblin_Repo(F8_Repo):
                       default=None, nargs=1)
         op.add_option("--ssl_verify", type="string", action="store", dest="ssl_verify",
                       default="yes")
+        op.add_option("--priority", type="int", action="store", dest="priority",
+                      default=None)
         return op

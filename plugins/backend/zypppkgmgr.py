@@ -45,6 +45,7 @@ class RepositoryStub:
         self.enabled = True
         self.autorefresh = True
         self.keeppackages = True
+        self.priority = None
 
 class RepoError(CreatorError):
     pass
@@ -251,7 +252,9 @@ class Zypp(BackendPlugin):
 
     def addRepository(self, name, url = None, mirrorlist = None, proxy = None,
                       proxy_username = None, proxy_password = None,
-                      inc = None, exc = None, ssl_verify = True):
+                      inc = None, exc = None, ssl_verify = True, cost=None,
+                      priority=None):
+        # TODO: Handle cost attribute for repos
         if not self.repo_manager:
             self.__initialize_repo_manager()
 
@@ -280,6 +283,8 @@ class Zypp(BackendPlugin):
 
         # Enable gpg check for verifying corrupt packages
         repo.gpgcheck = 1
+        if priority:
+            repo.priority = priority
         self.repos.append(repo)
 
         try:
@@ -301,6 +306,8 @@ class Zypp(BackendPlugin):
                     port = proxyinfo[1]
                 baseurl.setQueryParam ("proxyport", port)
             repo_info.addBaseUrl(baseurl)
+            if repo.priority:
+                repo_info.setPriority(repo.priority)
             self.repo_manager.addRepository(repo_info)
             self.__build_repo_cache(name)
         except RuntimeError, e:

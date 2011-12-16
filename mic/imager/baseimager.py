@@ -839,10 +839,11 @@ class BaseImageCreator(object):
         for repo in kickstart.get_repos(self.ks, repo_urls):
             (name, baseurl, mirrorlist, inc, exc,
              proxy, proxy_username, proxy_password, debuginfo,
-             source, gpgkey, disable, ssl_verify) = repo
+             source, gpgkey, disable, ssl_verify, cost, priority) = repo
 
             yr = pkg_manager.addRepository(name, baseurl, mirrorlist, proxy,
-                        proxy_username, proxy_password, inc, exc, ssl_verify)
+                        proxy_username, proxy_password, inc, exc, ssl_verify,
+                        cost, priority)
 
         if kickstart.exclude_docs(self.ks):
             rpm.addMacro("_excludedocs", "1")
