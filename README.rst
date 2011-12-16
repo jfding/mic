@@ -160,7 +160,8 @@ The blow is the content of one sample file: ::
   
   ; proxy = http://proxy.yourcompany.com:8080/
   ; no_proxy = localhost,127.0.0.0/8,.yourcompany.com
-  
+  ; ssl_verify = no
+
   [convert]
   ; settings for convert subcommand
   

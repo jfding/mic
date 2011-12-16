@@ -685,8 +685,13 @@ def get_repos(ks, repo_urls = {}):
             gpgkey = repo.gpgkey
         if hasattr(repo, "disable"):
             disable = repo.disable
+        ssl_verify = True
+        if hasattr(repo, "ssl_verify"):
+            ssl_verify = repo.ssl_verify == "yes"
 
-        repos[repo.name] = (repo.name, baseurl, mirrorlist, inc, exc, proxy, proxy_username, proxy_password, debuginfo, source, gpgkey, disable)
+        repos[repo.name] = (repo.name, baseurl, mirrorlist, inc, exc,
+                            proxy, proxy_username, proxy_password, debuginfo,
+                            source, gpgkey, disable, ssl_verify)
 
     return repos.values()
 

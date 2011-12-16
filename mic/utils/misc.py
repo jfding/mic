@@ -225,6 +225,8 @@ def get_repostrs_from_ks(ks):
             repostr += ",source:"
         if  hasattr(repodata, "gpgkey") and repodata.gpgkey:
             repostr += ",gpgkey:" + repodata.gpgkey
+        if hasattr(repodata, "ssl_verify") and repodata.ssl_verify:
+            repostr += ",ssl_verify:" + repodata.ssl_verify
         kickstart_repos.append(repostr[1:])
     return kickstart_repos
 
