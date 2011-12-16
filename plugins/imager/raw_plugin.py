@@ -55,13 +55,17 @@ class RawPlugin(ImagerPlugin):
         recording_pkgs = []
         if len(creatoropts['record_pkgs']) > 0:
             recording_pkgs = creatoropts['record_pkgs']
+
         if creatoropts['release'] is not None:
             if 'name' not in recording_pkgs:
                 recording_pkgs.append('name')
             ksconf = misc.save_ksconf_file(ksconf, creatoropts['release'])
-            name = os.path.splitext(os.path.basename(ksconf))[0]
-            creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'], creatoropts['release'], name)
+
         configmgr._ksconf = ksconf
+    
+        # Called After setting the configmgr._ksconf as the creatoropts['name'] is reset there.
+        if creatoropts['release'] is not None:
+            creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'], creatoropts['release'], creatoropts['name'])
 
         # try to find the pkgmgr
         pkgmgr = None

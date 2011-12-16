@@ -109,8 +109,7 @@ class BaseImageCreator(object):
 
         self._dep_checks = ["ls", "bash", "cp", "echo", "modprobe", "passwd"]
 
-        #FIXME to be obsolete, make it configurable
-        self.distro_name = "Tizen"
+        self.distro_name = createopts['distro_name']
 
         # Output image file names
         self.outimage = []

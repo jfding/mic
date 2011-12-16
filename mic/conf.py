@@ -41,6 +41,8 @@ class ConfigMgr(object):
                     "logfile": None,
                     "record_pkgs": [],
                     "compress_disk_image": None,
+                    "distro_name": "Default Distribution",
+                    "name_prefix": None,
                 },
                 'chroot': {},
                 'convert': {},
@@ -139,6 +141,9 @@ class ConfigMgr(object):
 
         self.create['ks'] = ks
         self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
+
+        if self.create['name_prefix']:
+            self.create['name'] = "%s-%s" % (self.create['name_prefix'], self.create['name'])
 
         self._selinux_check (self.create['arch'], ks)
 
