@@ -41,6 +41,9 @@ install: build
 develop: build
 	$(PYTHON) setup.py develop
 
+test:
+	cd tests/unittest/ && $(PYTHON) suite.py 
+
 clean:
 	rm -f *.tar.gz
 	rm -f *.tar.bz2
