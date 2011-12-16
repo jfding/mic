@@ -1,0 +1,1 @@
+mic create liveusb  --pkgmgr=zypp --local-pkgs-path=package_ia32

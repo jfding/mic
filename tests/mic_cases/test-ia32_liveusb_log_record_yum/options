@@ -1,0 +1,1 @@
+mic cr  liveusb --pkgmgr=yum --logfile=logfile4 --record-pkgs=name,license
