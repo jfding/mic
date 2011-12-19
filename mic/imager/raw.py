@@ -47,6 +47,7 @@ class RawImageCreator(BaseImageCreator):
         self.__imgdir = None
         self.__disks = {}
         self.__disk_format = "raw"
+        self._diskinfo = []
         self.vmem = 512
         self.vcpu = 1
         self.checksum = False
@@ -116,12 +117,10 @@ class RawImageCreator(BaseImageCreator):
         cfg.write(mkinitrd)
         cfg.close()
 
-    #
-    # Actual implementation
-    #
-    def _mount_instroot(self, base_on = None):
-        self.__imgdir = self._mkdtemp()
-
+    def _get_parts(self):
+        if not self.ks:
+            raise CreatorError("Failed to get partition info," \
+                               "please check your kickstart setting")
         #Set a default partition if no partition is given out
         if not self.ks.handler.partition.partitions:
             partstr = "part / --size 1900 --ondisk sda --fstype=ext3"
@@ -133,8 +132,15 @@ class RawImageCreator(BaseImageCreator):
         #list of partitions from kickstart file
         parts = kickstart.get_partitions(self.ks)
 
-        #list of disks where a disk is an dict with name: and size
-        disks = []
+        return parts
+
+    def get_diskinfo(self):
+
+        if self._diskinfo:
+            return self._diskinfo
+
+        #get partition info from ks handler
+        parts = self._get_parts()
 
         for i in range(len(parts)):
             if parts[i].disk:
@@ -150,18 +156,27 @@ class RawImageCreator(BaseImageCreator):
             size =   parts[i].size * 1024L * 1024L
 
             found = False
-            for j in range(len(disks)):
-                if disks[j]['name'] == disk:
-                    disks[j]['size'] = disks[j]['size'] + size
+            for j in range(len(self._diskinfo)):
+                if self._diskinfo[j]['name'] == disk:
+                    self._diskinfo[j]['size'] = self._diskinfo[j]['size'] + size
                     found = True
                     break
                 else:
                     found = False
             if not found:
-                disks.append({ 'name': disk, 'size': size })
+                self._diskinfo.append({ 'name': disk, 'size': size })
+        return self._diskinfo
+
+    #
+    # Actual implemention
+    #
+    def _mount_instroot(self, base_on = None):
+        self.__imgdir = self._mkdtemp()
+
+        parts = self._get_parts()
 
         #create disk
-        for item in disks:
+        for item in self.get_diskinfo():
             msger.debug("Adding disk %s as %s/%s-%s.raw" % (item['name'],
                                                             self.__imgdir,
                                                             self.name,

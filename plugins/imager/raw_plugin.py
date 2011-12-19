@@ -84,12 +84,13 @@ class RawPlugin(ImagerPlugin):
             creator._recording_pkgs = recording_pkgs
 
         if creatoropts['release'] is None:
-            imagefile = "%s-sda.raw" % os.path.join(creator.destdir, creator.name)
-            if os.path.exists(imagefile):
-                if msger.ask('The target image: %s already exists, cleanup and continue?' % imagefile):
-                    os.unlink(imagefile)
-                else:
-                    raise errors.Abort('Canceled')
+            for item in creator.get_diskinfo():
+                imagefile = "%s-%s.raw" % (os.path.join(creator.destdir, creator.name), item['name'])
+                if os.path.exists(imagefile):
+                    if msger.ask('The target image: %s already exists, cleanup and continue?' % imagefile):
+                       os.unlink(imagefile)
+                    else:
+                       raise errors.Abort('Canceled')
 
         try:
             creator.check_depend_tools()
