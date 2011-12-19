@@ -273,3 +273,23 @@ debug/verbose output to get more details in the process by adding `-d/-v`. And
 it's recommended to add `-d/--debug` or `-v/--verbose` like: ::
 
   $ sudo mic -d cr fs test.ks
+
+Advance Features
+================
+
+Proxy support
+-------------
+proxy setting in mic.conf is not enabled, but you can set proxy in repo section
+of ks file, example as follows: ::
+
+  repo --name=1.2-oss --baseurl=http://repo.meego.com/MeeGo/releases/1.2.0/repos/oss/ia32/packages/ --proxy=http://host:port --save --debuginfo --source --gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-meego
+
+Multiple running instances support
+----------------------------------
+mic support running multi-instance, but cache dir can't be shared between instances,
+so you should specify different cachedir for different instance using `--cachedir`.
+Also outdir should be specified to a different directory for each  instance  using
+`--outdir`, example as follows: ::
+
+    mic cr fs netbook1.ks --cachedir=/var/tmp/cache/mic1 --outdir=out1
+    mic cr fs netbook2.ks --cachedir=/var/tmp/cache/mic2 --outdir=out2
