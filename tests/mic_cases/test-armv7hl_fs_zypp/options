@@ -1,0 +1,1 @@
+mic cr fs --arch=armv7hl  --pkgmgr=zypp

@@ -1,0 +1,1 @@
+mic cr fs --arch=armv7hl --pkgmgr=yum --include-src --logfile=logfile1 --local-pkgs-path=package_armv7hl 

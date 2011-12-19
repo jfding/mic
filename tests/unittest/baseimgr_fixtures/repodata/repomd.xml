@@ -1,0 +1,40 @@
+<?xml version="1.0" ?>
+<repomd xmlns="http://linux.duke.edu/metadata/repo" xmlns:rpm="http://linux.duke.edu/metadata/rpm">
+  <revision>1323679441</revision>
+  <data type="other">
+    <checksum type="sha256">b986688b812223a31fbe59f59229cdda5eb7010bdc1492c9a77d66b45dc51207</checksum>
+    <timestamp>1323679441</timestamp>
+    <size>697</size>
+    <open-size>1567</open-size>
+    <open-checksum type="sha256">da7a68cbd42c85411ecca4069f1d04d8e9fe27d12f0a912d837f68c5e15bdfc7</open-checksum>
+    <location href="repodata/other.xml.gz"/>
+  </data>
+  <data type="filelists">
+    <checksum type="sha256">8274d0eefe8cc49055ccd2e82743d37d91a2ebf1c1e4ff288aa5f3a8b3572194</checksum>
+    <timestamp>1323679441</timestamp>
+    <size>699</size>
+    <open-size>1562</open-size>
+    <open-checksum type="sha256">77977b787c2e5c5326752100c77a93a6573385b43061671e7091a0895b5aad53</open-checksum>
+    <location href="repodata/filelists.xml.gz"/>
+  </data>
+  <data type="primary">
+    <checksum type="sha256">cc428f16cb0ae3a3981c43bd2ab494fa12549459912b491d4b10664e95703860</checksum>
+    <timestamp>1323679441</timestamp>
+    <size>1372</size>
+    <open-size>9145</open-size>
+    <open-checksum type="sha256">b61cfc6373c10e02ab0bf256cfa30ca01b1295765c4d9f7ce1cf147c79f7cb26</open-checksum>
+    <location href="repodata/primary.xml.gz"/>
+  </data>
+  <data type="patterns">
+    <location href="repodata/ea95ecaccf9abc214715b1724188a3ecfcae1eb9b7855127938b39de83fbc303-patterns.xml.gz"/>
+    <checksum type="sha256">ea95ecaccf9abc214715b1724188a3ecfcae1eb9b7855127938b39de83fbc303</checksum>
+    <timestamp>1323679441.67</timestamp>
+    <open-checksum type="sha256">053b5757a184246546ddc61ee0533d755ccdd73799cd310042606da57f066897</open-checksum>
+  </data>
+  <data type="group">
+    <location href="repodata/4bb63d1039a6f0d3fd1e7035acff76e7015963cabab2751263c7a20f4ff1c668-group.xml.gz"/>
+    <checksum type="sha256">4bb63d1039a6f0d3fd1e7035acff76e7015963cabab2751263c7a20f4ff1c668</checksum>
+    <timestamp>1323679441.82</timestamp>
+    <open-checksum type="sha256">b830ae0d0a36c4c1044fcc7c87797d374053ed3909e6d84770704b3016c992c6</open-checksum>
+  </data>
+</repomd>

@@ -31,5 +31,8 @@ def MICtestsuite():
     return alltests       
 
 if __name__ == '__main__':
+    if os.getuid() != 0:
+        raise SystemExit("Root permission is needed")
+
     suite = MICtestsuite()
     unittest.TextTestRunner(verbosity=2).run(suite)

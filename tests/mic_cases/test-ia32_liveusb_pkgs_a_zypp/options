@@ -1,0 +1,1 @@
+mic create liveusb  --pkgmgr=zypp -A i686

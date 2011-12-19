@@ -1,0 +1,1 @@
+mic cr fs --arch=armv7hl --pkgmgr=yum -o outdir13 --release=XXX

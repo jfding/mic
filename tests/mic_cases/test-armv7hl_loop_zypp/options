@@ -1,0 +1,1 @@
+mic cr loop --arch=armv7hl --pkgmgr=zypp
