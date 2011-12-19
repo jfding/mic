@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os, sys
+import os
 import ConfigParser
 
 import msger
@@ -97,7 +97,8 @@ class ConfigMgr(object):
             return
 
         if not os.path.exists(siteconf):
-            raise errors.ConfigError("Failed to find config file: %s" % siteconf)
+            raise errors.ConfigError("Failed to find config file: %s" \
+                                     % siteconf)
 
         parser = ConfigParser.SafeConfigParser()
         parser.read(siteconf)
@@ -107,8 +108,10 @@ class ConfigMgr(object):
                 getattr(self, section).update(dict(parser.items(section)))
 
     def _selinux_check(self, arch, ks):
-        """ If a user needs to use btrfs or creates ARM image, selinux must be disabled at start """
-
+        """
+        If a user needs to use btrfs or creates ARM image,
+        selinux must be disabled at start.
+        """
         for path in ["/usr/sbin/getenforce",
                      "/usr/bin/getenforce",
                      "/sbin/getenforce",
@@ -118,19 +121,21 @@ class ConfigMgr(object):
                      ]:
             if os.path.exists(path):
                 selinux_status = runner.outs([path])
-                if arch and arch.startswith("arm") and selinux_status == "Enforcing":
-                    raise errors.ConfigError("Can't create arm image if selinux is enabled, please disable it and try again")
+                if arch and arch.startswith("arm") \
+                        and selinux_status == "Enforcing":
+                    raise errors.ConfigError("Can't create arm image if "\
+                          "selinux is enabled, please disable it and try again")
 
                 use_btrfs = False
-                parts = ks.handler.partition.partitions
                 for part in ks.handler.partition.partitions:
                     if part.fstype == "btrfs":
                         use_btrfs = True
                         break
 
                 if use_btrfs and selinux_status == "Enforcing":
-                    raise errors.ConfigError("Can't create image useing btrfs filesystem if selinux is enabled, please disable it and try again")
-
+                    raise errors.ConfigError("Can't create image using btrfs "\
+                                          "filesystem if selinux is enabled, "\
+                                          "please disable it and try again")
                 break
 
     def _parse_kickstart(self, ksconf=None):
@@ -143,27 +148,31 @@ class ConfigMgr(object):
         self.create['name'] = os.path.splitext(os.path.basename(ksconf))[0]
 
         if self.create['name_prefix']:
-            self.create['name'] = "%s-%s" % (self.create['name_prefix'], self.create['name'])
+            self.create['name'] = "%s-%s" % (self.create['name_prefix'],
+                                             self.create['name'])
 
         self._selinux_check (self.create['arch'], ks)
 
         msger.info("Retrieving repo metadata:")
         ksrepos = misc.get_repostrs_from_ks(ks)
-        self.create['repomd'] = misc.get_metadata_from_repos(ksrepos, self.create['cachedir'])
+        self.create['repomd'] = misc.get_metadata_from_repos(ksrepos,
+                                                        self.create['cachedir'])
         msger.raw(" DONE")
 
         target_archlist, archlist = misc.get_arch(self.create['repomd'])
         if self.create['arch']:
             if self.create['arch'] not in archlist:
-                raise errors.ConfigError("Invalid arch %s for repository. Valid arches: %s"\
-                                         % (self.create['arch'], ', '.join(archlist)))
+                raise errors.ConfigError("Invalid arch %s for repository. "\
+                          "Valid arches: %s" % (self.create['arch'],
+                                                ', '.join(archlist)))
         else:
             if len(target_archlist) == 1:
                 self.create['arch'] = str(target_archlist[0])
                 msger.info("\nUse detected arch %s." % target_archlist[0])
             else:
                 raise errors.ConfigError("Please specify a valid arch, "\
-                                         "your choise can be: %s" % ', '.join(archlist))
+                                         "your choise can be: %s" \
+                                         % ', '.join(archlist))
 
         kickstart.resolve_groups(self.create, self.create['repomd'])
 
