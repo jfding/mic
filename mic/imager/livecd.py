@@ -70,11 +70,22 @@ class LiveImageCreatorBase(LoopImageCreator):
 
         self.__isodir = None
 
-        self.__modules = ["=ata", "sym53c8xx", "aic7xxx", "=usb", "=firewire", "=mmc", "=pcmcia", "mptsas"]
+        self.__modules = ["=ata",
+                          "sym53c8xx",
+                          "aic7xxx",
+                          "=usb",
+                          "=firewire",
+                          "=mmc",
+                          "=pcmcia",
+                          "mptsas"]
         if self.ks:
             self.__modules.extend(kickstart.get_modules(self.ks))
 
-        self._dep_checks.extend(["isohybrid", "unsquashfs", "mksquashfs", "dd", "genisoimage"])
+        self._dep_checks.extend(["isohybrid",
+                                 "unsquashfs",
+                                 "mksquashfs",
+                                 "dd",
+                                 "genisoimage"])
 
     #
     # Hooks for subclasses
@@ -85,7 +96,8 @@ class LiveImageCreatorBase(LoopImageCreator):
             This is the hook where subclasses must create the booloader
             configuration in order to allow a bootable ISO to be built.
 
-            isodir -- the directory where the contents of the ISO are to be staged
+            isodir -- the directory where the contents of the ISO are to
+                      be staged
         """
         raise CreatorError("Bootloader configuration is arch-specific, "
                            "but not implemented for this arch!")
@@ -100,8 +112,9 @@ class LiveImageCreatorBase(LoopImageCreator):
     def _get_kernel_options(self):
         """Return a kernel options string for bootloader configuration.
 
-            This is the hook where subclasses may specify a set of kernel options
-            which should be included in the images bootloader configuration.
+            This is the hook where subclasses may specify a set of kernel
+            options which should be included in the images bootloader
+            configuration.
 
             A sensible default implementation is provided.
         """
@@ -121,8 +134,8 @@ class LiveImageCreatorBase(LoopImageCreator):
     def _get_mkisofs_options(self, isodir):
         """Return the architecture specific mkisosfs options.
 
-            This is the hook where subclasses may specify additional arguments to
-            mkisofs, e.g. to enable a bootable ISO to be built.
+            This is the hook where subclasses may specify additional arguments
+            to mkisofs, e.g. to enable a bootable ISO to be built.
 
             By default, an empty list is returned.
         """
@@ -133,11 +146,11 @@ class LiveImageCreatorBase(LoopImageCreator):
     #
     def _has_checkisomd5(self):
         """Check whether checkisomd5 is available in the install root."""
-        def exists(instroot, path):
-            return os.path.exists(instroot + path)
+        def _exists(path):
+            return os.path.exists(self._instroot + path)
 
-        if (exists(self._instroot, "/usr/lib/moblin-installer-runtime/checkisomd5") or
-            exists(self._instroot, "/usr/bin/checkisomd5")):
+        if (_exists("/usr/lib/moblin-installer-runtime/checkisomd5") or \
+            _exists("/usr/bin/checkisomd5")):
             if (os.path.exists("/usr/bin/implantisomd5") or
                os.path.exists("/usr/lib/anaconda-runtime/implantisomd5")):
                 return True
@@ -255,13 +268,17 @@ class LiveImageCreatorBase(LoopImageCreator):
             minimal_size = self._resparse()
 
             if not self.skip_minimize:
-                fs_related.create_image_minimizer(self.__isodir + "/LiveOS/osmin.img",
-                                       self._image, minimal_size)
+                fs_related.create_image_minimizer(self.__isodir + \
+                                                      "/LiveOS/osmin.img",
+                                                  self._image,
+                                                  minimal_size)
 
             if self.skip_compression:
                 shutil.move(self._image, self.__isodir + "/LiveOS/ext3fs.img")
             else:
-                fs_related.makedirs(os.path.join(os.path.dirname(self._image), "LiveOS"))
+                fs_related.makedirs(os.path.join(
+                                        os.path.dirname(self._image),
+                                        "LiveOS"))
                 shutil.move(self._image,
                             os.path.join(os.path.dirname(self._image),
                                          "LiveOS", "ext3fs.img"))
@@ -282,7 +299,8 @@ class x86LiveImageCreator(LiveImageCreatorBase):
                  "-boot-load-size", "4" ]
 
     def _get_required_packages(self):
-        return ["syslinux", "syslinux-extlinux"] + LiveImageCreatorBase._get_required_packages(self)
+        return ["syslinux", "syslinux-extlinux"] + \
+               LiveImageCreatorBase._get_required_packages(self)
 
     def _get_isolinux_stanzas(self, isodir):
         return ""
@@ -335,7 +353,7 @@ class x86LiveImageCreator(LiveImageCreatorBase):
         if self._alt_initrd_name:
             src_initrd_path = os.path.join(bootdir, self._alt_initrd_name)
         else:
-            src_initrd_path = os.path.join(bootdir, "initrd-" + version + ".img")
+            src_initrd_path = os.path.join(bootdir, "initrd-" +version+ ".img")
 
         try:
             shutil.copyfile(bootdir + "/vmlinuz-" + version,
@@ -343,7 +361,8 @@ class x86LiveImageCreator(LiveImageCreatorBase):
             shutil.copyfile(src_initrd_path,
                             isodir + "/isolinux/initrd" + index + ".img")
         except:
-            raise CreatorError("Unable to copy valid kernels or initrds, please check the repo")
+            raise CreatorError("Unable to copy valid kernels or initrds, "
+                               "please check the repo.")
 
         is_xen = False
         if os.path.exists(bootdir + "/xen.gz-" + version[:-3]):
@@ -407,26 +426,47 @@ menu color cmdline 0 #ffffffff #00000000
                 versions.append(version)
 
         if not versions:
-            raise CreatorError("Unable to find valid kernels, please check the repo")
+            raise CreatorError("Unable to find valid kernels, "
+                               "please check the repo")
 
         kernel_options = self._get_kernel_options()
 
-        """ menu can be customized highly, the format is
+        """ menu can be customized highly, the format is:
 
-              short_name1:long_name1:extra_options1;short_name2:long_name2:extra_options2
+          short_name1:long_name1:extra_opts1;short_name2:long_name2:extra_opts2
 
-            for example: autoinst:Installation only:systemd.unit=installer-graphical.service
-            but in order to keep compatible with old format, these are still ok:
+        e.g.: autoinst:InstallationOnly:systemd.unit=installer-graphical.service
+        but in order to keep compatible with old format, these are still ok:
 
               liveinst autoinst
               liveinst;autoinst
               liveinst::;autoinst::
         """
-        oldmenus = {"basic":{"short":"basic", "long":"Installation Only (Text based)", "extra":"basic nosplash 4"},
-                    "liveinst":{"short":"liveinst", "long":"Installation Only", "extra":"liveinst nosplash 4"},
-                    "autoinst":{"short":"autoinst", "long":"Autoinstall (Deletes all existing content)", "extra":"autoinst nosplash 4"},
-                    "netinst":{"short":"netinst", "long":"Network Installation", "extra":"netinst 4"},
-                    "verify":{"short":"check", "long":"Verify and", "extra":"check"}
+        oldmenus = {"basic": {
+                        "short": "basic",
+                        "long": "Installation Only (Text based)",
+                        "extra": "basic nosplash 4"
+                    },
+                    "liveinst": {
+                        "short": "liveinst",
+                        "long": "Installation Only",
+                        "extra": "liveinst nosplash 4"
+                    },
+                    "autoinst": {
+                        "short": "autoinst",
+                        "long": "Autoinstall (Deletes all existing content)",
+                        "extra": "autoinst nosplash 4"
+                    },
+                    "netinst": {
+                        "short": "netinst",
+                        "long": "Network Installation",
+                        "extra": "netinst 4"
+                    },
+                    "verify": {
+                        "short": "check",
+                        "long": "Verify and",
+                        "extra": "check"
+                    }
                    }
         menu_options = self._get_menu_options()
         menus = menu_options.split(";")
@@ -455,7 +495,8 @@ menu color cmdline 0 #ffffffff #00000000
                 long = "Boot %s(%s)" % (self.name, kernel[7:])
             else:
                 long = "Boot %s(%s)" % (self.name, kernel)
-            oldmenus["verify"]["long"] = "%s %s" % (oldmenus["verify"]["long"], long)
+            oldmenus["verify"]["long"] = "%s %s" % (oldmenus["verify"]["long"],
+                                                    long)
 
             cfg += self.__get_image_stanza(is_xen,
                                            fslabel = self.fslabel,
@@ -607,11 +648,12 @@ hiddenmenu
                                                long = name,
                                                extra = "", index = index)
             if checkisomd5:
-                cfg += self.__get_efi_image_stanza(fslabel = self.fslabel,
-                                                   liveargs = kernel_options,
-                                                   long = "Verify and Boot " + name,
-                                                   extra = "check",
-                                                   index = index)
+                cfg += self.__get_efi_image_stanza(
+                                               fslabel = self.fslabel,
+                                               liveargs = kernel_options,
+                                               long = "Verify and Boot " + name,
+                                               extra = "check",
+                                               index = index)
             break
 
         return cfg
@@ -639,14 +681,18 @@ hiddenmenu
 
         # first gen mactel machines get the bootloader name wrong apparently
         if rpmmisc.getBaseArch() == "i386":
-            os.link(isodir + "/EFI/boot/grub.efi", isodir + "/EFI/boot/boot.efi")
-            os.link(isodir + "/EFI/boot/grub.conf", isodir + "/EFI/boot/boot.conf")
+            os.link(isodir + "/EFI/boot/grub.efi",
+                    isodir + "/EFI/boot/boot.efi")
+            os.link(isodir + "/EFI/boot/grub.conf",
+                    isodir + "/EFI/boot/boot.conf")
 
         # for most things, we want them named boot$efiarch
         efiarch = {"i386": "ia32", "x86_64": "x64"}
         efiname = efiarch[rpmmisc.getBaseArch()]
-        os.rename(isodir + "/EFI/boot/grub.efi", isodir + "/EFI/boot/boot%s.efi" %(efiname,))
-        os.link(isodir + "/EFI/boot/grub.conf", isodir + "/EFI/boot/boot%s.conf" %(efiname,))
+        os.rename(isodir + "/EFI/boot/grub.efi",
+                  isodir + "/EFI/boot/boot%s.efi" %(efiname,))
+        os.link(isodir + "/EFI/boot/grub.conf",
+                isodir + "/EFI/boot/boot%s.conf" %(efiname,))
 
 
     def _configure_bootloader(self, isodir):

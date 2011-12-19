@@ -30,10 +30,10 @@ from baseimager import BaseImageCreator
 class RawImageCreator(BaseImageCreator):
     """Installs a system into a file containing a partitioned disk image.
 
-        ApplianceImageCreator is an advanced ImageCreator subclass; a sparse file
-        is formatted with a partition table, each partition loopback mounted
-        and the system installed into an virtual disk. The disk image can
-        subsequently be booted in a virtual machine or accessed with kpartx
+    ApplianceImageCreator is an advanced ImageCreator subclass; a sparse file
+    is formatted with a partition table, each partition loopback mounted
+    and the system installed into an virtual disk. The disk image can
+    subsequently be booted in a virtual machine or accessed with kpartx
     """
 
     def __init__(self, *args):
@@ -64,7 +64,8 @@ class RawImageCreator(BaseImageCreator):
             os.chdir("/")
 
         if os.path.exists(self._instroot + "/usr/bin/Xorg"):
-            subprocess.call(["/bin/chmod", "u+s", "/usr/bin/Xorg"], preexec_fn = chroot)
+            subprocess.call(["/bin/chmod", "u+s", "/usr/bin/Xorg"],
+                            preexec_fn = chroot)
 
         BaseImageCreator.configure(self, repodata)
 
@@ -77,17 +78,17 @@ class RawImageCreator(BaseImageCreator):
                     p = p1
                     break
 
-            s += "%(device)s  %(mountpoint)s         %(fstype)s   %(fsopts)s 0 0\n" %  {
-                 'device': "/dev/%s%-d" % (p['disk'], p['num']),
-                 'mountpoint': p['mountpoint'],
-                 'fstype': p['fstype'],
-                 'fsopts': "defaults,noatime" if not p['fsopts'] else p['fsopts']}
+            s += "%(device)s  %(mountpoint)s  %(fstype)s  %(fsopts)s 0 0\n" % {
+               'device': "/dev/%s%-d" % (p['disk'], p['num']),
+               'mountpoint': p['mountpoint'],
+               'fstype': p['fstype'],
+               'fsopts': "defaults,noatime" if not p['fsopts'] else p['fsopts']}
 
             if p['mountpoint'] == "/":
                 for subvol in self.__instloop.subvolumes:
                     if subvol['mountpoint'] == "/":
                         continue
-                    s += "%(device)s  %(mountpoint)s         %(fstype)s   %(fsopts)s 0 0\n" %  {
+                    s += "%(device)s  %(mountpoint)s  %(fstype)s  %(fsopts)s 0 0\n" % {
                          'device': "/dev/%s%-d" % (p['disk'], p['num']),
                          'mountpoint': subvol['mountpoint'],
                          'fstype': p['fstype'],
@@ -108,7 +109,8 @@ class RawImageCreator(BaseImageCreator):
         mkinitrd += "rootfs=\"ext3\"\n"
         mkinitrd += "rootopts=\"defaults\"\n"
 
-        msger.debug("Writing mkinitrd config %s/etc/sysconfig/mkinitrd" % self._instroot)
+        msger.debug("Writing mkinitrd config %s/etc/sysconfig/mkinitrd" \
+                    % self._instroot)
         os.makedirs(self._instroot + "/etc/sysconfig/",mode=644)
         cfg = open(self._instroot + "/etc/sysconfig/mkinitrd", "w")
         cfg.write(mkinitrd)
@@ -138,10 +140,12 @@ class RawImageCreator(BaseImageCreator):
             if parts[i].disk:
                 disk = parts[i].disk
             else:
-                raise CreatorError("Failed to create disks, no --ondisk specified in partition line of ks file")
+                raise CreatorError("Failed to create disks, no --ondisk "
+                                   "specified in partition line of ks file")
 
             if not parts[i].fstype:
-                 raise CreatorError("Failed to create disks, no --fstype specified in partition line of ks file")
+                 raise CreatorError("Failed to create disks, no --fstype "
+                                    "specified in partition line of ks file")
 
             size =   parts[i].size * 1024L * 1024L
 
@@ -158,14 +162,26 @@ class RawImageCreator(BaseImageCreator):
 
         #create disk
         for item in disks:
-            msger.debug("Adding disk %s as %s/%s-%s.raw" % (item['name'], self.__imgdir,self.name, item['name']))
-            disk = fs_related.SparseLoopbackDisk("%s/%s-%s.raw" % (self.__imgdir,self.name, item['name']),item['size'])
+            msger.debug("Adding disk %s as %s/%s-%s.raw" % (item['name'],
+                                                            self.__imgdir,
+                                                            self.name,
+                                                            item['name']))
+            disk = fs_related.SparseLoopbackDisk("%s/%s-%s.raw" % (
+                                                                self.__imgdir,
+                                                                self.name,
+                                                                item['name']),
+                                                 item['size'])
             self.__disks[item['name']] = disk
 
         self.__instloop = PartitionedMount(self.__disks, self._instroot)
 
         for p in parts:
-            self.__instloop.add_partition(int(p.size), p.disk, p.mountpoint, p.fstype, fsopts = p.fsopts, boot = p.active)
+            self.__instloop.add_partition(int(p.size),
+                                          p.disk,
+                                          p.mountpoint,
+                                          p.fstype,
+                                          fsopts = p.fsopts,
+                                          boot = p.active)
 
         self.__instloop.mount()
         self._create_mkinitrd_config()
@@ -201,14 +217,18 @@ class RawImageCreator(BaseImageCreator):
 
     def _create_syslinux_config(self):
         #Copy splash
-        splash = "%s/usr/lib/anaconda-runtime/syslinux-vesa-splash.jpg" % self._instroot
+        splash = "%s/usr/lib/anaconda-runtime/syslinux-vesa-splash.jpg" \
+                 % self._instroot
+
         if os.path.exists(splash):
-            shutil.copy(splash, "%s%s/splash.jpg" % (self._instroot, "/boot/extlinux"))
+            shutil.copy(splash, "%s%s/splash.jpg" \
+                                % (self._instroot, "/boot/extlinux"))
             splashline = "menu background splash.jpg"
         else:
             splashline = ""
 
-        (bootdevnum, rootdevnum, rootdev, prefix) = self._get_syslinux_boot_config()
+        (bootdevnum, rootdevnum, rootdev, prefix) = \
+                                            self._get_syslinux_boot_config()
         options = self.ks.handler.bootloader.appendLine
 
         #XXX don't hardcode default kernel - see livecd code
@@ -242,16 +262,20 @@ class RawImageCreator(BaseImageCreator):
         footlabel = 0
         for v in versions:
             shutil.copy("%s/boot/vmlinuz-%s" %(self._instroot, v),
-                        "%s%s/vmlinuz-%s" % (self._instroot, "/boot/extlinux/", v))
-            syslinux_conf += "label %s%d\n" % (self.distro_name.lower(), footlabel)
+                        "%s%s/vmlinuz-%s" % (self._instroot,
+                                             "/boot/extlinux/", v))
+            syslinux_conf += "label %s%d\n" \
+                             % (self.distro_name.lower(), footlabel)
             syslinux_conf += "\tmenu label %s (%s)\n" % (self.distro_name, v)
             syslinux_conf += "\tkernel vmlinuz-%s\n" % v
-            syslinux_conf += "\tappend ro root=%s quiet vga=current %s\n" % (rootdev, options)
+            syslinux_conf += "\tappend ro root=%s quiet vga=current %s\n" \
+                             % (rootdev, options)
             if footlabel == 0:
                syslinux_conf += "\tmenu default\n"
             footlabel += 1;
 
-        msger.debug("Writing syslinux config %s/boot/extlinux/extlinux.conf" % self._instroot)
+        msger.debug("Writing syslinux config %s/boot/extlinux/extlinux.conf" \
+                    % self._instroot)
         cfg = open(self._instroot + "/boot/extlinux/extlinux.conf", "w")
         cfg.write(syslinux_conf)
         cfg.close()
@@ -264,31 +288,45 @@ class RawImageCreator(BaseImageCreator):
 
         msger.debug("Installing syslinux bootloader to %s" % loopdev)
 
-        (bootdevnum, rootdevnum, rootdev, prefix) = self._get_syslinux_boot_config()
+        (bootdevnum, rootdevnum, rootdev, prefix) = \
+                                    self._get_syslinux_boot_config()
 
 
         #Set MBR
-        mbrsize = os.stat("%s/usr/share/syslinux/mbr.bin" % self._instroot)[stat.ST_SIZE]
-        rc = runner.show(['dd', "if=%s/usr/share/syslinux/mbr.bin" % self._instroot, "of=" + loopdev])
+        mbrsize = os.stat("%s/usr/share/syslinux/mbr.bin" \
+                          % self._instroot)[stat.ST_SIZE]
+        rc = runner.show(['dd',
+                          'if=%s/usr/share/syslinux/mbr.bin' % self._instroot,
+                          'of=' + loopdev])
         if rc != 0:
             raise MountError("Unable to set MBR to %s" % loopdev)
 
         #Set Bootable flag
         parted = fs_related.find_binary_path("parted")
-        rc = runner.quiet([parted, "-s", loopdev, "set", "%d" % (bootdevnum + 1), "boot", "on"])
+        rc = runner.quiet([parted,
+                           "-s",
+                           loopdev,
+                           "set",
+                           "%d" % (bootdevnum + 1),
+                           "boot",
+                           "on"])
         #XXX disabled return code check because parted always fails to
         #reload part table with loop devices. Annoying because we can't
         #distinguish this failure from real partition failures :-(
         if rc != 0 and 1 == 0:
-            raise MountError("Unable to set bootable flag to %sp%d" % (loopdev, (bootdevnum + 1)))
+            raise MountError("Unable to set bootable flag to %sp%d" \
+                             % (loopdev, (bootdevnum + 1)))
 
         #Ensure all data is flushed to disk before doing syslinux install
         runner.quiet('sync')
 
         fullpathsyslinux = fs_related.find_binary_path("extlinux")
-        rc = runner.show([fullpathsyslinux, "-i", "%s/boot/extlinux" % self._instroot])
+        rc = runner.show([fullpathsyslinux,
+                          "-i",
+                          "%s/boot/extlinux" % self._instroot])
         if rc != 0:
-            raise MountError("Unable to install syslinux bootloader to %sp%d" % (loopdev, (bootdevnum + 1)))
+            raise MountError("Unable to install syslinux bootloader to %sp%d" \
+                             % (loopdev, (bootdevnum + 1)))
 
     def _create_bootconfig(self):
         #If syslinux is available do the required configurations.
@@ -332,8 +370,8 @@ class RawImageCreator(BaseImageCreator):
             name_attributes += " release='%s'" % self.appliance_release
         xml += "  <name%s>%s</name>\n" % (name_attributes, self.name)
         xml += "  <domain>\n"
-        # XXX don't hardcode - determine based on the kernel we installed for grub
-        # baremetal vs xen
+        # XXX don't hardcode - determine based on the kernel we installed for
+        # grub baremetal vs xen
         xml += "    <boot type='hvm'>\n"
         xml += "      <guest>\n"
         xml += "        <arch>%s</arch>\n" % imgarch
@@ -344,7 +382,8 @@ class RawImageCreator(BaseImageCreator):
 
         i = 0
         for name in self.__disks.keys():
-            xml += "      <drive disk='%s-%s.%s' target='hd%s'/>\n" % (self.name,name, self.__disk_format,chr(ord('a')+i))
+            xml += "      <drive disk='%s-%s.%s' target='hd%s'/>\n" \
+                   % (self.name,name, self.__disk_format,chr(ord('a')+i))
             i = i + 1
 
         xml += "    </boot>\n"
@@ -360,12 +399,16 @@ class RawImageCreator(BaseImageCreator):
 
         if self.checksum is True:
             for name in self.__disks.keys():
-                diskpath = "%s/%s-%s.%s" % (self._outdir,self.name,name, self.__disk_format)
+                diskpath = "%s/%s-%s.%s" \
+                           % (self._outdir,self.name,name, self.__disk_format)
                 disk_size = os.path.getsize(diskpath)
                 meter_ct = 0
                 meter = progress.TextMeter()
-                meter.start(size=disk_size, text="Generating disk signature for %s-%s.%s" % (self.name,name,self.__disk_format))
-                xml += "    <disk file='%s-%s.%s' use='system' format='%s'>\n" % (self.name,name, self.__disk_format, self.__disk_format)
+                meter.start(size=disk_size,
+                            text="Generating disk signature for %s-%s.%s" \
+                                 % (self.name,name,self.__disk_format))
+                xml += "    <disk file='%s-%s.%s' use='system' format='%s'>\n" \
+                       % (self.name,name, self.__disk_format, self.__disk_format)
 
                 try:
                     import hashlib
@@ -387,20 +430,24 @@ class RawImageCreator(BaseImageCreator):
                     meter_ct = meter_ct + 65536
 
                 sha1checksum = m1.hexdigest()
-                xml +=  """      <checksum type='sha1'>%s</checksum>\n""" % sha1checksum
+                xml +=  "      <checksum type='sha1'>%s</checksum>\n" \
+                        % sha1checksum
 
                 if m2:
                     sha256checksum = m2.hexdigest()
-                    xml += """      <checksum type='sha256'>%s</checksum>\n""" % sha256checksum
+                    xml += "      <checksum type='sha256'>%s</checksum>\n" \
+                           % sha256checksum
+
                 xml += "    </disk>\n"
         else:
             for name in self.__disks.keys():
-                xml += "    <disk file='%s-%s.%s' use='system' format='%s'/>\n" % (self.name,name, self.__disk_format, self.__disk_format)
+                xml += "    <disk file='%s-%s.%s' use='system' format='%s'/>\n"\
+                       %(self.name,name, self.__disk_format, self.__disk_format)
 
         xml += "  </storage>\n"
         xml += "</image>\n"
 
-        msger.debug("writing image XML to %s/%s.xml" %  (self._outdir, self.name))
+        msger.debug("writing image XML to %s/%s.xml" %(self._outdir, self.name))
         cfg = open("%s/%s.xml" % (self._outdir, self.name), "w")
         cfg.write(xml)
         cfg.close()

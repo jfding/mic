@@ -130,19 +130,28 @@ def setup_chrootenv(chrootdir, bindmounts = None):
             else:
                 srcdst[1] = os.path.abspath(os.path.expanduser(srcdst[1]))
                 if os.path.isdir(chrootdir + "/" + srcdst[1]):
-                    msger.warning("%s has existed in %s , skip it." % (srcdst[1], chrootdir))
+                    msger.warning("%s has existed in %s , skip it."\
+                                  % (srcdst[1], chrootdir))
                     continue
 
-            chrootmounts.append(fs_related.BindChrootMount(srcdst[0], chrootdir, srcdst[1]))
+            chrootmounts.append(fs_related.BindChrootMount(srcdst[0],
+                                                           chrootdir,
+                                                           srcdst[1]))
 
         """Default bind mounts"""
         for pt in BIND_MOUNTS:
             chrootmounts.append(fs_related.BindChrootMount(pt, chrootdir, None))
 
-        chrootmounts.append(fs_related.BindChrootMount("/", chrootdir, "/parentroot", "ro"))
+        chrootmounts.append(fs_related.BindChrootMount("/",
+                                                       chrootdir,
+                                                       "/parentroot",
+                                                       "ro"))
 
         for kernel in os.listdir("/lib/modules"):
-            chrootmounts.append(fs_related.BindChrootMount("/lib/modules/" + kernel, chrootdir, None, "ro"))
+            chrootmounts.append(fs_related.BindChrootMount("/lib/modules/"+kernel,
+                                                           chrootdir,
+                                                           None,
+                                                           "ro"))
 
         return chrootmounts
 
@@ -270,10 +279,13 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
 
     os.close(dev_null)
     if not architecture_found:
-        raise errors.CreatorError("Failed to get architecture from any of the following files %s from chroot." % files_to_check)
+        raise errors.CreatorError("Failed to get architecture from any of the "
+                                  "following files %s from chroot." \
+                                  % files_to_check)
 
     try:
-        msger.info("Launching shell. Exit to continue.\n----------------------------------")
+        msger.info("Launching shell. Exit to continue.\n"
+                   "----------------------------------")
         globalmounts = setup_chrootenv(chrootdir, bindmounts)
         subprocess.call(execute, preexec_fn = mychroot, shell=True)
 

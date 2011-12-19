@@ -45,21 +45,38 @@ class LiveUSBImageCreator(LiveCDImageCreator):
         plussize=128
         kernelargs=None
 
-        if overlaysizemb > 2047 and fstype == "vfat":
-            raise CreatorError("Can't have an overlay of 2048MB or greater on VFAT")
-        if homesizemb > 2047 and fstype == "vfat":
-            raise CreatorError("Can't have an home overlay of 2048MB or greater on VFAT")
-        if swapsizemb > 2047 and fstype == "vfat":
-            raise CreatorError("Can't have an swap overlay of 2048MB or greater on VFAT")
+        if fstype == 'vfat':
+            if overlaysizemb > 2047:
+                raise CreatorError("Can't have an overlay of 2048MB or "
+                                   "greater on VFAT")
+
+            if homesizemb > 2047:
+                raise CreatorError("Can't have an home overlay of 2048MB or "
+                                   "greater on VFAT")
+
+            if swapsizemb > 2047:
+                raise CreatorError("Can't have an swap overlay of 2048MB or "
+                                   "greater on VFAT")
 
         livesize = misc.get_file_size(isodir + "/LiveOS")
 
-        usbimgsize = (overlaysizemb + homesizemb + swapsizemb + livesize + plussize) * 1024L * 1024L
-        disk = fs_related.SparseLoopbackDisk("%s/%s.usbimg" % (self._outdir, self.name), usbimgsize)
+        usbimgsize = (overlaysizemb + \
+                      homesizemb + \
+                      swapsizemb + \
+                      livesize + \
+                      plussize) * 1024L * 1024L
+
+        disk = fs_related.SparseLoopbackDisk("%s/%s.usbimg" \
+                                                 % (self._outdir, self.name),
+                                             usbimgsize)
         usbmnt = self._mkdtemp("usb-mnt")
         usbloop = PartitionedMount({'/dev/sdb':disk}, usbmnt)
 
-        usbloop.add_partition(usbimgsize/1024/1024, "/dev/sdb", "/", fstype, boot=True)
+        usbloop.add_partition(usbimgsize/1024/1024,
+                              "/dev/sdb",
+                              "/",
+                              fstype,
+                              boot=True)
 
         usbloop.mount()
 
@@ -67,12 +84,15 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             fs_related.makedirs(usbmnt + "/LiveOS")
 
             if os.path.exists(isodir + "/LiveOS/squashfs.img"):
-                shutil.copyfile(isodir + "/LiveOS/squashfs.img", usbmnt + "/LiveOS/squashfs.img")
+                shutil.copyfile(isodir + "/LiveOS/squashfs.img",
+                                usbmnt + "/LiveOS/squashfs.img")
             else:
-                fs_related.mksquashfs(os.path.dirname(self._image), usbmnt + "/LiveOS/squashfs.img")
+                fs_related.mksquashfs(os.path.dirname(self._image),
+                                      usbmnt + "/LiveOS/squashfs.img")
 
             if os.path.exists(isodir + "/LiveOS/osmin.img"):
-                shutil.copyfile(isodir + "/LiveOS/osmin.img", usbmnt + "/LiveOS/osmin.img")
+                shutil.copyfile(isodir + "/LiveOS/osmin.img",
+                                usbmnt + "/LiveOS/osmin.img")
 
             if fstype == "vfat" or fstype == "msdos":
                 uuid = usbloop.partitions[0]['mount'].uuid
@@ -87,7 +107,8 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             args = ['cp', "-Rf", isodir + "/isolinux", usbmnt + "/syslinux"]
             rc = runner.show(args)
             if rc:
-                raise CreatorError("Can't copy isolinux directory %s" % (isodir + "/isolinux/*"))
+                raise CreatorError("Can't copy isolinux directory %s" \
+                                   % (isodir + "/isolinux/*"))
 
             if os.path.isfile("/usr/share/syslinux/isolinux.bin"):
                 syslinux_path = "/usr/share/syslinux"
@@ -103,10 +124,10 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                     args = ['cp', path, usbmnt + "/syslinux/"]
                     rc = runner.show(args)
                     if rc:
-                        raise CreatorError("Can't copy syslinux file %s" % (path))
+                        raise CreatorError("Can't copy syslinux file " + path)
                 else:
-                    raise CreatorError("syslinux not installed : "
-                               "syslinux file %s not found" % path)
+                    raise CreatorError("syslinux not installed: "
+                                       "syslinux file %s not found" % path)
 
             fd = open(isodir + "/isolinux/isolinux.cfg", "r")
             text = fd.read()
@@ -122,9 +143,18 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 msger.info("Initializing persistent overlay file")
                 overfile = "overlay" + overlaysuffix
                 if fstype == "vfat":
-                    args = ['dd', "if=/dev/zero", "of=" + usbmnt + "/LiveOS/" + overfile, "count=%d" % overlaysizemb, "bs=1M"]
+                    args = ['dd',
+                            "if=/dev/zero",
+                            "of=" + usbmnt + "/LiveOS/" + overfile,
+                            "count=%d" % overlaysizemb,
+                            "bs=1M"]
                 else:
-                    args = ['dd', "if=/dev/null", "of=" + usbmnt + "/LiveOS/" + overfile, "count=1", "bs=1M", "seek=%d" % overlaysizemb]
+                    args = ['dd',
+                            "if=/dev/null",
+                            "of=" + usbmnt + "/LiveOS/" + overfile,
+                            "count=1",
+                            "bs=1M",
+                            "seek=%d" % overlaysizemb]
                 rc = runner.show(args)
                 if rc:
                     raise CreatorError("Can't create overlay file")
@@ -134,7 +164,11 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             if swapsizemb > 0:
                 msger.info("Initializing swap file")
                 swapfile = usbmnt + "/LiveOS/" + "swap.img"
-                args = ['dd', "if=/dev/zero", "of=" + swapfile, "count=%d" % swapsizemb, "bs=1M"]
+                args = ['dd',
+                        "if=/dev/zero",
+                        "of=" + swapfile,
+                        "count=%d" % swapsizemb,
+                        "bs=1M"]
                 rc = runner.show(args)
                 if rc:
                     raise CreatorError("Can't create swap file")
@@ -147,9 +181,18 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                 msger.info("Initializing persistent /home")
                 homefile = usbmnt + "/LiveOS/" + homefile
                 if fstype == "vfat":
-                    args = ['dd', "if=/dev/zero", "of=" + homefile, "count=%d" % homesizemb, "bs=1M"]
+                    args = ['dd',
+                            "if=/dev/zero",
+                            "of=" + homefile,
+                            "count=%d" % homesizemb,
+                            "bs=1M"]
                 else:
-                    args = ['dd', "if=/dev/null", "of=" + homefile, "count=1", "bs=1M", "seek=%d" % homesizemb]
+                    args = ['dd',
+                            "if=/dev/null",
+                            "of=" + homefile,
+                            "count=1",
+                            "bs=1M",
+                            "seek=%d" % homesizemb]
                 rc = runner.show(args)
                 if rc:
                     raise CreatorError("Can't create home file")
@@ -164,7 +207,11 @@ class LiveUSBImageCreator(LiveCDImageCreator):
                     raise CreatorError("Can't mke2fs home file")
                 if fstype == "ext2" or fstype == "ext3":
                     tune2fs = fs_related.find_binary_path("tune2fs")
-                    args = [tune2fs, "-c0", "-i0", "-ouser_xattr,acl", homefile]
+                    args = [tune2fs,
+                            "-c0",
+                            "-i0",
+                            "-ouser_xattr,acl",
+                            homefile]
                     rc = runner.show(args)
                     if rc:
                          raise CreatorError("Can't tune2fs home file")
@@ -172,11 +219,18 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             if fstype == "vfat" or fstype == "msdos":
                 syslinuxcmd = fs_related.find_binary_path("syslinux")
                 syslinuxcfg = usbmnt + "/syslinux/syslinux.cfg"
-                args = [syslinuxcmd, "-d", "syslinux", usbloop.partitions[0]["device"]]
+                args = [syslinuxcmd,
+                        "-d",
+                        "syslinux",
+                        usbloop.partitions[0]["device"]]
+
             elif fstype == "ext2" or fstype == "ext3":
                 extlinuxcmd = fs_related.find_binary_path("extlinux")
                 syslinuxcfg = usbmnt + "/syslinux/extlinux.conf"
-                args = [extlinuxcmd, "-i", usbmnt + "/syslinux"]
+                args = [extlinuxcmd,
+                        "-i",
+                        usbmnt + "/syslinux"]
+
             else:
                 raise CreatorError("Invalid file system type: %s" % (fstype))
 
@@ -192,7 +246,7 @@ class LiveUSBImageCreator(LiveCDImageCreator):
             usbloop.unmount()
             usbloop.cleanup()
 
-        #Need to do this after image is unmounted and device mapper is closed
+        # Need to do this after image is unmounted and device mapper is closed
         msger.info("set MBR")
         mbrfile = "/usr/lib/syslinux/mbr.bin"
         if not os.path.exists(mbrfile):
@@ -202,7 +256,13 @@ class LiveUSBImageCreator(LiveCDImageCreator):
         mbrsize = os.path.getsize(mbrfile)
         outimg = "%s/%s.usbimg" % (self._outdir, self.name)
 
-        args = ['dd', "if=" + mbrfile, "of=" + outimg, "seek=0", "conv=notrunc", "bs=1", "count=%d" % (mbrsize)]
+        args = ['dd',
+                "if=" + mbrfile,
+                "of=" + outimg,
+                "seek=0",
+                "conv=notrunc",
+                "bs=1",
+                "count=%d" % (mbrsize)]
         rc = runner.show(args)
         if rc:
             raise CreatorError("Can't set MBR.")
@@ -216,12 +276,16 @@ class LiveUSBImageCreator(LiveCDImageCreator):
 
             if not self.skip_minimize:
                 fs_related.create_image_minimizer(isodir + "/LiveOS/osmin.img",
-                                       self._image, minimal_size)
+                                                  self._image,
+                                                  minimal_size)
 
             if self.skip_compression:
-                shutil.move(self._image, isodir + "/LiveOS/ext3fs.img")
+                shutil.move(self._image,
+                            isodir + "/LiveOS/ext3fs.img")
             else:
-                fs_related.makedirs(os.path.join(os.path.dirname(self._image), "LiveOS"))
+                fs_related.makedirs(os.path.join(
+                                        os.path.dirname(self._image),
+                                        "LiveOS"))
                 shutil.move(self._image,
                             os.path.join(os.path.dirname(self._image),
                                          "LiveOS", "ext3fs.img"))

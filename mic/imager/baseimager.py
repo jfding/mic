@@ -84,7 +84,8 @@ class BaseImageCreator(object):
 
                 # check whether destine dir exist
                 if os.path.exists(self.destdir):
-                    if msger.ask('Image dir: %s already exists, cleanup and continue?' % self.destdir):
+                    if msger.ask('Image dir: %s already exists, '
+                                 'cleanup and continue?' % self.destdir):
                         shutil.rmtree(self.destdir, ignore_errors = True)
                     else:
                         raise Abort('Canceled')
@@ -145,7 +146,8 @@ class BaseImageCreator(object):
                 if dep == "extlinux":
                     self._dep_checks.remove(dep)
 
-            if not os.path.exists("/usr/bin/qemu-arm") or not misc.is_statically_linked("/usr/bin/qemu-arm"):
+            if not os.path.exists("/usr/bin/qemu-arm") or \
+               not misc.is_statically_linked("/usr/bin/qemu-arm"):
                 self._dep_checks.append("qemu-arm-static")
 
             if os.path.exists("/proc/sys/vm/vdso_enabled"):
@@ -153,9 +155,11 @@ class BaseImageCreator(object):
                 vdso_value = vdso_fh.read().strip()
                 vdso_fh.close()
                 if (int)(vdso_value) == 1:
-                    msger.warning("vdso is enabled on your host, which might cause problems with arm emulations.\n"
-                                  "\tYou can disable vdso with following command before starting image build:\n"
-                                  "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
+                    msger.warning("vdso is enabled on your host, which might "
+                        "cause problems with arm emulations.\n"
+                        "\tYou can disable vdso with following command before "
+                        "starting image build:\n"
+                        "\techo 0 | sudo tee /proc/sys/vm/vdso_enabled")
 
         # make sure the specified tmpdir and cachedir exist
         if not os.path.exists(self.tmpdir):
@@ -163,8 +167,12 @@ class BaseImageCreator(object):
         if not os.path.exists(self.cachedir):
             os.makedirs(self.cachedir)
 
-        if self._img_compression_method != None and self._img_compression_method not in self._valid_compression_methods:
-            raise CreatorError("Given disk image compression method ('%s') is not valid. Valid values are '%s'." % (self._img_compression_method, ' '.join(self._valid_compression_methods)))
+        if self._img_compression_method != None and \
+           self._img_compression_method not in self._valid_compression_methods:
+            raise CreatorError("Given disk image compression method ('%s') is "
+                               "not valid. Valid values are '%s'." \
+                               % (self._img_compression_method,
+                                  ' '.join(self._valid_compression_methods)))
 
     def __del__(self):
         self.cleanup()
@@ -311,11 +319,14 @@ class BaseImageCreator(object):
             f = open(licensefile, "w")
 
             f.write('Summary:\n')
-            for license in reversed(sorted(self._pkgs_license, key=lambda license: len(self._pkgs_license[license]))):
-                f.write("    - %s: %s\n" % (license, len(self._pkgs_license[license])))
+            for license in reversed(sorted(self._pkgs_license, key=\
+                            lambda license: len(self._pkgs_license[license]))):
+                f.write("    - %s: %s\n" \
+                        % (license, len(self._pkgs_license[license])))
 
             f.write('\nDetails:\n')
-            for license in reversed(sorted(self._pkgs_license, key=lambda license: len(self._pkgs_license[license]))):
+            for license in reversed(sorted(self._pkgs_license, key=\
+                            lambda license: len(self._pkgs_license[license]))):
                 f.write("    - %s:\n" % (license))
                 for pkg in sorted(self._pkgs_license[license]):
                     f.write("        - %s\n" % (pkg))
@@ -382,7 +393,9 @@ class BaseImageCreator(object):
         A sensible default implementation is provided.
 
         """
-        s =  "/dev/root  /         %s    %s 0 0\n" % (self._fstype, "defaults,noatime" if not self._fsopts else self._fsopts)
+        s =  "/dev/root  /         %s    %s 0 0\n" \
+             % (self._fstype,
+                "defaults,noatime" if not self._fsopts else self._fsopts)
         s += self._get_fstab_special()
         return s
 
@@ -622,6 +635,7 @@ class BaseImageCreator(object):
                    ('ptmx',   5, 2, 0666),
                    ('tty',    5, 0, 0666),
                    ('zero',   1, 5, 0666))
+
         links = (("/proc/self/fd", "/dev/fd"),
                  ("/proc/self/fd/0", "/dev/stdin"),
                  ("/proc/self/fd/1", "/dev/stdout"),
@@ -629,10 +643,14 @@ class BaseImageCreator(object):
 
         for (node, major, minor, perm) in devices:
             if not os.path.exists(self._instroot + "/dev/" + node):
-                os.mknod(self._instroot + "/dev/" + node, perm | stat.S_IFCHR, os.makedev(major,minor))
+                os.mknod(self._instroot + "/dev/" + node,
+                         perm | stat.S_IFCHR,
+                         os.makedev(major,minor))
+
         for (src, dest) in links:
             if not os.path.exists(self._instroot + dest):
                 os.symlink(src, self._instroot + dest)
+
         os.umask(origumask)
 
     def mount(self, base_on = None, cachedir = None):
@@ -660,11 +678,19 @@ class BaseImageCreator(object):
 
         self._mount_instroot(base_on)
 
-        for d in ("/dev/pts", "/etc", "/boot", "/var/log", "/var/cache/yum", "/sys", "/proc", "/usr/bin"):
+        for d in ("/dev/pts",
+                  "/etc",
+                  "/boot",
+                  "/var/log",
+                  "/var/cache/yum",
+                  "/sys",
+                  "/proc",
+                  "/usr/bin"):
             fs.makedirs(self._instroot + d)
 
         if self.target_arch and self.target_arch.startswith("arm"):
-            self.qemu_emulator = misc.setup_qemu_emulator(self._instroot, self.target_arch)
+            self.qemu_emulator = misc.setup_qemu_emulator(self._instroot,
+                                                          self.target_arch)
 
         self.get_cachedir(cachedir)
 
@@ -912,7 +938,10 @@ class BaseImageCreator(object):
             try:
                 try:
                     subprocess.call([s.interp, script],
-                                    preexec_fn = preexec, env = env, stdout = sys.stdout, stderr = sys.stderr)
+                                    preexec_fn = preexec,
+                                    env = env,
+                                    stdout = sys.stdout,
+                                    stderr = sys.stderr)
                 except OSError, (err, msg):
                     raise CreatorError("Failed to execute %%post script "
                                        "with '%s' : %s" % (s.interp, msg))
@@ -1016,22 +1045,32 @@ class BaseImageCreator(object):
             img_location = os.path.join(self._outdir,self._img_name)
             if self._img_compression_method == "bz2":
                 bzip2 = fs.find_binary_path('bzip2')
-                msger.info("Compressing %s with bzip2. Please wait..." % img_location)
+                msger.info("Compressing %s with bzip2. Please wait..." \
+                           % img_location)
                 rc = runner.show([bzip2, "-f", img_location])
                 if rc:
-                    raise CreatorError("Failed to compress image %s with %s." % (img_location, self._img_compression_method))
-                for bootimg in glob.glob(os.path.dirname(img_location) + "/*-boot.bin"):
-                    msger.info("Compressing %s with bzip2. Please wait..." % bootimg)
+                    raise CreatorError("Failed to compress image %s with %s." \
+                                % (img_location, self._img_compression_method))
+
+                for bootimg in glob.glob(os.path.dirname(img_location) + \
+                                         "/*-boot.bin"):
+                    msger.info("Compressing %s with bzip2. Please wait..." \
+                               % bootimg)
                     rc = runner.show([bzip2, "-f", bootimg])
                     if rc:
-                        raise CreatorError("Failed to compress image %s with %s." % (bootimg, self._img_compression_method))
+                        raise CreatorError("Failed to compress image %s with "
+                                           "%s." \
+                                           % (bootimg,
+                                              self._img_compression_method))
 
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
 
-        """ For image formats with two or multiple image files, it will be better to put them under a directory """
+        # For image formats with two or multiple image files, it will be
+        # better to put them under a directory
         if self.image_format in ("raw", "vmdk", "vdi", "nand", "mrstnand"):
-            destdir = os.path.join(destdir, "%s-%s" % (self.name, self.image_format))
+            destdir = os.path.join(destdir, "%s-%s" \
+                                            % (self.name, self.image_format))
             msger.debug("creating destination dir: %s" % destdir)
             fs.makedirs(destdir)
 
@@ -1075,7 +1114,10 @@ class BaseImageCreator(object):
 
             for file in self.outimage:
                 msger.info("adding %s to %s" % (file, dst))
-                tar.add(file, arcname=os.path.join("%s-%s" % (self.name, image_format), os.path.basename(file)))
+                tar.add(file,
+                        arcname=os.path.join("%s-%s" \
+                                           % (self.name, image_format),
+                                              os.path.basename(file)))
                 if os.path.isdir(file):
                     shutil.rmtree(file, ignore_errors = True)
                 else:
@@ -1126,7 +1168,8 @@ class BaseImageCreator(object):
 
                     rc, md5sum = runner.runtool(["/usr/bin/md5sum", "-b", _rpath(f)])
                     if rc != 0:
-                        msger.warning("Failed to generate md5sum for file %s" % _rpath(f))
+                        msger.warning("Failed to generate md5sum for file %s" \
+                                      % _rpath(f))
                     else:
                         md5sum = md5sum.lstrip().split()[0]
                         wf.write(md5sum+" "+ f +"\n")

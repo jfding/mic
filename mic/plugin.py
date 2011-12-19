@@ -51,7 +51,8 @@ class PluginMgr(object):
         path = os.path.abspath(os.path.expanduser(path))
 
         if not os.path.isdir(path):
-            msger.warning("Plugin dir is not a directory or does not exist: %s" % path)
+            msger.warning("Plugin dir is not a directory or does not exist: %s"\
+                          % path)
             return
 
         if path not in self.plugin_dirs:
@@ -72,19 +73,22 @@ class PluginMgr(object):
                         try:
                             pymod = __import__(mod)
                             self.plugin_dirs[pdir] = True
-                            msger.debug("Plugin module %s:%s imported" % (mod, pymod.__file__))
+                            msger.debug("Plugin module %s:%s imported"\
+                                        % (mod, pymod.__file__))
                         except ImportError, e:
-                            msger.warning('%s, skip plugin %s/%s' %(str(e), os.path.basename(pdir), mod))
+                            msger.warning('%s, skip plugin %s/%s'\
+                                          %(str(e), os.path.basename(pdir), mod))
 
             del(sys.path[0])
 
     def get_plugins(self, ptype):
         """ the return value is dict of name:class pairs """
-        if ptype in PLUGIN_TYPES:
-            self._add_plugindir(os.path.join(DEFAULT_PLUGIN_LOCATION, ptype))
-            self._load_all()
-        else:
+
+        if ptype not in PLUGIN_TYPES:
             raise errors.CreatorError('%s is not valid plugin type' % ptype)
+
+        self._add_plugindir(os.path.join(DEFAULT_PLUGIN_LOCATION, ptype))
+        self._load_all()
 
         return pluginbase.get_plugins(ptype)
 

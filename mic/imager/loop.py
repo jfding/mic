@@ -54,8 +54,10 @@ class LoopImageCreator(BaseImageCreator):
 
         self.__blocksize = 4096
         if self.ks:
-            self.__fstype = kickstart.get_image_fstype(self.ks, "ext3")
-            self.__fsopts = kickstart.get_image_fsopts(self.ks, "defaults,noatime")
+            self.__fstype = kickstart.get_image_fstype(self.ks,
+                                                       "ext3")
+            self.__fsopts = kickstart.get_image_fsopts(self.ks,
+                                                       "defaults,noatime")
 
             allloops = []
             for part in sorted(kickstart.get_partitions(self.ks),
@@ -72,7 +74,8 @@ class LoopImageCreator(BaseImageCreator):
                 else:
                     mp = mp.rstrip('/')
                     if not label:
-                        msger.warning('no "label" specified for loop img at %s, use the mountpoint as the name' % mp)
+                        msger.warning('no "label" specified for loop img at %s,'
+                                      ' use the mountpoint as the name' % mp)
                         label = mp.split('/')[-1]
 
                 imgname = misc.strip_end(label,'.img') + '.img'
@@ -94,7 +97,8 @@ class LoopImageCreator(BaseImageCreator):
         self.__imgdir = None
 
         if self.ks:
-            self.__image_size = kickstart.get_image_size(self.ks, 4096L * 1024 * 1024)
+            self.__image_size = kickstart.get_image_size(self.ks,
+                                                         4096L * 1024 * 1024)
         else:
             self.__image_size = 0
 
@@ -196,18 +200,18 @@ class LoopImageCreator(BaseImageCreator):
     def _resparse(self, size = None):
         """Rebuild the filesystem image to be as sparse as possible.
 
-            This method should be used by subclasses when staging the final image
-            in order to reduce the actual space taken up by the sparse image file
-            to be as little as possible.
+        This method should be used by subclasses when staging the final image
+        in order to reduce the actual space taken up by the sparse image file
+        to be as little as possible.
 
-            This is done by resizing the filesystem to the minimal size (thereby
-            eliminating any space taken up by deleted files) and then resizing it
-            back to the supplied size.
+        This is done by resizing the filesystem to the minimal size (thereby
+        eliminating any space taken up by deleted files) and then resizing it
+        back to the supplied size.
 
-            size -- the size in, in bytes, which the filesystem image should be
-                    resized to after it has been minimized; this defaults to None,
-                    causing the original size specified by the kickstart file to
-                    be used (or 4GiB if not specified in the kickstart).
+        size -- the size in, in bytes, which the filesystem image should be
+                resized to after it has been minimized; this defaults to None,
+                causing the original size specified by the kickstart file to
+                be used (or 4GiB if not specified in the kickstart).
         """
         minsize = 0
         for item in self._instloops:
@@ -264,7 +268,9 @@ class LoopImageCreator(BaseImageCreator):
             else:
                 msger.error('Cannot support fstype: %s' % fstype)
 
-            loop['loop'] = MyDiskMount(fs.SparseLoopbackDisk(os.path.join(self.__imgdir, imgname), size),
+            loop['loop'] = MyDiskMount(fs.SparseLoopbackDisk(
+                                           os.path.join(self.__imgdir, imgname),
+                                           size),
                                        mp,
                                        fstype,
                                        self._blocksize,
@@ -297,7 +303,9 @@ class LoopImageCreator(BaseImageCreator):
             tar = tarfile.open(os.path.join(self._outdir, tarfile_name), 'w')
             for item in self._instloops:
                 if item['fstype'] == "ext4":
-                    runner.show('/sbin/tune2fs -O ^huge_file,extents,uninit_bg ' + item['name'])
+                    runner.show('/sbin/tune2fs '
+                                '-O ^huge_file,extents,uninit_bg %s ' \
+                                % item['name'])
                 tar.add(item['name'])
 
             tar.close()
@@ -306,4 +314,5 @@ class LoopImageCreator(BaseImageCreator):
         else:
             self._resparse()
             for item in self._instloops:
-                shutil.move(os.path.join(self.__imgdir, item['name']), os.path.join(self._outdir, item['name']))
+                shutil.move(os.path.join(self.__imgdir, item['name']),
+                            os.path.join(self._outdir, item['name']))

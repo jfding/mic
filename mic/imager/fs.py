@@ -33,7 +33,11 @@ class FsImageCreator(BaseImageCreator):
 
     def package(self, destdir = "."):
 
-        ignores = ["/dev/fd", "/dev/stdin", "/dev/stdout", "/dev/stderr", "/etc/mtab"]
+        ignores = ["/dev/fd",
+                   "/dev/stdin",
+                   "/dev/stdout",
+                   "/dev/stderr",
+                   "/etc/mtab"]
 
         if not os.path.exists(destdir):
             os.makedirs(destdir)
@@ -55,10 +59,16 @@ class FsImageCreator(BaseImageCreator):
 
         elif self._img_compression_method == "tar.bz2":
             dst = "%s/%s.tar.bz2" % (destdir, self.name)
-            msger.info("Creating %s (compressing %s with %s). Please wait..." % (dst, self._instroot, self._img_compression_method))
+            msger.info("Creating %s (compressing %s with %s). Please wait..." \
+                       % (dst, self._instroot, self._img_compression_method))
 
             tar = find_binary_path('tar')
-            tar_cmdline = [tar, "--numeric-owner", "--preserve-permissions", "--preserve-order", "--one-file-system", "--directory", self._instroot]
+            tar_cmdline = [tar, "--numeric-owner",
+                                "--preserve-permissions",
+                                "--preserve-order",
+                                "--one-file-system",
+                                "--directory",
+                                self._instroot]
             for ignore_entry in ignores:
                 if ignore_entry.startswith('/'):
                     ignore_entry = ignore_entry[1:]
@@ -69,9 +79,11 @@ class FsImageCreator(BaseImageCreator):
 
             rc = call(tar_cmdline)
             if rc:
-                raise CreatorError("Failed compress image with tar.bz2. Cmdline: %s" % (" ".join(tar_cmdline)))
+                raise CreatorError("Failed compress image with tar.bz2. "
+                                   "Cmdline: %s" % (" ".join(tar_cmdline)))
 
             self.outimage.append(dst)
 
         else:
-            raise CreatorError("Compression method '%s' not supported for 'fs' image format." % (self._img_compression_method))
+            raise CreatorError("Compression method '%s' not supported for 'fs' "
+                               "image format." % (self._img_compression_method))

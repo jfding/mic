@@ -114,10 +114,10 @@ class ConfigMgr(object):
                 getattr(self, section).update(dict(parser.items(section)))
 
     def _selinux_check(self, arch, ks):
-        """
-        If a user needs to use btrfs or creates ARM image,
+        """If a user needs to use btrfs or creates ARM image,
         selinux must be disabled at start.
         """
+
         for path in ["/usr/sbin/getenforce",
                      "/usr/bin/getenforce",
                      "/sbin/getenforce",
@@ -129,7 +129,7 @@ class ConfigMgr(object):
                 selinux_status = runner.outs([path])
                 if arch and arch.startswith("arm") \
                         and selinux_status == "Enforcing":
-                    raise errors.ConfigError("Can't create arm image if "\
+                    raise errors.ConfigError("Can't create arm image if "
                           "selinux is enabled, please disable it and try again")
 
                 use_btrfs = False
@@ -139,9 +139,9 @@ class ConfigMgr(object):
                         break
 
                 if use_btrfs and selinux_status == "Enforcing":
-                    raise errors.ConfigError("Can't create image using btrfs "\
-                                          "filesystem if selinux is enabled, "\
-                                          "please disable it and try again")
+                    raise errors.ConfigError("Can't create image using btrfs "
+                                           "filesystem if selinux is enabled, "
+                                           "please disable it and try again.")
                 break
 
     def _parse_kickstart(self, ksconf=None):
@@ -161,22 +161,23 @@ class ConfigMgr(object):
 
         msger.info("Retrieving repo metadata:")
         ksrepos = misc.get_repostrs_from_ks(ks)
-        self.create['repomd'] = misc.get_metadata_from_repos(ksrepos,
-                                                        self.create['cachedir'])
+        self.create['repomd'] = misc.get_metadata_from_repos(
+                                                    ksrepos,
+                                                    self.create['cachedir'])
         msger.raw(" DONE")
 
         target_archlist, archlist = misc.get_arch(self.create['repomd'])
         if self.create['arch']:
             if self.create['arch'] not in archlist:
-                raise errors.ConfigError("Invalid arch %s for repository. "\
-                          "Valid arches: %s" % (self.create['arch'],
-                                                ', '.join(archlist)))
+                raise errors.ConfigError("Invalid arch %s for repository. "
+                                  "Valid arches: %s" \
+                                  % (self.create['arch'], ', '.join(archlist)))
         else:
             if len(target_archlist) == 1:
                 self.create['arch'] = str(target_archlist[0])
                 msger.info("\nUse detected arch %s." % target_archlist[0])
             else:
-                raise errors.ConfigError("Please specify a valid arch, "\
+                raise errors.ConfigError("Please specify a valid arch, "
                                          "your choise can be: %s" \
                                          % ', '.join(archlist))
 

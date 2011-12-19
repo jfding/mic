@@ -50,19 +50,48 @@ class Creator(cmdln.Cmdln):
 
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self)
-        optparser.add_option('-d', '--debug', action='store_true', dest='debug', help=SUPPRESS_HELP)
-        optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help=SUPPRESS_HELP)
-        optparser.add_option('', '--logfile', type='string', dest='logfile', default=None, help='Path of logfile')
-        optparser.add_option('-c', '--config', type='string', dest='config', default=None, help='Specify config file for mic')
-        optparser.add_option('-k', '--cachedir', type='string', action='store', dest='cachedir', default=None, help='Cache directory to store the downloaded')
-        optparser.add_option('-o', '--outdir', type='string', action='store', dest='outdir', default=None, help='Output directory')
-        optparser.add_option('-A', '--arch', type='string', dest='arch', default=None, help='Specify repo architecture')
-        optparser.add_option('', '--release', type='string', dest='release', default=None, metavar='RID', help='Generate a release of RID with all necessary files, when @BUILD_ID@ is contained in kickstart file, it will be replaced by RID')
-        optparser.add_option("", "--record-pkgs", type="string", dest="record_pkgs", default=None,
-                             help='Record the info of installed packages, multiple values can be specified which joined by ",", valid values: "name", "content", "license"')
-        optparser.add_option('', '--pkgmgr', type='string', dest='pkgmgr', default=None, help='Specify backend package manager')
-        optparser.add_option('', '--local-pkgs-path', type='string', dest='local_pkgs_path', default=None, help='Path for local pkgs(rpms) to be installed')
-        optparser.add_option('', '--compress-disk-image', type='string', dest='compress_disk_image', default=None, help='Sets the disk image compression. NOTE: The available values might depend on the used filesystem type.')
+        optparser.add_option('-d', '--debug', action='store_true', dest='debug',
+                             help=SUPPRESS_HELP)
+        optparser.add_option('-v', '--verbose', action='store_true',
+                             dest='verbose',
+                             help=SUPPRESS_HELP)
+        optparser.add_option('', '--logfile', type='string', dest='logfile',
+                             default=None,
+                             help='Path of logfile')
+        optparser.add_option('-c', '--config', type='string', dest='config',
+                             default=None,
+                             help='Specify config file for mic')
+        optparser.add_option('-k', '--cachedir', type='string', action='store',
+                             dest='cachedir', default=None,
+                             help='Cache directory to store the downloaded')
+        optparser.add_option('-o', '--outdir', type='string', action='store',
+                             dest='outdir', default=None,
+                             help='Output directory')
+        optparser.add_option('-A', '--arch', type='string', dest='arch',
+                             default=None,
+                             help='Specify repo architecture')
+        optparser.add_option('', '--release', type='string', dest='release',
+                             default=None, metavar='RID',
+                             help='Generate a release of RID with all necessary'
+                                  ' files, when @BUILD_ID@ is contained in '
+                                  'kickstart file, it will be replaced by RID')
+        optparser.add_option("", "--record-pkgs", type="string",
+                             dest="record_pkgs", default=None,
+                             help='Record the info of installed packages, '
+                                  'multiple values can be specified which '
+                                  'joined by ",", valid values: "name", '
+                                  '"content", "license"')
+        optparser.add_option('', '--pkgmgr', type='string', dest='pkgmgr',
+                             default=None,
+                             help='Specify backend package manager')
+        optparser.add_option('', '--local-pkgs-path', type='string',
+                             dest='local_pkgs_path', default=None,
+                             help='Path for local pkgs(rpms) to be installed')
+        optparser.add_option('', '--compress-disk-image', type='string',
+                             dest='compress_disk_image', default=None,
+                             help='Sets the disk image compression. NOTE: The '
+                                  'available values might depend on the used '
+                                  'filesystem type.')
         return optparser
 
     def preoptparse(self, argv):
@@ -133,7 +162,9 @@ class Creator(cmdln.Cmdln):
             configmgr.create['record_pkgs'] = []
             for infotype in self.options.record_pkgs.split(','):
                 if infotype not in ('name', 'content', 'license'):
-                    raise errors.Usage('Invalid pkg recording: %s, valid ones: "name", "content", "license"' % infotype)
+                    raise errors.Usage('Invalid pkg recording: %s, valid ones:'
+                                       ' "name", "content", "license"' \
+                                       % infotype)
 
                 configmgr.create['record_pkgs'].append(infotype)
 
@@ -144,13 +175,15 @@ class Creator(cmdln.Cmdln):
             else:
                 raise errors.Usage('Invalid architecture: "%s".\n'
                                    '  Supported architectures are: \n'
-                                   '  %s\n' % (self.options.arch, ', '.join(supported_arch)))
+                                   '  %s\n' % (self.options.arch,
+                                               ', '.join(supported_arch)))
 
         if self.options.pkgmgr is not None:
             configmgr.create['pkgmgr'] = self.options.pkgmgr
 
         if self.options.compress_disk_image is not None:
-            configmgr.create['compress_disk_image'] = self.options.compress_disk_image
+            configmgr.create['compress_disk_image'] = \
+                                                self.options.compress_disk_image
 
     def main(self, argv=None):
         if argv is None:
