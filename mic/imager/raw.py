@@ -119,9 +119,10 @@ class RawImageCreator(BaseImageCreator):
 
     def _get_parts(self):
         if not self.ks:
-            raise CreatorError("Failed to get partition info," \
-                               "please check your kickstart setting")
-        #Set a default partition if no partition is given out
+            raise CreatorError("Failed to get partition info, "
+                               "please check your kickstart setting.")
+
+        # Set a default partition if no partition is given out
         if not self.ks.handler.partition.partitions:
             partstr = "part / --size 1900 --ondisk sda --fstype=ext3"
             args = partstr.split()
@@ -129,10 +130,8 @@ class RawImageCreator(BaseImageCreator):
             if pd not in self.ks.handler.partition.partitions:
                 self.ks.handler.partition.partitions.append(pd)
 
-        #list of partitions from kickstart file
-        parts = kickstart.get_partitions(self.ks)
-
-        return parts
+        # partitions list from kickstart file
+        return kickstart.get_partitions(self.ks)
 
     def get_diskinfo(self):
 
@@ -163,8 +162,10 @@ class RawImageCreator(BaseImageCreator):
                     break
                 else:
                     found = False
+
             if not found:
                 self._diskinfo.append({ 'name': disk, 'size': size })
+
         return self._diskinfo
 
     #
@@ -421,9 +422,14 @@ class RawImageCreator(BaseImageCreator):
                 meter = progress.TextMeter()
                 meter.start(size=disk_size,
                             text="Generating disk signature for %s-%s.%s" \
-                                 % (self.name,name,self.__disk_format))
+                                 % (self.name,
+                                    name,
+                                    self.__disk_format))
                 xml += "    <disk file='%s-%s.%s' use='system' format='%s'>\n" \
-                       % (self.name,name, self.__disk_format, self.__disk_format)
+                       % (self.name,
+                          name,
+                          self.__disk_format,
+                          self.__disk_format)
 
                 try:
                     import hashlib
@@ -457,7 +463,10 @@ class RawImageCreator(BaseImageCreator):
         else:
             for name in self.__disks.keys():
                 xml += "    <disk file='%s-%s.%s' use='system' format='%s'/>\n"\
-                       %(self.name,name, self.__disk_format, self.__disk_format)
+                       %(self.name,
+                         name,
+                         self.__disk_format,
+                         self.__disk_format)
 
         xml += "  </storage>\n"
         xml += "</image>\n"

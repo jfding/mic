@@ -88,10 +88,10 @@ class Moblin_Repo(F8_Repo):
                       default=False)
         op.add_option("--proxy", type="string", action="store", dest="proxy",
                       default=None, nargs=1)
-        op.add_option("--proxyuser", type="string", action="store", dest="proxy_username",
-                      default=None, nargs=1)
-        op.add_option("--proxypasswd", type="string", action="store", dest="proxy_password",
-                      default=None, nargs=1)
+        op.add_option("--proxyuser", type="string", action="store",
+                      dest="proxy_username", default=None, nargs=1)
+        op.add_option("--proxypasswd", type="string", action="store",
+                      dest="proxy_password", default=None, nargs=1)
         op.add_option("--debuginfo", action="store_true", dest="debuginfo",
                       default=False)
         op.add_option("--source", action="store_true", dest="source",
@@ -100,8 +100,8 @@ class Moblin_Repo(F8_Repo):
                       default=False)
         op.add_option("--gpgkey", type="string", action="store", dest="gpgkey",
                       default=None, nargs=1)
-        op.add_option("--ssl_verify", type="string", action="store", dest="ssl_verify",
-                      default="yes")
+        op.add_option("--ssl_verify", type="string", action="store",
+                      dest="ssl_verify", default="yes")
         op.add_option("--priority", type="int", action="store", dest="priority",
                       default=None)
         return op

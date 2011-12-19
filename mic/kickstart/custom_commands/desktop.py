@@ -22,7 +22,12 @@ from pykickstart.errors import *
 from pykickstart.options import *
 
 class Moblin_Desktop(KickstartCommand):
-    def __init__(self, writePriority=0, defaultdesktop=None, defaultdm=None, autologinuser="meego", session=None):
+    def __init__(self, writePriority=0,
+                       defaultdesktop=None,
+                       defaultdm=None,
+                       autologinuser="meego",
+                       session=None):
+
         KickstartCommand.__init__(self, writePriority)
 
         self.__new_version = False
@@ -58,10 +63,22 @@ class Moblin_Desktop(KickstartCommand):
             op = KSOptionParser()
             self.__new_version = True
 
-        op.add_option("--defaultdesktop", dest="defaultdesktop", action="store", type="string", nargs=1)
-        op.add_option("--autologinuser", dest="autologinuser", action="store", type="string", nargs=1)
-        op.add_option("--defaultdm", dest="defaultdm", action="store", type="string", nargs=1)
-        op.add_option("--session", dest="session", action="store", type="string", nargs=1)
+        op.add_option("--defaultdesktop", dest="defaultdesktop",
+                                          action="store",
+                                          type="string",
+                                          nargs=1)
+        op.add_option("--autologinuser", dest="autologinuser",
+                                         action="store",
+                                         type="string",
+                                         nargs=1)
+        op.add_option("--defaultdm", dest="defaultdm",
+                                     action="store",
+                                     type="string",
+                                     nargs=1)
+        op.add_option("--session", dest="session",
+                                   action="store",
+                                   type="string",
+                                   nargs=1)
         return op
 
     def parse(self, args):
@@ -71,7 +88,8 @@ class Moblin_Desktop(KickstartCommand):
             (opts, extra) = self.op.parse_args(args=args)
 
         if extra:
-            mapping = {"command": "desktop", "options": extra}
-            raise KickstartValueError, formatErrorMsg(self.lineno, msg=_("Unexpected arguments to %(command)s command: %(options)s") % mapping)
+            m = _("Unexpected arguments to %(command)s command: %(options)s") \
+                  % {"command": "desktop", "options": extra}
+            raise KickstartValueError, formatErrorMsg(self.lineno, msg=m)
 
         self._setToSelf(self.op, opts)

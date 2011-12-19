@@ -177,7 +177,9 @@ class TimezoneConfig(KickstartConfig):
         try:
             shutil.copyfile(tz_source, tz_dest)
         except (IOError, OSError), (errno, msg):
-            raise errors.KickstartError("Error copying timezone info from '%s' to '%s': %s" %(tz_source, tz_dest, msg))
+            raise errors.KickstartError("Error copying timezone info from "
+                                        "'%s' to '%s': %s" \
+                                        % (tz_source, tz_dest, msg))
 
 
 class AuthConfig(KickstartConfig):
@@ -214,7 +216,8 @@ class RootPasswordConfig(KickstartConfig):
     def set_unencrypted(self, password):
         for p in ("/bin/echo", "/usr/sbin/chpasswd"):
             if not os.path.exists("%s/%s" %(self.instroot, p)):
-                raise errors.KsError("Unable to set unencrypted password due to lack of %s" % p)
+                raise errors.KsError("Unable to set unencrypted password due "
+                                     "to lack of %s" % p)
 
         p1 = subprocess.Popen(["/bin/echo", "root:%s" %password],
                               stdout = subprocess.PIPE,
@@ -243,7 +246,8 @@ class UserConfig(KickstartConfig):
     def set_unencrypted_passwd(self, user, password):
         for p in ("/bin/echo", "/usr/sbin/chpasswd"):
             if not os.path.exists("%s/%s" %(self.instroot, p)):
-                raise errors.KsError("Unable to set unencrypted password due to lack of %s" % p)
+                raise errors.KsError("Unable to set unencrypted password due "
+                                     "to lack of %s" % p)
 
         p1 = subprocess.Popen(["/bin/echo", "%s:%s" %(user, password)],
                               stdout = subprocess.PIPE,
@@ -268,13 +272,16 @@ class UserConfig(KickstartConfig):
             os.close(dev_null)
             if userconfig.password not in (None, ""):
                 if userconfig.isCrypted:
-                    self.set_encrypted_passwd(userconfig.name, userconfig.password)
+                    self.set_encrypted_passwd(userconfig.name,
+                                              userconfig.password)
                 else:
-                    self.set_unencrypted_passwd(userconfig.name, userconfig.password)
+                    self.set_unencrypted_passwd(userconfig.name,
+                                                userconfig.password)
             else:
                 self.set_empty_passwd(userconfig.name)
         else:
-            raise errors.KsError("Invalid kickstart command: %s" % userconfig.__str__())
+            raise errors.KsError("Invalid kickstart command: %s" \
+                                 % userconfig.__str__())
 
     def apply(self, user):
         for userconfig in user.userList:
@@ -351,6 +358,7 @@ class MoblinRepoConfig(KickstartConfig):
                 baseurl = repo.baseurl
             if repo.mirrorlist:
                 mirrorlist = repo.mirrorlist
+
         elif type == "debuginfo":
             if repo.baseurl:
                 if repo.baseurl.endswith("/"):
@@ -358,17 +366,22 @@ class MoblinRepoConfig(KickstartConfig):
                 else:
                     baseurl = os.path.dirname(repo.baseurl)
                 baseurl += "/debug"
+
             if repo.mirrorlist:
                 variant = repo.mirrorlist[repo.mirrorlist.find("$"):]
                 mirrorlist = repo.mirrorlist[0:repo.mirrorlist.find("$")]
                 mirrorlist += "debug" + "-" + variant
+
         elif type == "source":
             if repo.baseurl:
                 if repo.baseurl.endswith("/"):
-                    baseurl = os.path.dirname(os.path.dirname(os.path.dirname(repo.baseurl)))
+                    baseurl = os.path.dirname(
+                                 os.path.dirname(
+                                    os.path.dirname(repo.baseurl)))
                 else:
                     baseurl = os.path.dirname(os.path.dirname(repo.baseurl))
                 baseurl += "/source"
+
             if repo.mirrorlist:
                 variant = repo.mirrorlist[repo.mirrorlist.find("$"):]
                 mirrorlist = repo.mirrorlist[0:repo.mirrorlist.find("$")]
@@ -418,7 +431,10 @@ class MoblinRepoConfig(KickstartConfig):
         if repodata:
             for repo in repodata:
                 if repo['repokey']:
-                    runner.quiet(['rpm', "--root=%s" % self.instroot, "--import", repo['repokey']])
+                    runner.quiet(['rpm',
+                                  "--root=%s" % self.instroot,
+                                  "--import",
+                                  repo['repokey']])
 
 class RPMMacroConfig(KickstartConfig):
     """A class to apply the specified rpm macros to the filesystem"""
@@ -780,17 +796,18 @@ def resolve_groups(creatoropts, repometadata):
     ks = creatoropts['ks']
 
     for repo in repometadata:
-        """ Mustn't replace group with package list if repo is ready for the corresponding package manager """
+        """ Mustn't replace group with package list if repo is ready for the
+            corresponding package manager.
+        """
+
         if iszypp and repo["patterns"]:
             continue
         if not iszypp and repo["comps"]:
             continue
 
-        """
-            But we also must handle such cases, use zypp but repo only has comps,
-            use yum but repo only has patterns, use zypp but use_comps is true,
-            use yum but use_comps is false.
-        """
+        # But we also must handle such cases, use zypp but repo only has comps,
+        # use yum but repo only has patterns, use zypp but use_comps is true,
+        # use yum but use_comps is false.
         groupfile = None
         if iszypp and repo["comps"]:
             groupfile = repo["comps"]
@@ -804,7 +821,9 @@ def resolve_groups(creatoropts, repometadata):
             while True:
                 if i >= len(ks.handler.packages.groupList):
                     break
-                pkglist = get_pkglist_handler(ks.handler.packages.groupList[i].name, groupfile)
+                pkglist = get_pkglist_handler(
+                                        ks.handler.packages.groupList[i].name,
+                                        groupfile)
                 if pkglist:
                     del ks.handler.packages.groupList[i]
                     for pkg in pkglist:
