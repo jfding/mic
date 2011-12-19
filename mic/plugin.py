@@ -18,6 +18,7 @@
 import os, sys
 import msger
 import pluginbase
+from mic.utils import errors
 
 __ALL__ = ['PluginMgr', 'pluginmgr']
 
@@ -37,10 +38,7 @@ class PluginMgr(object):
         return cls._instance
 
     def __init__(self):
-
-        # default plugin directory
-        for pt in PLUGIN_TYPES:
-            self._add_plugindir(os.path.join(DEFAULT_PLUGIN_LOCATION, pt))
+        pass
 
     def append_dirs(self, dirs):
         for path in dirs:
@@ -82,9 +80,11 @@ class PluginMgr(object):
 
     def get_plugins(self, ptype):
         """ the return value is dict of name:class pairs """
-
-        # good place to load all the plugins
-        self._load_all()
+        if ptype in PLUGIN_TYPES:
+            self._add_plugindir(os.path.join(DEFAULT_PLUGIN_LOCATION, ptype))
+            self._load_all()
+        else:
+            raise errors.CreatorError('%s is not valid plugin type' % ptype)
 
         return pluginbase.get_plugins(ptype)
 

@@ -122,6 +122,7 @@ class Creator(cmdln.Cmdln):
             configmgr.create['outdir'] = self.options.outdir
         if self.options.cachedir is not None:
             configmgr.create['cachedir'] = self.options.cachedir
+        os.environ['ZYPP_LOCKFILE_ROOT'] = configmgr.create['cachedir']
         if self.options.local_pkgs_path is not None:
             configmgr.create['local_pkgs_path'] = self.options.local_pkgs_path
 
