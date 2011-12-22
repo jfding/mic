@@ -22,6 +22,7 @@ import termios
 import rpm
 from mic import msger
 from .errors import CreatorError
+from .proxy import get_proxy_for
 import runner
 
 def myurlgrab(url, filename, proxies, progress_obj = None):
@@ -567,6 +568,9 @@ def checkRepositoryEULA(name, repo):
     proxy = repo.proxy
     proxy_username = repo.proxy_username
     proxy_password = repo.proxy_password
+
+    if not proxy:
+        proxy = get_proxy_for(repo.baseurl[0])
 
     handlers = []
     auth_handler = u2.HTTPBasicAuthHandler(u2.HTTPPasswordMgrWithDefaultRealm())
