@@ -20,7 +20,7 @@ import ConfigParser
 
 import msger
 import kickstart
-from .utils import misc, runner, errors
+from .utils import misc, runner, proxy, errors
 
 DEFAULT_GSITECONF = '/etc/mic/mic.conf'
 
@@ -43,6 +43,8 @@ class ConfigMgr(object):
                     "compress_disk_image": None,
                     "distro_name": "Default Distribution",
                     "name_prefix": None,
+                    "proxy": None,
+                    "no_proxy": None,
                 },
                 'chroot': {},
                 'convert': {},
@@ -112,6 +114,8 @@ class ConfigMgr(object):
         for section in parser.sections():
             if section in self.DEFAULTS.keys():
                 getattr(self, section).update(dict(parser.items(section)))
+
+        proxy.set_proxies(self.create['proxy'], self.create['no_proxy'])
 
     def _selinux_check(self, arch, ks):
         """If a user needs to use btrfs or creates ARM image,
