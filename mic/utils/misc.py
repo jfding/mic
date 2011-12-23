@@ -26,6 +26,11 @@ import hashlib
 import rpmmisc
 
 try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
+
+try:
     import sqlite3 as sqlite
 except ImportError:
     import sqlite
@@ -43,6 +48,16 @@ from proxy import get_proxy_for
 import runner
 
 from mic import msger
+
+def get_md5sum(fpath):
+    md5sum = md5()
+    with open(fpath, 'rb') as f:
+        while True:
+            data = f.read(1024)
+            if not data:
+                break
+            md5sum.update(data)
+    return md5sum.hexdigest()
 
 def save_ksconf_file(ksconf, release="latest", arch="ia32"):
     if not os.path.exists(ksconf):
