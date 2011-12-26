@@ -162,6 +162,7 @@ def _isnoproxy(url):
 def set_proxies(proxy = None, no_proxy = None):
     _set_proxies(proxy, no_proxy)
     _set_noproxy_list()
+    set_proxy_environ()
 
 def get_proxy_for(url):
     if url[0:4] == "file" or _isnoproxy(url):
