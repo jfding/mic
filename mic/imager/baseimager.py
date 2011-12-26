@@ -1009,18 +1009,10 @@ class BaseImageCreator(object):
         if not self._genchecksum:
             return
 
-        """ Generate md5sum if /usr/bin/md5sum is available """
-        if os.path.exists("/usr/bin/md5sum"):
-            (rc, md5sum) = runner.runtool(["/usr/bin/md5sum", "-b", image_name])
-            if rc != 0:
-                msger.warning("Can't generate md5sum for image %s" % image_name)
-            else:
-                pattern = re.compile("\*.*$")
-                md5sum = pattern.sub("*" + os.path.basename(image_name), md5sum)
-                fd = open(image_name + ".md5sum", "w")
-                fd.write(md5sum)
-                fd.close()
-                self.outimage.append(image_name+".md5sum")
+        md5sum = misc.get_md5sum(image_name)
+        with open(image_name + ".md5sum", "w") as f:
+            f.write("%s %s" % (md5sum, os.path.basename(image_name)))
+        self.outimage.append(image_name+".md5sum")
 
     def package(self, destdir = "."):
         """Prepares the created image for final delivery.
@@ -1160,22 +1152,16 @@ class BaseImageCreator(object):
 
         # generate MANIFEST
         with open(_rpath("MANIFEST"), "w") as wf:
-            if os.path.exists("/usr/bin/md5sum"):
-                for f in os.listdir(destdir):
-                    if f == "MANIFEST": continue
-                    if os.path.isdir(os.path.join(destdir,f)):
-                        continue
+            for f in os.listdir(destdir):
+                if f == "MANIFEST":
+                    continue
 
-                    rc, md5sum = runner.runtool(["/usr/bin/md5sum", "-b", _rpath(f)])
-                    if rc != 0:
-                        msger.warning("Failed to generate md5sum for file %s" \
-                                      % _rpath(f))
-                    else:
-                        md5sum = md5sum.lstrip().split()[0]
-                        wf.write(md5sum+" "+ f +"\n")
-            else:
-                msger.warning('no md5sum tool found, no checksum string in MANIFEST')
-                wf.writelines(os.listdir(destdir))
+                if os.path.isdir(os.path.join(destdir, f)):
+                    continue
+
+                md5sum = misc.get_md5sum(_rpath(f))
+                wf.write("%s %s\n" % (md5sum, f))
+
         outimages.append("%s/MANIFEST" % destdir)
 
         # Filter out the nonexist file
