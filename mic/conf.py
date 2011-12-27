@@ -25,7 +25,9 @@ from .utils import misc, runner, proxy, errors
 DEFAULT_GSITECONF = '/etc/mic/mic.conf'
 
 class ConfigMgr(object):
-    DEFAULTS = {'common': {},
+    DEFAULTS = {'common': {
+                    "distro_name": "Default Distribution",
+                },
                 'create': {
                     "tmpdir": '/var/tmp/mic',
                     "cachedir": '/var/tmp/mic/cache',
@@ -41,7 +43,6 @@ class ConfigMgr(object):
                     "logfile": None,
                     "record_pkgs": [],
                     "compress_disk_image": None,
-                    "distro_name": "Default Distribution",
                     "name_prefix": None,
                     "proxy": None,
                     "no_proxy": None,
@@ -110,6 +111,11 @@ class ConfigMgr(object):
 
         parser = ConfigParser.SafeConfigParser()
         parser.read(siteconf)
+
+        # append common section items to other sections
+        for section in self.DEFAULTS.keys():
+            if section != "common":
+                getattr(self, section).update(self.common)
 
         for section in parser.sections():
             if section in self.DEFAULTS.keys():
