@@ -1181,4 +1181,4 @@ class BaseImageCreator(object):
             self.outimage.append(kernelfilename)
 
     def get_pkg_manager(self):
-        return self.pkgmgr(creator = self)
+        return self.pkgmgr(target_arch = self.target_arch, instroot = self._instroot, cachedir = self.cachedir)

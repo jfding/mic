@@ -54,21 +54,21 @@ from mic.pluginbase import BackendPlugin
 class Yum(BackendPlugin, yum.YumBase):
     name = 'yum'
 
-    def __init__(self, creator = None):
-        if not isinstance(creator, BaseImageCreator):
-            raise CreatorError("Invalid argument: creator")
+    def __init__(self, target_arch, instroot, cachedir):
         yum.YumBase.__init__(self)
 
-        self.creator = creator
+        self.cachedir = cachedir
+        self.instroot  = instroot
+        self.target_arch = target_arch
 
-        if self.creator.target_arch:
-            if not rpmUtils.arch.arches.has_key(self.creator.target_arch):
+        if self.target_arch:
+            if not rpmUtils.arch.arches.has_key(self.target_arch):
                 rpmUtils.arch.arches["armv7hl"] = "noarch"
                 rpmUtils.arch.arches["armv7tnhl"] = "armv7nhl"
                 rpmUtils.arch.arches["armv7tnhl"] = "armv7thl"
                 rpmUtils.arch.arches["armv7thl"] = "armv7hl"
                 rpmUtils.arch.arches["armv7nhl"] = "armv7hl"
-            self.arch.setup_arch(self.creator.target_arch)
+            self.arch.setup_arch(self.target_arch)
 
         self.__pkgs_license = {}
         self.__pkgs_content = {}
@@ -323,7 +323,7 @@ class Yum(BackendPlugin, yum.YumBase):
             cb.filelog = False
 
             msger.warning('\nCaution, do NOT interrupt the installation, else mic cannot finish the cleanup.')
-            installlogfile = "%s/__catched_stderr.buf" % (self.creator._instroot)
+            installlogfile = "%s/__catched_stderr.buf" % (self.instroot)
             msger.enable_logstderr(installlogfile)
             ret = self.runTransaction(cb)
             self._cleanupRpmdbLocks(self.conf.installroot)

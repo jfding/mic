@@ -57,13 +57,13 @@ from mic.pluginbase import BackendPlugin
 class Zypp(BackendPlugin):
     name = 'zypp'
 
-    def __init__(self, creator = None):
-        if not isinstance(creator, BaseImageCreator):
-            raise CreatorError("Invalid argument: creator")
+    def __init__(self, target_arch, instroot, cachedir):
+        self.cachedir = cachedir
+        self.instroot  = instroot
+        self.target_arch = target_arch
 
         self.__pkgs_license = {}
         self.__pkgs_content = {}
-        self.creator = creator
         self.repos = []
         self.to_deselect = []
         self.localpkgs = {}
@@ -126,11 +126,7 @@ class Zypp(BackendPlugin):
         arch = None
         if len(sp) == 2:
             arch = sp[1]
-            if self.creator.target_arch == None:
-                # TODO, get the default_arch from conf or detected from global settings
-                sysarch = zypp.Arch('i686')
-            else:
-                sysarch = zypp.Arch(self.creator.target_arch)
+            sysarch = zypp.Arch(self.target_arch)
             if not zypp.Arch(arch).compatible_with (sysarch):
                 arch = None
                 name = ".".join(sp)
@@ -394,21 +390,21 @@ class Zypp(BackendPlugin):
             return
 
         """ Clean up repo metadata """
-        shutil.rmtree(self.creator.cachedir + "/etc", ignore_errors = True)
-        shutil.rmtree(self.creator.cachedir + "/solv", ignore_errors = True)
-        shutil.rmtree(self.creator.cachedir + "/raw", ignore_errors = True)
+        shutil.rmtree(self.cachedir + "/etc", ignore_errors = True)
+        shutil.rmtree(self.cachedir + "/solv", ignore_errors = True)
+        shutil.rmtree(self.cachedir + "/raw", ignore_errors = True)
 
         zypp.KeyRing.setDefaultAccept( zypp.KeyRing.ACCEPT_UNSIGNED_FILE
                                      | zypp.KeyRing.ACCEPT_VERIFICATION_FAILED
                                      | zypp.KeyRing.ACCEPT_UNKNOWNKEY
                                      | zypp.KeyRing.TRUST_KEY_TEMPORARILY
                                      )
-        self.repo_manager_options = zypp.RepoManagerOptions(zypp.Pathname(self.creator._instroot))
-        self.repo_manager_options.knownReposPath = zypp.Pathname(self.creator.cachedir + "/etc/zypp/repos.d")
-        self.repo_manager_options.repoCachePath = zypp.Pathname(self.creator.cachedir)
-        self.repo_manager_options.repoRawCachePath = zypp.Pathname(self.creator.cachedir + "/raw")
-        self.repo_manager_options.repoSolvCachePath = zypp.Pathname(self.creator.cachedir + "/solv")
-        self.repo_manager_options.repoPackagesCachePath = zypp.Pathname(self.creator.cachedir + "/packages")
+        self.repo_manager_options = zypp.RepoManagerOptions(zypp.Pathname(self.instroot))
+        self.repo_manager_options.knownReposPath = zypp.Pathname(self.cachedir + "/etc/zypp/repos.d")
+        self.repo_manager_options.repoCachePath = zypp.Pathname(self.cachedir)
+        self.repo_manager_options.repoRawCachePath = zypp.Pathname(self.cachedir + "/raw")
+        self.repo_manager_options.repoSolvCachePath = zypp.Pathname(self.cachedir + "/solv")
+        self.repo_manager_options.repoPackagesCachePath = zypp.Pathname(self.cachedir + "/packages")
 
         self.repo_manager = zypp.RepoManager(self.repo_manager_options)
 
@@ -425,8 +421,8 @@ class Zypp(BackendPlugin):
         zconfig = zypp.ZConfig_instance()
 
         """ Set system architecture """
-        if self.creator.target_arch:
-            zconfig.setSystemArchitecture(zypp.Arch(self.creator.target_arch))
+        if self.target_arch:
+            zconfig.setSystemArchitecture(zypp.Arch(self.target_arch))
 
         msger.info("zypp architecture is <%s>" % zconfig.systemArchitecture())
 
@@ -439,7 +435,7 @@ class Zypp(BackendPlugin):
             self.repo_manager.loadFromCache(repo)
 
         self.Z = zypp.ZYppFactory_instance().getZYpp()
-        self.Z.initializeTarget(zypp.Pathname(self.creator._instroot))
+        self.Z.initializeTarget(zypp.Pathname(self.instroot))
         self.Z.target().load()
 
 
@@ -460,7 +456,7 @@ class Zypp(BackendPlugin):
     def installLocal(self, pkg, po=None, updateonly=False):
         if not self.ts:
             self.__initialize_transaction()
-        solvfile = "%s/.solv" % (self.creator.cachedir)
+        solvfile = "%s/.solv" % (self.cachedir)
         rc, out = runner.runtool([fs_related.find_binary_path("rpms2solv"), pkg])
         if rc == 0:
             f = open(solvfile, "w+")
@@ -474,11 +470,7 @@ class Zypp(BackendPlugin):
             msger.warning('Can not get %s solv data.' % pkg)
         hdr = rpmmisc.readRpmHeader(self.ts, pkg)
         arch = zypp.Arch(hdr['arch'])
-        if self.creator.target_arch == None:
-            # TODO, get the default_arch from conf or detected from global settings
-            sysarch = zypp.Arch('i686')
-        else:
-            sysarch = zypp.Arch(self.creator.target_arch)
+        sysarch = zypp.Arch(self.target_arch)
         if arch.compatible_with (sysarch):
             pkgname = hdr['name']
             self.localpkgs[pkgname] = pkg
@@ -554,7 +546,7 @@ class Zypp(BackendPlugin):
         if not unresolved_dependencies:
             self.ts.order()
             cb = rpmmisc.RPMInstallCallback(self.ts)
-            installlogfile = "%s/__catched_stderr.buf" % (self.creator._instroot)
+            installlogfile = "%s/__catched_stderr.buf" % (self.instroot)
             msger.enable_logstderr(installlogfile)
             errors = self.ts.run(cb.callback, '')
             if errors is None:
@@ -590,7 +582,7 @@ class Zypp(BackendPlugin):
 
     def __initialize_transaction(self):
         if not self.ts:
-            self.ts = rpm.TransactionSet(self.creator._instroot)
+            self.ts = rpm.TransactionSet(self.instroot)
             # Set to not verify DSA signatures.
             self.ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES|rpm._RPMVSF_NODIGESTS)
 
