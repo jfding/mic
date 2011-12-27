@@ -42,6 +42,7 @@ class ConfigMgr(object):
                     "release": None,
                     "logfile": None,
                     "record_pkgs": [],
+                    "rpmver": None,
                     "compress_disk_image": None,
                     "name_prefix": None,
                     "proxy": None,
@@ -175,6 +176,8 @@ class ConfigMgr(object):
                                                     ksrepos,
                                                     self.create['cachedir'])
         msger.raw(" DONE")
+
+        self.create['rpmver'] = misc.get_rpmver_in_repo(self.create['repomd'])
 
         target_archlist, archlist = misc.get_arch(self.create['repomd'])
         if self.create['arch']:

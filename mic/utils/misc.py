@@ -360,6 +360,35 @@ def get_metadata_from_repos(repostrs, cachedir):
 
     return my_repo_metadata
 
+def get_rpmver_in_repo(repometadata):
+    for repo in repometadata:
+        if repo["primary"].endswith(".xml"):
+            root = xmlparse(repo["primary"])
+            ns = root.getroot().tag
+            ns = ns[0:ns.rindex("}")+1]
+
+            versionlist = []
+            for elm in root.getiterator("%spackage" % ns):
+                if elm.find("%sname" % ns).text == 'rpm':
+                    for node in elm.getchildren():
+                        if node.tag == "%sversion" % ns:
+                            versionlist.append(node.attrib['ver'])
+
+            if versionlist:
+                return reversed(
+                         sorted(
+                           versionlist,
+                           key = lambda ver: map(int, ver.split('.')))).next()
+
+        elif repo["primary"].endswith(".sqlite"):
+            con = sqlite.connect(repo["primary"])
+            for row in con.execute("select version from packages where "
+                                   "name=\"rpm\" ORDER by version DESC"):
+                con.close()
+                return row[0]
+
+    return None
+
 def get_arch(repometadata):
     archlist = []
     for repo in repometadata:
