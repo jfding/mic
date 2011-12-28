@@ -38,8 +38,12 @@ class MicCmd(cmdln.Cmdln):
 
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self, version=self.version)
-        optparser.add_option('-d', '--debug', action='store_true', dest='debug', help='print debug message')
-        optparser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='verbose information')
+        optparser.add_option('-d', '--debug', action='store_true',
+                             dest='debug',
+                             help='print debug message')
+        optparser.add_option('-v', '--verbose', action='store_true',
+                             dest='verbose',
+                             help='verbose information')
         return optparser
 
     def postoptparse(self):
@@ -102,7 +106,8 @@ class MicCmd(cmdln.Cmdln):
             raise errors.Usage("Extra argument given")
 
         if not os.path.exists(srcimg):
-            raise errors.CreatorError("Failed to find the image: %s" % srcimg)
+            raise errors.CreatorError("Cannot find the image: %s" % srcimg)
+
         self._root_confirm()
 
         srcformat = misc.get_image_type(srcimg)
@@ -118,7 +123,8 @@ class MicCmd(cmdln.Cmdln):
                destimager = icls
 
         if (srcimager and destimager) is None:
-           raise errors.CreatorError("Can't convert from %s to %s" %(srcformat, destformat))
+           raise errors.CreatorError("Can't convert from %s to %s" \
+                                     % (srcformat, destformat))
         else:
             base_on = srcimager.do_unpack(srcimg)
             destimager.do_pack(base_on)
@@ -146,8 +152,9 @@ class MicCmd(cmdln.Cmdln):
             raise errors.Usage("Extra argument given")
 
         if not os.path.exists(targetimage):
-            raise errors.CreatorError("Failed to find the image: %s" 
+            raise errors.CreatorError("Cannot find the image: %s"
                                       % targetimage)
+
         self._root_confirm()
 
         imagetype = misc.get_image_type(targetimage)
@@ -161,7 +168,8 @@ class MicCmd(cmdln.Cmdln):
                 break
 
         if not chrootclass:
-            raise errors.CreatorError("Cannot support image type: %s" % imagetype)
+            raise errors.CreatorError("Cannot support image type: %s" \
+                                      % imagetype)
 
         chrootclass.do_chroot(targetimage)
 
