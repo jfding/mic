@@ -101,6 +101,8 @@ class MicCmd(cmdln.Cmdln):
         else:
             raise errors.Usage("Extra argument given")
 
+        if not os.path.exists(srcimg):
+            raise errors.CreatorError("Failed to find the image: %s" % srcimg)
         self._root_confirm()
 
         srcformat = misc.get_image_type(srcimg)
@@ -143,6 +145,9 @@ class MicCmd(cmdln.Cmdln):
         else:
             raise errors.Usage("Extra argument given")
 
+        if not os.path.exists(targetimage):
+            raise errors.CreatorError("Failed to find the image: %s" 
+                                      % targetimage)
         self._root_confirm()
 
         imagetype = misc.get_image_type(targetimage)
