@@ -50,10 +50,12 @@ import runner
 from mic import msger
 
 def get_md5sum(fpath):
+    blksize = 65536 # should be optimized enough
+
     md5sum = md5()
     with open(fpath, 'rb') as f:
         while True:
-            data = f.read(1024)
+            data = f.read(blksize)
             if not data:
                 break
             md5sum.update(data)
