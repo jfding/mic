@@ -113,7 +113,62 @@ class LoopPlugin(ImagerPlugin):
         return 0
 
     @classmethod
+    def do_chroot_tar(cls, target):
+        import tarfile
+
+        tar = tarfile.open(target, 'r')
+        tmpdir = misc.mkdtemp()
+        tar.extractall(path=tmpdir)
+        tar.close()
+
+        loops = []
+        mntdir = misc.mkdtemp()
+        with open(os.path.join(tmpdir, '.mountpoints'), 'r') as f:
+            for line in f.readlines():
+                try:
+                    mp, label, name, size, fstype = line.strip('\n').split(':')
+                except:
+                    msger.error("Wrong format image tarball: %s" % target)
+
+                if fstype in ("ext2", "ext3", "ext4"):
+                    myDiskMount = fs_related.ExtDiskMount
+                elif fstype == "btrfs":
+                    myDiskMount = fs_related.BtrfsDiskMount
+                elif fstype in ("vfat", "msdos"):
+                    myDiskMount = fs_related.VfatDiskMount
+                else:
+                    msger.error("Cannot support fstype: %s" % fstype)
+
+                name = os.path.join(tmpdir, name)
+                size = int(size) * 1024L * 1024L
+                loop = myDiskMount(fs_related.SparseLoopbackDisk(name, size),
+                                   os.path.join(mntdir, mp.lstrip('/')),
+                                   fstype, size, label)
+                loops.append(loop)
+
+                try:
+                    msger.verbose("Mount %s to %s" % (mp, mntdir + mp))
+                    fs_related.makedirs(os.path.join(mntdir, mp.lstrip('/')))
+                    loop.mount()
+                except:
+                    loop.cleanup()
+                    shutil.rmtree(mntdir, ignore_errors = True)
+                    raise
+        try:
+            chroot.chroot(mntdir, None, "/bin/env HOME=/root /bin/bash")
+        except:
+            raise errors.CreatorError("Failed to chroot to %s." % target)
+        finally:
+            for loop in reversed(loops):
+                chroot.cleanup_after_chroot("img", loop, None, mntdir)
+            shutil.rmtree(tmpdir, ignore_errors = True)
+
+    @classmethod
     def do_chroot(cls, target):#chroot.py parse opts&args
+        import tarfile
+        if tarfile.is_tarfile(target):
+            LoopPlugin.do_chroot_tar(target)
+            return
         img = target
         imgsize = misc.get_file_size(img) * 1024L * 1024L
         imgtype = misc.get_image_type(img)

@@ -308,6 +308,10 @@ class LoopImageCreator(BaseImageCreator):
                                 % item['name'])
                 tar.add(item['name'])
 
+            # append mount map file to tar ball
+            mountmap = misc.write_mount_point(self._instloops)
+            tar.add(mountmap)
+
             tar.close()
             os.chdir(curdir)
 
