@@ -112,14 +112,14 @@ class ConfigMgr(object):
         parser = ConfigParser.SafeConfigParser()
         parser.read(siteconf)
 
+        for section in parser.sections():
+            if section in self.DEFAULTS:
+                getattr(self, section).update(dict(parser.items(section)))
+
         # append common section items to other sections
         for section in self.DEFAULTS.keys():
             if section != "common":
                 getattr(self, section).update(self.common)
-
-        for section in parser.sections():
-            if section in self.DEFAULTS.keys():
-                getattr(self, section).update(dict(parser.items(section)))
 
         proxy.set_proxies(self.create['proxy'], self.create['no_proxy'])
 

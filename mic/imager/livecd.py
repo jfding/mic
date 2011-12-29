@@ -495,6 +495,7 @@ menu color cmdline 0 #ffffffff #00000000
                 long = "Boot %s(%s)" % (self.name, kernel[7:])
             else:
                 long = "Boot %s(%s)" % (self.name, kernel)
+
             oldmenus["verify"]["long"] = "%s %s" % (oldmenus["verify"]["long"],
                                                     long)
 
