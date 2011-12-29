@@ -63,6 +63,14 @@ class BaseImageCreator(object):
         self.__builddir = None
         self.__bindmounts = []
 
+        self.ks = None
+        self.name = "target"
+        self.tmpdir = "/var/tmp/mic"
+        self.cachedir = "/var/tmp/mic/cache"
+        self.destdir = "."
+        self.target_arch = "noarch"
+        self._local_pkgs_path = None
+
         # Eeach image type can change these values as they might be image type
         # specific
         if not hasattr(self, "_valid_compression_methods"):
@@ -72,45 +80,36 @@ class BaseImageCreator(object):
         self._img_compression_method = None
 
         if createopts:
-            # A pykickstart.KickstartParser instance."""
-            self.ks = createopts['ks']
+            optmap = {"pkgmgr" : "pkgmgr_name",
+                      "outdir" : "destdir",
+                      "arch" : "target_arch",
+                      "local_pkgs_path" : "_local_pkgs_path",
+                      "compress_disk_image" : "_img_compression_method",
+                     }
+    
+            # update setting from createopts
+            for key in createopts.keys():
+                if key in optmap:
+                    option = optmap[key]
+                else:
+                    option = key
+                setattr(self, option, createopts[key])
 
-            self.destdir = os.path.abspath(os.path.expanduser(createopts["outdir"]))
+            self.destdir = os.path.abspath(os.path.expanduser(self.destdir))
 
-            # A name for the image."""
-            self.name = createopts['name']
-            if createopts['release']:
+            if 'release' in createopts and createopts['release']:
                 self.name += '-' + createopts['release']
 
-                # check whether destine dir exist
                 if os.path.exists(self.destdir):
-                    if msger.ask('Image dir: %s already exists, '
-                                 'cleanup and continue?' % self.destdir):
+                    if msger.ask("Image dir: %s already exists, cleanup and" \
+                                 "continue?" % self.destdir):
                         shutil.rmtree(self.destdir, ignore_errors = True)
                     else:
-                        raise Abort('Canceled')
+                        raise Abort("Canceled")
 
-                # pending FEA: save log by default for --release
-
-            # The directory in which all temporary files will be created."""
-            self.tmpdir = createopts['tmpdir']
-            self.cachedir = createopts['cachedir']
-            self.target_arch = createopts['arch']
-            self._local_pkgs_path = createopts['local_pkgs_path']
-            self._img_compression_method = createopts['compress_disk_image']
-
-        else:
-            self.ks = None
-            self.name = "target"
-            self.tmpdir = "/var/tmp/mic"
-            self.cachedir = "/var/tmp/mic/cache"
-            self.destdir = "."
-            self.target_arch = "noarch"
-            self._local_pkgs_path = None
+                    # pending FEA: save log by default for --release
 
         self._dep_checks = ["ls", "bash", "cp", "echo", "modprobe", "passwd"]
-
-        self.distro_name = createopts['distro_name']
 
         # Output image file names
         self.outimage = []

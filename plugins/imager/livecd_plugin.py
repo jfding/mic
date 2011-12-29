@@ -171,7 +171,8 @@ class LiveCDPlugin(ImagerPlugin):
             except OSError, (err, msg):
                raise errors.CreatorError("Failed to run post cleanups: %s" % msg)
 
-        convertor = livecd.LiveCDImageCreator()
+        convertoropts = configmgr.convert
+        convertor = livecd.LiveCDImageCreator(convertoropts)
         convertor.name = os.path.splitext(os.path.basename(base_on))[0]
         imgtype = misc.get_image_type(base_on)
         if imgtype == "btrfsimg":

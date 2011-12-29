@@ -174,7 +174,8 @@ class LiveUSBPlugin(ImagerPlugin):
             except OSError, (err, msg):
                raise errors.CreatorError("Failed to run post cleanups: %s" % msg)
 
-        convertor = liveusb.LiveUSBImageCreator()
+        convertoropts = configmgr.convert
+        convertor = liveusb.LiveUSBImageCreator(convertoropts)
         convertor.name = os.path.splitext(os.path.basename(base_on))[0]
         imgtype = misc.get_image_type(base_on)
         if imgtype == "btrfsimg":
