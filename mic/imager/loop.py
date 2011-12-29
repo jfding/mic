@@ -27,6 +27,35 @@ from baseimager import BaseImageCreator
 FSLABEL_MAXLEN = 32
 """The maximum string length supported for LoopImageCreator.fslabel."""
 
+def save_mountpoints(dpath, loops):
+    """Save mount points mapping to file
+    :loops, list of tuple (mp, label, name, size, fstype)
+    """
+
+    if not loops:
+        return None
+
+    fname = ".mountpoints"
+    fp = os.path.join(dpath, fname)
+
+    with open(fp, 'w') as wf:
+        for loop in loops:
+            wf.write(':'.join(map(str, loop)) + '\n')
+
+    return fname
+
+def load_mountpoints(dpath):
+    """Load mount points mapping from file
+    """
+    mps = []
+    with open(os.path.join(dpath, '.mountpoints')) as f:
+        for line in f.readlines():
+            try:
+                mps.append(tuple(line.strip().split(':')))
+            except:
+                msger.warning("wrong format line in mountpoints mapping file")
+    return mps
+
 class LoopImageCreator(BaseImageCreator):
     """Installs a system into a loopback-mountable filesystem image.
 
@@ -308,9 +337,15 @@ class LoopImageCreator(BaseImageCreator):
                                 % item['name'])
                 tar.add(item['name'])
 
-            # append mount map file to tar ball
-            mountmap = misc.write_mount_point(self._instloops)
-            tar.add(mountmap)
+            # append mount points mapping file to tar ball
+            mountmap_fp = save_mountpoints(self.__imgdir,
+                               [(loop['mountpoint'],
+                                 loop['label'],
+                                 loop['name'],
+                                 loop['size'],
+                                 loop['fstype']) for loop in self._instloops])
+            if mountmap_fp:
+                tar.add(mountmap_fp)
 
             tar.close()
             os.chdir(curdir)

@@ -23,7 +23,7 @@ from mic import chroot, msger
 from mic.utils import misc, fs_related, errors, cmdln
 from mic.conf import configmgr
 from mic.plugin import pluginmgr
-import mic.imager.loop as loop
+from mic.imager.loop import LoopImageCreator, load_mountpoints
 
 from mic.pluginbase import ImagerPlugin
 class LoopPlugin(ImagerPlugin):
@@ -76,7 +76,7 @@ class LoopPlugin(ImagerPlugin):
             pkgmgrs = pluginmgr.get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
 
-        creator = loop.LoopImageCreator(creatoropts, pkgmgr, opts.taring_to)
+        creator = LoopImageCreator(creatoropts, pkgmgr, opts.taring_to)
 
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
@@ -86,6 +86,7 @@ class LoopPlugin(ImagerPlugin):
                 imagefile = "%s.tar" % os.path.join(creator.destdir, opts.taring_to)
             else:
                 imagefile = "%s.img" % os.path.join(creator.destdir, creator.name)
+
             if os.path.exists(imagefile):
                 if msger.ask('The target image: %s already exists, cleanup and continue?' % imagefile):
                     os.unlink(imagefile)
@@ -113,47 +114,48 @@ class LoopPlugin(ImagerPlugin):
         return 0
 
     @classmethod
-    def do_chroot_tar(cls, target):
+    def _do_chroot_tar(cls, target):
         import tarfile
-
         tar = tarfile.open(target, 'r')
         tmpdir = misc.mkdtemp()
         tar.extractall(path=tmpdir)
         tar.close()
 
-        loops = []
         mntdir = misc.mkdtemp()
-        with open(os.path.join(tmpdir, '.mountpoints'), 'r') as f:
-            for line in f.readlines():
-                try:
-                    mp, label, name, size, fstype = line.strip('\n').split(':')
-                except:
-                    msger.error("Wrong format image tarball: %s" % target)
 
-                if fstype in ("ext2", "ext3", "ext4"):
-                    myDiskMount = fs_related.ExtDiskMount
-                elif fstype == "btrfs":
-                    myDiskMount = fs_related.BtrfsDiskMount
-                elif fstype in ("vfat", "msdos"):
-                    myDiskMount = fs_related.VfatDiskMount
-                else:
-                    msger.error("Cannot support fstype: %s" % fstype)
+        loops = []
+        for (mp, label, name, size, fstype) in load_mountpoints(tmpdir):
+            if fstype in ("ext2", "ext3", "ext4"):
+                myDiskMount = fs_related.ExtDiskMount
+            elif fstype == "btrfs":
+                myDiskMount = fs_related.BtrfsDiskMount
+            elif fstype in ("vfat", "msdos"):
+                myDiskMount = fs_related.VfatDiskMount
+            else:
+                msger.error("Cannot support fstype: %s" % fstype)
 
-                name = os.path.join(tmpdir, name)
-                size = int(size) * 1024L * 1024L
-                loop = myDiskMount(fs_related.SparseLoopbackDisk(name, size),
-                                   os.path.join(mntdir, mp.lstrip('/')),
-                                   fstype, size, label)
-                loops.append(loop)
+            name = os.path.join(tmpdir, name)
+            size = int(size) * 1024L * 1024L
+            loop = myDiskMount(fs_related.SparseLoopbackDisk(name, size),
+                               os.path.join(mntdir, mp.lstrip('/')),
+                               fstype, size, label)
 
-                try:
-                    msger.verbose("Mount %s to %s" % (mp, mntdir + mp))
-                    fs_related.makedirs(os.path.join(mntdir, mp.lstrip('/')))
-                    loop.mount()
-                except:
-                    loop.cleanup()
-                    shutil.rmtree(mntdir, ignore_errors = True)
-                    raise
+            try:
+                msger.verbose("Mount %s to %s" % (mp, mntdir + mp))
+                fs_related.makedirs(os.path.join(mntdir, mp.lstrip('/')))
+                loop.mount()
+
+            except:
+                loop.cleanup()
+                for lp in reversed(loops):
+                    chroot.cleanup_after_chroot("img", lp, None, mntdir)
+
+                shutil.rmtree(mntdir, ignore_errors = True)
+                shutil.rmtree(tmpdir, ignore_errors = True)
+                raise
+
+            loops.append(loop)
+
         try:
             chroot.chroot(mntdir, None, "/bin/env HOME=/root /bin/bash")
         except:
@@ -161,14 +163,16 @@ class LoopPlugin(ImagerPlugin):
         finally:
             for loop in reversed(loops):
                 chroot.cleanup_after_chroot("img", loop, None, mntdir)
+
             shutil.rmtree(tmpdir, ignore_errors = True)
 
     @classmethod
     def do_chroot(cls, target):#chroot.py parse opts&args
         import tarfile
         if tarfile.is_tarfile(target):
-            LoopPlugin.do_chroot_tar(target)
+            LoopPlugin._do_chroot_tar(target)
             return
+
         img = target
         imgsize = misc.get_file_size(img) * 1024L * 1024L
         imgtype = misc.get_image_type(img)

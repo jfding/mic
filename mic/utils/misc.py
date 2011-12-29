@@ -61,17 +61,6 @@ def get_md5sum(fpath):
             md5sum.update(data)
     return md5sum.hexdigest()
 
-def write_mount_point(loops):
-    if not loops:
-        return
-    mountpoints = ".mountpoints"
-    with open(mountpoints, 'w') as f:
-        for loop in loops:
-            f.write("%s:%s:%s:%d:%s\n" % (loop['mountpoint'], loop['label'],
-                                          loop['name'], loop['size'], 
-                                          loop['fstype']))
-    return mountpoints
-
 def save_ksconf_file(ksconf, release="latest", arch="ia32"):
     if not os.path.exists(ksconf):
         return
