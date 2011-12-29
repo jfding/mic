@@ -85,11 +85,6 @@ def check_meego_chroot(rootdir):
         raise CreatorError("Directory %s is not a MeeGo/Tizen chroot env"\
                            % rootdir)
 
-    if not os.path.exists(rootdir + "/etc/inittab") or \
-       not os.path.exists(rootdir + "/etc/rc.sysinit"):
-        raise CreatorError("Lack of init scripts under %s: /etc/inittab, "\
-                           "/etc/rc.sysinit" % rootdir)
-
     if not glob.glob(rootdir + "/boot/vmlinuz-*"):
         raise CreatorError("Failed to find kernel module under %s" % rootdir)
 

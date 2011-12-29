@@ -20,7 +20,7 @@ import shutil
 import re
 import tempfile
 
-from mic import chroot, msger
+from mic import chroot, msger, rt_util
 from mic.utils import misc, fs_related, errors, runner
 from mic.conf import configmgr
 from mic.plugin import pluginmgr
@@ -77,6 +77,9 @@ class RawPlugin(ImagerPlugin):
         if not pkgmgr:
             pkgmgrs = pluginmgr.get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
+
+        if creatoropts['runtime']:
+            rt_util.runmic_in_runtime(creatoropts['runtime'], creatoropts, ksconf, None)
 
         creator = raw.RawImageCreator(creatoropts, pkgmgr)
 

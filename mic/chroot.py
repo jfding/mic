@@ -83,6 +83,9 @@ def cleanup_mounts(chrootdir):
     for point in BIND_MOUNTS:
         args = [ umountcmd, "-l", chrootdir + point ]
         runner.quiet(args)
+    point = '/parentroot'
+    args = [ umountcmd, "-l", chrootdir + point ]
+    runner.quiet(args)
 
     abs_chrootdir = os.path.abspath(chrootdir)
     with open('/proc/mounts') as f:

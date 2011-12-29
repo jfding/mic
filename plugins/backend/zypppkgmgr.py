@@ -107,9 +107,10 @@ class Zypp(BackendPlugin):
         for f in glob.glob(installroot + "/var/lib/rpm/__db*"):
             os.unlink(f)
 
-    def setup(self, confpath, installroot):
-        self._cleanupRpmdbLocks(installroot)
-        self.installroot = installroot
+    def setup(self, confpath=None, instroot=None):
+        if not self.instroot:
+            self.instroot = instroot
+        self._cleanupRpmdbLocks(self.instroot)
 
     def whatObsolete(self, pkg):
         query = zypp.PoolQuery()
@@ -296,10 +297,14 @@ class Zypp(BackendPlugin):
             if proxy:
                 (scheme, host, path, parm, query, frag) = urlparse.urlparse(proxy)
                 proxyinfo = host.split(":")
-                baseurl.setQueryParam ("proxy", proxyinfo[0])
+                host = proxyinfo[0]
                 port = "80"
                 if len(proxyinfo) > 1:
                     port = proxyinfo[1]
+                if proxy.startswith("socks") and len(proxy.rsplit(':', 1)) == 2:
+                    host = proxy.rsplit(':', 1)[0]
+                    port = proxy.rsplit(':', 1)[1]
+                baseurl.setQueryParam ("proxy", host)
                 baseurl.setQueryParam ("proxyport", port)
             repo_info.addBaseUrl(baseurl)
             if repo.priority:

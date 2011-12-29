@@ -87,6 +87,9 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('', '--local-pkgs-path', type='string',
                              dest='local_pkgs_path', default=None,
                              help='Path for local pkgs(rpms) to be installed')
+        optparser.add_option('', '--runtime', type='string',
+                             dest='runtime', default=None,
+                             help='Specify  runtime mode, avaiable: bootstrap')
         optparser.add_option('', '--compress-disk-image', type='string',
                              dest='compress_disk_image', default=None,
                              help='Sets the disk image compression. NOTE: The '
@@ -181,6 +184,9 @@ class Creator(cmdln.Cmdln):
         if self.options.pkgmgr is not None:
             configmgr.create['pkgmgr'] = self.options.pkgmgr
 
+        if self.options.runtime:
+            configmgr.create['runtime'] = self.options.runtime
+
         if self.options.compress_disk_image is not None:
             configmgr.create['compress_disk_image'] = \
                                                 self.options.compress_disk_image
@@ -208,10 +214,10 @@ class Creator(cmdln.Cmdln):
             # optparser=None means no process for opts
             self.options, args = None, argv[1:]
 
-        self.postoptparse()
-
         if not args:
             return self.emptyline()
+
+        self.postoptparse()
 
         if os.geteuid() != 0:
             msger.error('Root permission is required to continue, abort')

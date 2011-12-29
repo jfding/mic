@@ -49,3 +49,9 @@ class SnapshotError(CreatorError):
 
 class SquashfsError(CreatorError):
     keyword = '<squashfs>'
+
+class BootstrapError(CreatorError):
+    keyword = '<bootstrap>'
+
+class RuntimeError(CreatorError):
+    keyword = '<runtime>'

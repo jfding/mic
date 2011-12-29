@@ -16,8 +16,9 @@
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os
+import sys
 
-from mic import chroot, msger
+from mic import chroot, msger, rt_util
 from mic.utils import cmdln, misc, errors
 from mic.imager import fs
 from mic.conf import configmgr
@@ -77,6 +78,9 @@ class FsPlugin(ImagerPlugin):
         if not pkgmgr:
             pkgmgrs = pluginmgr.get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
+
+        if creatoropts['runtime']:
+            rt_util.runmic_in_runtime(creatoropts['runtime'], creatoropts, ksconf, None)
 
         creator = fs.FsImageCreator(creatoropts, pkgmgr)
         creator._include_src = opts.include_src

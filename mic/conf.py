@@ -32,6 +32,8 @@ class ConfigMgr(object):
                     "tmpdir": '/var/tmp/mic',
                     "cachedir": '/var/tmp/mic/cache',
                     "outdir": './mic-output',
+                    "bootstrapdir": '/var/tmp/mic/bootstrap',
+
                     "arch": None, # None means auto-detect
                     "pkgmgr": "yum",
                     "name": "output",
@@ -47,9 +49,12 @@ class ConfigMgr(object):
                     "name_prefix": None,
                     "proxy": None,
                     "no_proxy": None,
+
+                    "runtime": None,
                 },
                 'chroot': {},
                 'convert': {},
+                'bootstraps': {},
                }
 
     # make the manager class as singleton
@@ -123,6 +128,33 @@ class ConfigMgr(object):
                 getattr(self, section).update(self.common)
 
         proxy.set_proxies(self.create['proxy'], self.create['no_proxy'])
+
+        for section in parser.sections():
+            if section.startswith('bootstrap'):
+                name = section
+                repostr = {}
+                for option in parser.options(section):
+                    if option == 'name':
+                        name = parser.get(section, 'name')
+                        continue
+
+                    val = parser.get(section, option)
+                    if '_' in option:
+                        (reponame, repoopt) = option.split('_')
+                        if repostr.has_key(reponame):
+                            repostr[reponame] += "%s:%s," % (repoopt, val)
+                        else:
+                            repostr[reponame] = "%s:%s," % (repoopt, val)
+                        continue
+
+                    if val.split(':')[0] in ('file', 'http', 'https', 'ftp'):
+                        if repostr.has_key(option):
+                            repostr[option] += "name:%s,baseurl:%s," % (option, val)
+                        else:
+                            repostr[option]  = "name:%s,baseurl:%s," % (option, val)
+                        continue
+
+                self.bootstraps[name] = repostr
 
     def _selinux_check(self, arch, ks):
         """If a user needs to use btrfs or creates ARM image,
