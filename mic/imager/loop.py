@@ -51,7 +51,9 @@ def load_mountpoints(dpath):
     with open(os.path.join(dpath, '.mountpoints')) as f:
         for line in f.readlines():
             try:
-                mps.append(tuple(line.strip().split(':')))
+                mp, label, name, size, fstype = line.strip().split(':')
+                size = int(size)
+                mps.append((mp, label, name, size, fstype))
             except:
                 msger.warning("wrong format line in mountpoints mapping file")
     return mps
@@ -70,8 +72,8 @@ class LoopImageCreator(BaseImageCreator):
     def __init__(self, creatoropts=None, pkgmgr=None, taring_to=None):
         """Initialize a LoopImageCreator instance.
 
-            This method takes the same arguments as ImageCreator.__init__() with
-            the addition of:
+            This method takes the same arguments as ImageCreator.__init__()
+            with the addition of:
 
             fslabel -- A string used as a label for any filesystems created.
         """
@@ -90,7 +92,7 @@ class LoopImageCreator(BaseImageCreator):
 
             allloops = []
             for part in sorted(kickstart.get_partitions(self.ks),
-                               key = lambda p: p.mountpoint):
+                               key=lambda p: p.mountpoint):
                 if part.fstype == "swap":
                     continue
 
@@ -99,22 +101,22 @@ class LoopImageCreator(BaseImageCreator):
                 if mp == '/':
                     # the base image
                     if not label:
-                        label =  self.name
+                        label = self.name
                 else:
                     mp = mp.rstrip('/')
                     if not label:
-                        msger.warning('no "label" specified for loop img at %s,'
-                                      ' use the mountpoint as the name' % mp)
+                        msger.warning('no "label" specified for loop img at %s'
+                                      ', use the mountpoint as the name' % mp)
                         label = mp.split('/')[-1]
 
-                imgname = misc.strip_end(label,'.img') + '.img'
+                imgname = misc.strip_end(label, '.img') + '.img'
                 allloops.append({
                     'mountpoint': mp,
                     'label': label,
                     'name': imgname,
                     'size': part.size or 4096L * 1024 * 1024,
                     'fstype': part.fstype or 'ext3',
-                    'loop': None, # to be created in _mount_instroot
+                    'loop': None,  # to be created in _mount_instroot
                     })
             self._instloops = allloops
 
@@ -135,7 +137,6 @@ class LoopImageCreator(BaseImageCreator):
 
     def _set_fstype(self, fstype):
         self.__fstype = fstype
-
     def _set_image_size(self, imgsize):
         self.__image_size = imgsize
 
@@ -159,9 +160,9 @@ class LoopImageCreator(BaseImageCreator):
     #filesystem label. In the case of ext3 it's 16 characters, but in the case
     #of ISO9660 it's 32 characters.
     #
-    #mke2fs silently truncates the label, but mkisofs aborts if the label is too
-    #long. So, for convenience sake, any string assigned to this attribute is
-    #silently truncated to FSLABEL_MAXLEN (32) characters.
+    #mke2fs silently truncates the label, but mkisofs aborts if the label is
+    #too long. So, for convenience sake, any string assigned to this attribute
+    #is silently truncated to FSLABEL_MAXLEN (32) characters.
     fslabel = property(__get_fslabel, __set_fslabel)
 
     def __get_image(self):
@@ -226,7 +227,7 @@ class LoopImageCreator(BaseImageCreator):
     #
     # Helpers for subclasses
     #
-    def _resparse(self, size = None):
+    def _resparse(self, size=None):
         """Rebuild the filesystem image to be as sparse as possible.
 
         This method should be used by subclasses when staging the final image
@@ -259,10 +260,11 @@ class LoopImageCreator(BaseImageCreator):
         if self.__imgdir is None:
             self.__imgdir = self._mkdtemp()
 
+
     #
     # Actual implementation
     #
-    def _mount_instroot(self, base_on = None):
+    def _mount_instroot(self, base_on=None):
 
         if base_on and os.path.isfile(base_on):
             self.__imgdir = os.path.dirname(base_on)
@@ -306,7 +308,7 @@ class LoopImageCreator(BaseImageCreator):
                                        loop['label'])
 
             try:
-                msger.verbose('Mounting image "%s" on "%s"' %(imgname, mp))
+                msger.verbose('Mounting image "%s" on "%s"' % (imgname, mp))
                 fs.makedirs(mp)
                 loop['loop'].mount()
             except MountError, e:

@@ -30,7 +30,9 @@ class LoopPlugin(ImagerPlugin):
     name = 'loop'
 
     @classmethod
-    @cmdln.option("--taring-to", dest="taring_to", type='string', default=None, help="Specify the filename for packaging all loop images into a single tarball")
+    @cmdln.option("--taring-to", dest="taring_to", type='string', default=None,
+                  help="Specify the filename for packaging all loop images "
+                       "into a single tarball")
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create loop image
 
@@ -60,10 +62,13 @@ class LoopPlugin(ImagerPlugin):
             ksconf = misc.save_ksconf_file(ksconf, creatoropts['release'])
 
         configmgr._ksconf = ksconf
-    
-        # Called After setting the configmgr._ksconf as the creatoropts['name'] is reset there.
+
+        # Called After setting the configmgr._ksconf
+        # as the creatoropts['name'] is reset there.
         if creatoropts['release'] is not None:
-            creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'], creatoropts['release'], creatoropts['name'])
+            creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'],
+                                                          creatoropts['release'],
+                                                          creatoropts['name'])
 
         # try to find the pkgmgr
         pkgmgr = None
@@ -74,7 +79,10 @@ class LoopPlugin(ImagerPlugin):
 
         if not pkgmgr:
             pkgmgrs = pluginmgr.get_plugins('backend').keys()
-            raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
+            raise errors.CreatorError("Can't find package manager: %s "
+                                      "(availables: %s)" \
+                                      % (creatoropts['pkgmgr'],
+                                         ', '.join(pkgmgrs)))
 
         creator = LoopImageCreator(creatoropts, pkgmgr, opts.taring_to)
 
@@ -88,7 +96,8 @@ class LoopPlugin(ImagerPlugin):
                 imagefile = "%s.img" % os.path.join(creator.destdir, creator.name)
 
             if os.path.exists(imagefile):
-                if msger.ask('The target image: %s already exists, cleanup and continue?' % imagefile):
+                if msger.ask('The target image: %s already exists, cleanup ' \
+                             'and continue?' % imagefile):
                     os.unlink(imagefile)
                 else:
                     raise errors.Abort('Canceled')
@@ -102,7 +111,9 @@ class LoopPlugin(ImagerPlugin):
             creator.package(creatoropts["outdir"])
 
             if creatoropts['release'] is not None:
-                creator.release_output(ksconf, creatoropts['outdir'], creatoropts['release'])
+                creator.release_output(ksconf, 
+                                       creatoropts['outdir'],
+                                       creatoropts['release'])
             creator.print_outimage_info()
 
         except errors.CreatorError:
@@ -135,7 +146,7 @@ class LoopPlugin(ImagerPlugin):
                 msger.error("Cannot support fstype: %s" % fstype)
 
             name = os.path.join(tmpdir, name)
-            size = int(size) * 1024L * 1024L
+            size = size * 1024L * 1024L
             loop = myDiskMount(fs_related.SparseLoopbackDisk(name, size),
                                os.path.join(mntdir, mp.lstrip('/')),
                                fstype, size, label)
@@ -150,8 +161,7 @@ class LoopPlugin(ImagerPlugin):
                 for lp in reversed(loops):
                     chroot.cleanup_after_chroot("img", lp, None, mntdir)
 
-                shutil.rmtree(mntdir, ignore_errors = True)
-                shutil.rmtree(tmpdir, ignore_errors = True)
+                shutil.rmtree(tmpdir, ignore_errors=True)
                 raise
 
             loops.append(loop)
@@ -164,10 +174,10 @@ class LoopPlugin(ImagerPlugin):
             for loop in reversed(loops):
                 chroot.cleanup_after_chroot("img", loop, None, mntdir)
 
-            shutil.rmtree(tmpdir, ignore_errors = True)
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     @classmethod
-    def do_chroot(cls, target):#chroot.py parse opts&args
+    def do_chroot(cls, target):
         import tarfile
         if tarfile.is_tarfile(target):
             LoopPlugin._do_chroot_tar(target)
@@ -183,7 +193,8 @@ class LoopPlugin(ImagerPlugin):
             fstype = imgtype[:4]
             myDiskMount = fs_related.ExtDiskMount
         else:
-            raise errors.CreatorError("Unsupported filesystem type: %s" % imgtype)
+            raise errors.CreatorError("Unsupported filesystem type: %s" \
+                                      % imgtype)
 
         extmnt = misc.mkdtemp()
         extloop = myDiskMount(fs_related.SparseLoopbackDisk(img, imgsize),
@@ -196,19 +207,20 @@ class LoopPlugin(ImagerPlugin):
 
         except errors.MountError:
             extloop.cleanup()
-            shutil.rmtree(extmnt, ignore_errors = True)
+            shutil.rmtree(extmnt, ignore_errors=True)
             raise
 
         try:
             chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
         except:
-            raise errors.CreatorError("Failed to chroot to %s." %img)
+            raise errors.CreatorError("Failed to chroot to %s." % img)
         finally:
             chroot.cleanup_after_chroot("img", extloop, None, extmnt)
 
     @classmethod
     def do_unpack(cls, srcimg):
-        image = os.path.join(tempfile.mkdtemp(dir = "/var/tmp", prefix = "tmp"), "target.img")
+        image = os.path.join(tempfile.mkdtemp(dir="/var/tmp", prefix="tmp"),
+                             "target.img")
         msger.info("Copying file system ...")
         shutil.copyfile(srcimg, image)
         return image
