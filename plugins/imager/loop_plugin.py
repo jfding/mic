@@ -96,7 +96,7 @@ class LoopPlugin(ImagerPlugin):
                 imagefile = "%s.img" % os.path.join(creator.destdir, creator.name)
 
             if os.path.exists(imagefile):
-                if msger.ask('The target image: %s already exists, cleanup ' \
+                if msger.ask('The target image: %s already exists, cleanup '
                              'and continue?' % imagefile):
                     os.unlink(imagefile)
                 else:

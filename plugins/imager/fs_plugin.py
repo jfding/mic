@@ -28,7 +28,11 @@ class FsPlugin(ImagerPlugin):
     name = 'fs'
 
     @classmethod
-    @cmdln.option("--include-src", dest="include_src", action="store_true", default=False, help="Generate a image with source rpms included")
+    @cmdln.option("--include-src",
+                  dest="include_src",
+                  action="store_true",
+                  default=False,
+                  help="Generate a image with source rpms included")
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create fs image
 

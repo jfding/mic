@@ -47,6 +47,9 @@ class BaseImageCreator(object):
 
     """
 
+    def __del__(self):
+        self.cleanup()
+
     def __init__(self, createopts = None, pkgmgr = None):
         """Initialize an ImageCreator instance.
 
@@ -173,8 +176,6 @@ class BaseImageCreator(object):
                                % (self._img_compression_method,
                                   ' '.join(self._valid_compression_methods)))
 
-    def __del__(self):
-        self.cleanup()
 
     #
     # Properties
@@ -211,6 +212,7 @@ class BaseImageCreator(object):
     Note also, this is a read-only attribute.
 
     """
+
 
     #
     # Hooks for subclasses
@@ -481,6 +483,7 @@ class BaseImageCreator(object):
 
         return ret
 
+
     #
     # Helpers for subclasses
     #
@@ -581,6 +584,7 @@ class BaseImageCreator(object):
         (f, path) = self._mkstemp(prefix)
         os.close(f)
         return path
+
 
     #
     # Actual implementation

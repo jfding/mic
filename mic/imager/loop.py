@@ -24,11 +24,13 @@ from mic.utils import misc, runner, fs_related as fs
 
 from baseimager import BaseImageCreator
 
+# The maximum string length supported for LoopImageCreator.fslabel
 FSLABEL_MAXLEN = 32
-"""The maximum string length supported for LoopImageCreator.fslabel."""
 
 def save_mountpoints(dpath, loops):
     """Save mount points mapping to file
+
+    :dpath, the dir to save file
     :loops, list of tuple (mp, label, name, size, fstype)
     """
 
@@ -46,7 +48,10 @@ def save_mountpoints(dpath, loops):
 
 def load_mountpoints(dpath):
     """Load mount points mapping from file
+
+    :dpath, the dir to load file
     """
+
     mps = []
     with open(os.path.join(dpath, '.mountpoints')) as f:
         for line in f.readlines():
@@ -61,22 +66,23 @@ def load_mountpoints(dpath):
 class LoopImageCreator(BaseImageCreator):
     """Installs a system into a loopback-mountable filesystem image.
 
-        LoopImageCreator is a straightforward ImageCreator subclass; the system
-        is installed into an ext3 filesystem on a sparse file which can be
-        subsequently loopback-mounted.
+    LoopImageCreator is a straightforward ImageCreator subclass; the system
+    is installed into an ext3 filesystem on a sparse file which can be
+    subsequently loopback-mounted.
 
-        When specifying multiple partitions in kickstart file, each partition
-        will be created as a separated loop image.
+    When specifying multiple partitions in kickstart file, each partition
+    will be created as a separated loop image.
     """
 
     def __init__(self, creatoropts=None, pkgmgr=None, taring_to=None):
         """Initialize a LoopImageCreator instance.
 
-            This method takes the same arguments as ImageCreator.__init__()
-            with the addition of:
+        This method takes the same arguments as ImageCreator.__init__()
+        with the addition of:
 
-            fslabel -- A string used as a label for any filesystems created.
+        fslabel -- A string used as a label for any filesystems created.
         """
+
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
         self.taring_to = taring_to
 
@@ -137,6 +143,7 @@ class LoopImageCreator(BaseImageCreator):
 
     def _set_fstype(self, fstype):
         self.__fstype = fstype
+
     def _set_image_size(self, imgsize):
         self.__image_size = imgsize
 
