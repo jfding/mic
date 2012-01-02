@@ -204,6 +204,9 @@ class ConfigMgr(object):
 
         msger.info("Retrieving repo metadata:")
         ksrepos = misc.get_repostrs_from_ks(ks)
+        if not ksrepos:
+            raise errors.KsError('no valid repos found in ks file')
+
         self.create['repomd'] = misc.get_metadata_from_repos(
                                                     ksrepos,
                                                     self.create['cachedir'])
@@ -223,7 +226,7 @@ class ConfigMgr(object):
                 msger.info("\nUse detected arch %s." % target_archlist[0])
             else:
                 raise errors.ConfigError("Please specify a valid arch, "
-                                         "your choise can be: %s" \
+                                         "the choice can be: %s" \
                                          % ', '.join(archlist))
 
         kickstart.resolve_groups(self.create, self.create['repomd'])

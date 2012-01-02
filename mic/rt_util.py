@@ -119,7 +119,7 @@ def select_bootstrap(repomd, cachedir, bootstrapdir):
             repolist.append(bsrepo[repo])
         repomd = misc.get_metadata_from_repos(repolist, cachedir)
         rpmver = misc.get_rpmver_in_repo(repomd)
-        if not rpmver: 
+        if not rpmver:
             continue
         if compare_rpmversion(repo_rpmver, rpmver):
             msger.set_loglevel(lvl)
@@ -140,7 +140,7 @@ def runmic_in_bootstrap(name, argv, opts, ksfile, repolist):
     msger.info("Sync native mic to bootstrap")
     copy_mic(bootstrap_env.rootdir)
 
-    # bind mounts , opts['cachedir'], opts['tmpdir'] 
+    # bind mounts , opts['cachedir'], opts['tmpdir']
     cwd = os.getcwd()
     lst = [cwd, opts['outdir']]
     if ksfile:
