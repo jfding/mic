@@ -1,7 +1,21 @@
-#!/usr/bin/python
+#!/usr/bin/python -tt
+#
+# Copyright (c) 2009, 2010, 2011 Intel, Inc.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation; version 2 of the License
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc., 59
+# Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os
-import sys
+import os, sys
 import string
 import shutil
 import re
@@ -14,18 +28,15 @@ from mic.utils import errors
 import mic.utils.misc as misc
 
 SUPPORT_DISTS = (
-    'SuSE', 'debian', 'fedora', 'redhat', 'centos',
-    'meego', 'moblin', 'tizen')
-
-def uniq(lst=[]):
-    if not lst:
-        return
-    try:
-        st = set(lst)
-    except:
-        import sets
-        st = sets.Set(lst)
-    return list(st)
+    'SuSE',
+    'debian',
+    'fedora',
+    'redhat',
+    'centos',
+    'meego',
+    'moblin',
+    'tizen',
+)
 
 # detect linux distribution, support "meego"
 def linux_distribution():
@@ -138,12 +149,15 @@ def runmic_in_bootstrap(name, argv, opts, ksfile, repolist):
     if opts['logfile']:
         logfile = os.path.abspath(os.path.expanduser(opts['logfile']))
         lst.append(os.path.dirname(logfile))
-    # local package path
-    # local repo
+
+    # TBD local package path
+    # TBD local repo
 
     # make unique
-    lst = uniq(lst)
+    lst = list(set(lst)) # FIXME: wo need the original order here
+
     bindmounts = ';'.join(map(lambda p: os.path.abspath(os.path.expanduser(p)), lst))
+
     msger.info("Start mic command in bootstrap")
     bootstrap_env.run(name, argv, cwd, bindmounts)
 
@@ -157,16 +171,19 @@ def get_mic_modpath():
         return os.path.dirname(path)
 
 def get_mic_binpath():
+    # FIXME: please use mic.find_binary_path()
     path = os.environ['PATH']
     paths = string.split(path, os.pathsep)
     for pth in paths:
         fn = os.path.join(pth, 'mic')
         if os.path.isfile(fn):
             return fn
+
     msger.warning("Can't find mic command")
 
 def get_mic_libpath():
     # so far mic lib path is hard coded
+    # TBD
     return "/usr/lib/mic"
 
 # the hard code path is prepared for bootstrap

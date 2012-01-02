@@ -1,8 +1,22 @@
-#/usr/bin/env python
+#!/usr/bin/python -tt
+#
+# Copyright (c) 2009, 2010, 2011 Intel, Inc.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation; version 2 of the License
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc., 59
+# Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 from __future__ import with_statement
-import os
-import sys
+import os, sys
 import pickle
 import shutil
 import subprocess
@@ -139,11 +153,14 @@ class Bootstrap(object):
             query_package = query_package_rpmdb
 
         name, mver = query_package(self.rootdir, 'name', 'meego-release')
-        #print "MeeGo Release: %s" % mver
+        msger.debug("MeeGo Release: %s" % mver)
+
         name, kver = query_package(self.rootdir, 'name', 'kernel')
-        #print "Kernel Version: %s" % kver
+        msger.debug("Kernel Version: %s" % kver)
+
         name, rver = query_package(self.rootdir, 'name', 'rpm')
-        #print "RPM Version: %s" % rver
+        msger.debug("RPM Version: %s" % rver)
+
         return (mver, kver, rver)
 
     def create(self, name, repolist, **kwargs):
@@ -151,7 +168,7 @@ class Bootstrap(object):
         self.pkgmgr = 'zypp'
         self.arch = 'i686'
         self.rootdir = name
-        self.cachedir = '/var/tmp/mic/cache'
+        self.cachedir = '/var/tmp/mic/cache' # TBD from conf, do NOT hardcode
 
         if 'arch' in kwargs:
             self.arch = kwargs['arch']
@@ -161,8 +178,8 @@ class Bootstrap(object):
         if os.path.exists(self._rootdir):
             metadata_fp = os.path.join(self._rootdir, '.metadata')
             if os.path.exists(metadata_fp) and \
-                0 != os.path.getsize(metadata_fp):
-                print "Already exists"
+               0 != os.path.getsize(metadata_fp):
+                msger.warning("bootstrap already exists") # TBD more details
                 return
             else:
                 shutil.rmtree(self._rootdir)
@@ -171,7 +188,6 @@ class Bootstrap(object):
             os.makedirs(self._rootdir)
 
         pkg_manager = self.pkgmgr(self.arch, self.rootdir, self.cachedir)
-
         pkg_manager.setup()
 
         for repo in repolist:
@@ -208,7 +224,7 @@ class Bootstrap(object):
         shutil.rmtree(destdir, ignore_errors = True)
         shutil.copytree(srcdir, destdir)
 
-        print "Bootstrap done"
+        msger.info("Bootstrap created.")
 
     def rebuild(self):
         pass
