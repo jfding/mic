@@ -219,8 +219,8 @@ class Creator(cmdln.Cmdln):
 
         self.postoptparse()
 
-        if os.geteuid() != 0:
-            msger.error('Root permission is required to continue, abort')
+        if os.geteuid() != 0 and args[0] != 'help':
+            msger.error('root permission is required to continue, abort')
 
         return self.cmd(args)
 
