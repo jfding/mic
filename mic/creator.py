@@ -27,7 +27,7 @@ class Creator(cmdln.Cmdln):
     """${name}: create an image
 
     Usage:
-        ${name} SUBCOMMAND [OPTS] [ARGS..]
+        ${name} SUBCOMMAND <ksfile> [OPTS]
 
     ${command_list}
     ${option_list}

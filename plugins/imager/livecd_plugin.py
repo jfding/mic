@@ -33,12 +33,14 @@ class LiveCDPlugin(ImagerPlugin):
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create livecd image
 
-        ${cmd_usage}
+        Usage:
+            ${name} ${cmd_name} <ksfile> [OPTS]
+
         ${cmd_option_list}
         """
 
         if not args:
-            raise errors.Usage("More arguments needed")
+            raise errors.Usage("need one argument as the path of ks file")
 
         if len(args) != 1:
             raise errors.Usage("Extra arguments given")
