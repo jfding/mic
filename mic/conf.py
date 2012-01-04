@@ -124,7 +124,7 @@ class ConfigMgr(object):
 
         # append common section items to other sections
         for section in self.DEFAULTS.keys():
-            if section != "common":
+            if section != "common" and not section.startswith('bootstrap'):
                 getattr(self, section).update(self.common)
 
         proxy.set_proxies(self.create['proxy'], self.create['no_proxy'])
