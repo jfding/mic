@@ -153,8 +153,8 @@ def runmic_in_bootstrap(name, argv, opts, ksfile, repolist):
     # TBD local package path
     # TBD local repo
 
-    # make unique
-    lst = list(set(lst)) # FIXME: wo need the original order here
+    # make unique and remain the original order
+    lst = sorted(set(lst), key=lst.index)
 
     bindmounts = ';'.join(map(lambda p: os.path.abspath(os.path.expanduser(p)), lst))
 
@@ -180,6 +180,7 @@ def get_mic_binpath():
             return fn
 
     msger.warning("Can't find mic command")
+    # FIXME: how to handle unfound case?
 
 def get_mic_libpath():
     # so far mic lib path is hard coded
