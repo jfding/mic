@@ -331,13 +331,6 @@ class Zypp(BackendPlugin):
             if not zypp.isKindPattern(item) and not self.inDeselectPackages(item):
                 dlpkgs.append(item)
 
-        # record the total size of installed pkgs
-        pkgs_total_size = sum(map(lambda x: int(x.installSize()), dlpkgs))
-
-        # check needed size before actually download and install
-        if checksize and pkgs_total_size > checksize:
-            raise CreatorError("Size of specified root partition in kickstart file is too small to install all selected packages.")
-
         # record all pkg and the content
         localpkgs = self.localpkgs.keys()
         for pkg in dlpkgs:
@@ -358,6 +351,7 @@ class Zypp(BackendPlugin):
 
         total_count = len(dlpkgs)
         cached_count = 0
+        download_total_size = 0L
         localpkgs = self.localpkgs.keys()
         msger.info("Checking packages cache and packages integrity ...")
         for po in dlpkgs:
@@ -368,9 +362,17 @@ class Zypp(BackendPlugin):
                 local = self.getLocalPkgPath(po)
                 if os.path.exists(local):
                     if self.checkPkg(local) != 0:
+                        download_total_size += po.downloadSize()
                         os.unlink(local)
                     else:
                         cached_count += 1
+
+        # record the total size of installed pkgs
+        install_total_size = sum(map(lambda x: int(x.installSize()), dlpkgs))
+        # check needed size before actually download and install
+        if checksize and download_total_size + install_total_size > checksize:
+            raise CreatorError("No enough space used for downloading and installing")
+
         download_count =  total_count - cached_count
         msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, download_count))
         try:
