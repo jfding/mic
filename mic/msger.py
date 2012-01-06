@@ -18,7 +18,7 @@
 
 import os,sys
 import re
-from datetime import datetime
+import time
 
 __ALL__ = ['set_mode',
            'get_loglevel',
@@ -40,6 +40,8 @@ WARN_COLOR = 33 # yellow
 ERR_COLOR  = 31 # red
 ASK_COLOR  = 34 # blue
 NO_COLOR = 0
+
+HOST_TIMEZONE = time.timezone
 
 PREFIX_RE = re.compile('^<(.*?)>\s*(.*)', re.S)
 
@@ -82,7 +84,9 @@ def _general_print(head, color, msg = None, stream = None, level = 'normal'):
 
         save_msg = msg.strip()
         if save_msg:
-            timestr = datetime.now().strftime('[%m/%d %H:%M:%S] ')
+            global HOST_TIMEZONE
+            timestr = time.strftime("[%m/%d %H:%M:%S] ",
+                                    time.gmtime(time.time() - HOST_TIMEZONE))
             LOG_CONTENT += timestr + save_msg + '\n'
 
     if errormsg:
