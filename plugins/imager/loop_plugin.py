@@ -183,10 +183,13 @@ class LoopPlugin(ImagerPlugin):
 
     @classmethod
     def do_chroot(cls, target):
-        import tarfile
-        if tarfile.is_tarfile(target):
-            LoopPlugin._do_chroot_tar(target)
-            return
+        if target.endswith('.tar'):
+            import tarfile
+            if tarfile.is_tarfile(target):
+                LoopPlugin._do_chroot_tar(target)
+                return
+            else:
+                raise errors.CreatorError("damaged tarball for loop images")
 
         img = target
         imgsize = misc.get_file_size(img) * 1024L * 1024L
