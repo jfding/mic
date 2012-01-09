@@ -293,7 +293,7 @@ class Yum(BackendPlugin, yum.YumBase):
                 cached_count +=1
 
         # record the total size of installed pkgs
-        pkgs_total_size = sum(map(lambda x: int(x.installedsize), dlpkgs))
+        pkgs_total_size = sum(map(lambda x: int(x.size), dlpkgs))
 
         # check needed size before actually download and install
         if checksize and pkgs_total_size + download_total_size > checksize:
