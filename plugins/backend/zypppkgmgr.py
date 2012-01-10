@@ -351,7 +351,7 @@ class Zypp(BackendPlugin):
 
         total_count = len(dlpkgs)
         cached_count = 0
-        download_total_size = 0L
+        download_total_size = sum(map(lambda x: int(x.downloadSize()), dlpkgs))
         localpkgs = self.localpkgs.keys()
         msger.info("Checking packages cache and packages integrity ...")
         for po in dlpkgs:
@@ -362,9 +362,9 @@ class Zypp(BackendPlugin):
                 local = self.getLocalPkgPath(po)
                 if os.path.exists(local):
                     if self.checkPkg(local) != 0:
-                        download_total_size += po.downloadSize()
                         os.unlink(local)
                     else:
+                        download_total_size -= int(po.downloadSize())
                         cached_count += 1
 
         # record the total size of installed pkgs

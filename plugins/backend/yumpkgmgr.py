@@ -280,20 +280,25 @@ class Yum(BackendPlugin, yum.YumBase):
 
         total_count = len(dlpkgs)
         cached_count = 0
-        download_total_size = 0L
+        download_total_size = sum(map(lambda x: int(x.packagesize), dlpkgs))
         msger.info("\nChecking packages cache and packages integrity ...")
         for po in dlpkgs:
             local = po.localPkg()
             if not os.path.exists(local):
                 continue
             if not self.verifyPkg(local, po, False):
-                download_total_size += po.downloadSize()
                 msger.warning("Package %s is damaged: %s" % (os.path.basename(local), local))
             else:
+                download_total_size -= int(po.packagesize)
                 cached_count +=1
 
         # record the total size of installed pkgs
-        pkgs_total_size = sum(map(lambda x: int(x.size), dlpkgs))
+        pkgs_total_size = 0L
+        for x in dlpkgs:
+            if hasattr(x, 'installedsize'):
+                pkgs_total_size += int(x.installedsize)
+            else:
+                pkgs_total_size += int(x.size)
 
         # check needed size before actually download and install
         if checksize and pkgs_total_size + download_total_size > checksize:
