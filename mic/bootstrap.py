@@ -38,7 +38,7 @@ required_pkgs = [ "pam", "passwd", "meego-release", "nss", "genisoimage",
                   "bzip2", "gzip", "perl", "make", "file", "psmisc", "wget",
                   "syslinux-extlinux", "btrfs-progs", "satsolver-tools",
                   "isomd5sum", "mtd-utils", "mtd-utils-ubi", "libzypp",
-                  "python-zypp", "grep", "mic" ]
+                  "python-zypp", "grep", "sed", "mic" ]
 
 
 def query_package_rpmdb(root='/', tag='name', pattern=None):
