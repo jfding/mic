@@ -169,7 +169,7 @@ class PartitionedMount(Mount):
                 # NOTE: We don't throw exception when return code is not 0, because
                 # parted always fails to reload part table with loop devices.
                 # This prevents us from distinguishing real errors based on return code.
-                msger.debug("WARNING: parted returned '%s' instead of 0 when creating partition-table for disk '%s'." % (p1.returncode,d['disk'].device))
+                msger.debug("WARNING: parted returned '%s' instead of 0 when creating partition-table for disk '%s'." % (rc, d['disk'].device))
 
         msger.debug("Creating partitions")
 
@@ -202,7 +202,7 @@ class PartitionedMount(Mount):
                 # NOTE: We don't throw exception when return code is not 0, because
                 # parted always fails to reload part table with loop devices.
                 # This prevents us from distinguishing real errors based on return code.
-                msger.debug("WARNING: parted returned '%s' instead of 0 when creating partition '%s' for disk '%s'." % (p1.returncode,p['mountpoint'],d['disk'].device))
+                msger.debug("WARNING: parted returned '%s' instead of 0 when creating partition '%s' for disk '%s'." % (ret, p['mountpoint'], d['disk'].device))
 
             if p['boot']:
                 msger.debug("Setting boot flag for partition '%s' on disk '%s'." % (p['num'],d['disk'].device))
