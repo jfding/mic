@@ -53,7 +53,9 @@ class ConfigMgr(object):
                     "runtime": None,
                 },
                 'chroot': {},
-                'convert': {},
+                'convert': {
+                    "shell": False,
+                },
                 'bootstraps': {},
                }
 

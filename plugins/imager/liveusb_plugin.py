@@ -180,8 +180,8 @@ class LiveUSBPlugin(ImagerPlugin):
                raise errors.CreatorError("Failed to run post cleanups: %s" % msg)
 
         convertoropts = configmgr.convert
+        convertoropts['name'] = os.path.splitext(os.path.basename(base_on))[0]
         convertor = liveusb.LiveUSBImageCreator(convertoropts)
-        convertor.name = os.path.splitext(os.path.basename(base_on))[0]
         imgtype = misc.get_image_type(base_on)
         if imgtype == "btrfsimg":
             fstype = "btrfs"
@@ -195,6 +195,7 @@ class LiveUSBPlugin(ImagerPlugin):
             __mkinitrd(convertor)
             convertor._create_bootconfig()
             __run_post_cleanups(convertor)
+            convertor.launch_shell(convertoropts['shell'])
             convertor.unmount()
             convertor.package()
             convertor.print_outimage_info()

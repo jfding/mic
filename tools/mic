@@ -18,6 +18,7 @@
 import os, sys, errno
 from mic import msger, creator
 from mic.utils import cmdln, misc, errors
+from mic.conf import configmgr
 from mic.plugin import pluginmgr
 from mic.__version__ import VERSION
 
@@ -82,6 +83,9 @@ class MicCmd(cmdln.Cmdln):
             msger.error('Root permission is required to continue, abort')
 
     @cmdln.alias("cv")
+    @cmdln.option("-S", "--shell",
+                  action="store_true", dest="shell", default=False,
+                  help="Launch shell before packaging the converted image")
     def do_convert(self, subcmd, opts, *args):
         """${cmd_name}: convert image format
 
@@ -109,6 +113,8 @@ class MicCmd(cmdln.Cmdln):
             raise errors.CreatorError("Cannot find the image: %s" % srcimg)
 
         self._root_confirm()
+
+        configmgr.convert['shell'] = opts.shell
 
         srcformat = misc.get_image_type(srcimg)
         if srcformat == "ext3fsimg":
