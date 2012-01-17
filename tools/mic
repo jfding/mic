@@ -136,6 +136,9 @@ class MicCmd(cmdln.Cmdln):
             destimager.do_pack(base_on)
 
     @cmdln.alias("ch")
+    @cmdln.option('-s', '--saveto',
+                  action='store', dest='saveto', default=None,
+                  help="Save the unpacked image to specified dir")
     def do_chroot(self, subcmd, opts, *args):
         """${cmd_name}: chroot into an image
 
@@ -162,6 +165,8 @@ class MicCmd(cmdln.Cmdln):
                                       % targetimage)
 
         self._root_confirm()
+
+        configmgr.chroot['saveto'] = opts.saveto
 
         imagetype = misc.get_image_type(targetimage)
         if imagetype in ("ext3fsimg", "ext4fsimg", "btrfsimg"):

@@ -52,7 +52,9 @@ class ConfigMgr(object):
 
                     "runtime": None,
                 },
-                'chroot': {},
+                'chroot': {
+                    "saveto": None,
+                },
                 'convert': {
                     "shell": False,
                 },

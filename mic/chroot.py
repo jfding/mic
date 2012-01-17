@@ -21,6 +21,7 @@ import shutil
 import subprocess
 
 from mic import msger
+from mic.conf import configmgr
 from mic.utils import misc, errors, runner, fs_related
 
 chroot_lockfd = -1
@@ -250,6 +251,34 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
     def mychroot():
         os.chroot(chrootdir)
         os.chdir("/")
+
+    if configmgr.chroot['saveto']:
+        savefs = True
+        saveto = configmgr.chroot['saveto']
+        wrnmsg = "Can't save chroot fs for dir %s exists" % saveto
+        if saveto == chrootdir:
+            savefs = False
+            wrnmsg = "Dir %s is being used to chroot" % saveto
+        elif os.path.exists(saveto):
+            if msger.ask("Dir %s already exists, cleanup and continue?" %
+                         saveto):
+                shutil.rmtree(saveto, ignore_errors = True)
+                savefs = True
+            else:
+                savefs = False
+
+        if savefs:
+            msger.info("Saving image to directory %s" % saveto)
+            runner.quiet("cp -af %s %s" % (chrootdir, saveto))
+            devs = ['dev/fd',
+                    'dev/stdin',
+                    'dev/stdout',
+                    'dev/stderr',
+                    'etc/mtab']
+            ignlst = [os.path.join(saveto, x) for x in devs]
+            map(os.unlink, filter(os.path.exists, ignlst))
+        else:
+            msger.warning(wrnmsg)
 
     dev_null = os.open("/dev/null", os.O_WRONLY)
     files_to_check = ["/bin/bash", "/sbin/init"]
