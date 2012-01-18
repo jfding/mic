@@ -112,6 +112,7 @@ class FsPlugin(ImagerPlugin):
                     msger.warning("Source packages can't be downloaded")
 
             creator.configure(creatoropts["repomd"])
+            creator.copy_kernel()
             creator.unmount()
             creator.package(creatoropts["outdir"])
             if creatoropts['release'] is not None:

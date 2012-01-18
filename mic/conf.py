@@ -49,6 +49,7 @@ class ConfigMgr(object):
                     "name_prefix": None,
                     "proxy": None,
                     "no_proxy": None,
+                    "copy_kernel": False,
 
                     "runtime": None,
                 },

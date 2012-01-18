@@ -95,6 +95,10 @@ class Creator(cmdln.Cmdln):
                              help='Sets the disk image compression. NOTE: The '
                                   'available values might depend on the used '
                                   'filesystem type.')
+        optparser.add_option('', '--copy-kernel', action='store_true',
+                             dest='copy_kernel',
+                             help='Copy kernel files from image /boot directory'
+                                  'to the image output directory.')
         return optparser
 
     def preoptparse(self, argv):
@@ -193,7 +197,10 @@ class Creator(cmdln.Cmdln):
         if self.options.compress_disk_image is not None:
             configmgr.create['compress_disk_image'] = \
                                                 self.options.compress_disk_image
-
+        
+        if self.options.copy_kernel:
+            configmgr.create['copy_kernel'] = self.options.copy_kernel
+        
     def main(self, argv=None):
         if argv is None:
             argv = sys.argv

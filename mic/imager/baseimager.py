@@ -1,3 +1,4 @@
+
 #!/usr/bin/python -tt
 #
 # Copyright (c) 2007 Red Hat  Inc.
@@ -73,6 +74,8 @@ class BaseImageCreator(object):
         self.destdir = "."
         self.target_arch = "noarch"
         self._local_pkgs_path = None
+        # If the kernel is save to the destdir when copy_kernel cmd is called.
+        self._copy_kernel = False
 
         # Eeach image type can change these values as they might be image type
         # specific
@@ -83,11 +86,13 @@ class BaseImageCreator(object):
         self._img_compression_method = None
 
         if createopts:
+            # Mapping table for variables that have different names.
             optmap = {"pkgmgr" : "pkgmgr_name",
                       "outdir" : "destdir",
                       "arch" : "target_arch",
                       "local_pkgs_path" : "_local_pkgs_path",
                       "compress_disk_image" : "_img_compression_method",
+                      "copy_kernel" : "_copy_kernel",
                      }
     
             # update setting from createopts
@@ -1172,11 +1177,18 @@ class BaseImageCreator(object):
             if not os.path.exists("%s" % fp):
                 outimages.remove(fp)
 
-    def save_kernel(self, destdir):
-        if not os.path.exists(destdir):
-            os.makedirs(destdir)
+    def copy_kernel(self):
+        """ Copy kernel files to the outimage directory.
+        
+        NOTE: This needs to be called before unmounting the instroot.
+        
+        """
+        if not self._copy_kernel:
+            return
+        if not os.path.exists(self.destdir):
+            os.makedirs(self.destdir)
         for kernel in glob.glob("%s/boot/vmlinuz-*" % self._instroot):
-            kernelfilename = "%s/%s-%s" % (destdir, self.name, os.path.basename(kernel))
+            kernelfilename = "%s/%s-%s" % (self.destdir, self.name, os.path.basename(kernel))
             shutil.copy(kernel, kernelfilename)
             self.outimage.append(kernelfilename)
 
