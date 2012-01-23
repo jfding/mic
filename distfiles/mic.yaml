@@ -18,6 +18,9 @@ Builder: python
 BuildArch: noarch
 SupportOtherDistros: yes
 
+Conflicts:
+    - mic2
+
 Requires:
     - util-linux
     - coreutils
