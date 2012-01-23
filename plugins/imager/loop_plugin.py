@@ -112,6 +112,7 @@ class LoopPlugin(ImagerPlugin):
             creator.mount(None, creatoropts["cachedir"])
             creator.install()
             creator.configure(creatoropts["repomd"])
+            creator.copy_kernel()            
             creator.unmount()
             creator.package(creatoropts["outdir"])
 
