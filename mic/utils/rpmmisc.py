@@ -586,6 +586,7 @@ def checkRepositoryEULA(name, repo):
             proxy_url = proxy
 
         proxy_support = u2.ProxyHandler({'http': proxy_url,
+                                         'https': proxy_url,
                                          'ftp': proxy_url})
         handlers.append(proxy_support)
 
