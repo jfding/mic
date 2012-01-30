@@ -87,15 +87,15 @@ class Zypp(BackendPlugin):
 
     def close(self):
         self.closeRpmDB()
+        if self.ts:
+            self.ts.closeDB()
+            self.ts = None
         if not os.path.exists("/etc/fedora-release") and not os.path.exists("/etc/meego-release"):
             for i in range(3, os.sysconf("SC_OPEN_MAX")):
                 try:
                     os.close(i)
                 except:
                     pass
-        if self.ts:
-            self.ts.closeDB()
-            self.ts = None
 
     def __del__(self):
         self.close()
