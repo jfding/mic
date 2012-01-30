@@ -1169,7 +1169,10 @@ class BaseImageCreator(object):
                     continue
 
                 md5sum = misc.get_md5sum(_rpath(f))
-                wf.write("%s %s\n" % (md5sum, f))
+                # There needs to be two spaces between the sum and
+                # filepath to match the syntax with md5sum. 
+                # This way also md5sum -c MANIFEST can be used by users
+                wf.write("%s *%s\n" % (md5sum, f))
 
         outimages.append("%s/MANIFEST" % destdir)
 
