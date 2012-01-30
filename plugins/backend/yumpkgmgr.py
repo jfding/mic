@@ -332,16 +332,16 @@ class Yum(BackendPlugin, yum.YumBase):
             msger.warning('\nCaution, do NOT interrupt the installation, else mic cannot finish the cleanup.')
             installlogfile = "%s/__catched_stderr.buf" % (self.instroot)
             msger.enable_logstderr(installlogfile)
-            ret = self.runTransaction(cb)
+            self.runTransaction(cb)
             self._cleanupRpmdbLocks(self.conf.installroot)
-            msger.disable_logstderr()
-            return ret
         except rpmUtils.RpmUtilsError, e:
             raise CreatorError("mic does NOT support delta rpm: %s" % e)
         except yum.Errors.RepoError, e:
             raise CreatorError("Unable to download from repo : %s" % e)
         except yum.Errors.YumBaseError, e:
             raise CreatorError("Unable to install: %s" % e)
+        finally:
+            msger.disable_logstderr()
 
     def getAllContent(self):
         return self.__pkgs_content

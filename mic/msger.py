@@ -269,6 +269,7 @@ def disable_logstderr():
     global CATCHERR_BUFFILE_PATH
     global CATCHERR_SAVED_2
 
+    raw(msg = None) # flush message buffer and print it.
     os.dup2(CATCHERR_SAVED_2, 2)
     os.close(CATCHERR_SAVED_2)
     os.close(CATCHERR_BUFFILE_FD)
