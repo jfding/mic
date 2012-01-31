@@ -270,7 +270,7 @@ class Yum(BackendPlugin, yum.YumBase):
 
         # record all pkg and the content
         for pkg in dlpkgs:
-            pkg_long_name = "%s-%s.%s.rpm" % (pkg.name, pkg.printVer(), pkg.arch)
+            pkg_long_name = "%s.%s %s" % (pkg.name, pkg.arch, pkg.printVer())
             self.__pkgs_content[pkg_long_name] = pkg.files
             license = pkg.license
             if license in self.__pkgs_license.keys():

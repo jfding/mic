@@ -337,10 +337,10 @@ class Zypp(BackendPlugin):
             license = ''
             if pkg.name() in localpkgs:
                 hdr = rpmmisc.readRpmHeader(self.ts, self.localpkgs[pkg.name()])
-                pkg_long_name = "%s-%s-%s.%s.rpm" % (hdr['name'], hdr['version'], hdr['release'], hdr['arch'])
+                pkg_long_name = "%s.%s %s-%s" % (hdr['name'], hdr['arch'], hdr['version'], hdr['release'])
                 license = hdr['license']
             else:
-                pkg_long_name = "%s-%s.%s.rpm" % (pkg.name(), pkg.edition(), pkg.arch())
+                pkg_long_name = "%s.%s %s" % (pkg.name(), pkg.arch(), pkg.edition())
                 package = zypp.asKindPackage(pkg)
                 license = package.license()
             self.__pkgs_content[pkg_long_name] = {} #TBD: to get file list
