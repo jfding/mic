@@ -79,9 +79,10 @@ def save_ksconf_file(ksconf, release="latest", arch="ia32"):
 
     return ksconf
 
-def check_meego_chroot(rootdir):
+def _check_meego_chroot(rootdir):
     if not os.path.exists(rootdir + "/etc/moblin-release") and \
-       not os.path.exists(rootdir + "/etc/meego-release"):
+       not os.path.exists(rootdir + "/etc/meego-release") and \
+       not os.path.exists(rootdir + "/etc/tizen-release"):
         raise CreatorError("Directory %s is not a MeeGo/Tizen chroot env"\
                            % rootdir)
 
@@ -91,7 +92,6 @@ def check_meego_chroot(rootdir):
     return
 
 def get_image_type(path):
-
     def _get_extension_name(path):
         match = re.search("(?<=\.)\w+$", path)
         if match:
@@ -100,7 +100,7 @@ def get_image_type(path):
             return None
 
     if os.path.isdir(path):
-        check_meego_chroot(path)
+        _check_meego_chroot(path)
         return "fs"
 
     maptab = {
@@ -155,7 +155,7 @@ def get_image_type(path):
         raise CreatorError("Cannot detect the type of image: %s" % path)
 
 def get_file_size(file):
-    """ Return size in MB unit, TODO: rewrite """
+    """ Return size in MB unit """
     rc, duOutput  = runner.runtool(['du', "-s", "-b", "-B", "1M", file])
     if rc != 0:
         raise CreatorError("Failed to run %s" % du)
@@ -204,15 +204,17 @@ def uncompress_squashfs(squashfsimg, outdir):
         raise SquashfsError("Failed to uncompress %s." % squashfsimg)
 
 def mkdtemp(dir = "/var/tmp", prefix = "mic-tmp-"):
+    """ FIXME: use the dir in mic.conf instead """
+
     makedirs(dir)
     return tempfile.mkdtemp(dir = dir, prefix = prefix)
 
-def get_temp_reponame(baseurl):
-    md5obj = hashlib.md5(baseurl)
-    tmpreponame = "%s" % md5obj.hexdigest()
-    return tmpreponame
-
 def get_repostrs_from_ks(ks):
+    def _get_temp_reponame(baseurl):
+        md5obj = hashlib.md5(baseurl)
+        tmpreponame = "%s" % md5obj.hexdigest()
+        return tmpreponame
+
     kickstart_repos = []
     for repodata in ks.handler.repo.repoList:
         repostr = ""
@@ -237,7 +239,7 @@ def get_repostrs_from_ks(ks):
         if  hasattr(repodata, "proxypasswd") and repodata.proxy_password:
             repostr += ",proxypasswd:" + repodata.proxy_password
         if repostr.find("name:") == -1:
-            repostr = ",name:%s" % get_temp_reponame(repodata.baseurl)
+            repostr = ",name:%s" % _get_temp_reponame(repodata.baseurl)
         if hasattr(repodata, "debuginfo") and repodata.debuginfo:
             repostr += ",debuginfo:"
         if hasattr(repodata, "source") and repodata.source:
@@ -251,7 +253,7 @@ def get_repostrs_from_ks(ks):
         kickstart_repos.append(repostr[1:])
     return kickstart_repos
 
-def get_uncompressed_data_from_url(url, filename, proxies):
+def _get_uncompressed_data_from_url(url, filename, proxies):
     filename = myurlgrab(url, filename, proxies)
     suffix = None
     if filename.endswith(".gz"):
@@ -264,10 +266,10 @@ def get_uncompressed_data_from_url(url, filename, proxies):
         filename = filename.replace(suffix, "")
     return filename
 
-def get_metadata_from_repo(baseurl, proxies, cachedir, reponame, filename):
+def _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, filename):
     url = str(baseurl + "/" + filename)
     filename_tmp = str("%s/%s/%s" % (cachedir, reponame, os.path.basename(filename)))
-    return get_uncompressed_data_from_url(url,filename_tmp,proxies)
+    return _get_uncompressed_data_from_url(url,filename_tmp,proxies)
 
 def get_metadata_from_repos(repostrs, cachedir):
     my_repo_metadata = []
@@ -336,17 +338,17 @@ def get_metadata_from_repos(repostrs, cachedir):
             continue
 
         primary = elm.find("%slocation" % ns).attrib['href']
-        primary = get_metadata_from_repo(baseurl, proxies, cachedir, reponame, primary)
+        primary = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, primary)
 
         if patterns:
-            patterns = get_metadata_from_repo(baseurl, proxies, cachedir, reponame, patterns)
+            patterns = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, patterns)
 
         if comps:
-            comps = get_metadata_from_repo(baseurl, proxies, cachedir, reponame, comps)
+            comps = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, comps)
 
         """ Get repo key """
         try:
-            repokey = get_metadata_from_repo(baseurl, proxies, cachedir, reponame, "repodata/repomd.xml.key")
+            repokey = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, "repodata/repomd.xml.key")
         except CreatorError:
             repokey = None
             msger.warning("\ncan't get %s/%s" % (baseurl, "repodata/repomd.xml.key"))
@@ -526,88 +528,6 @@ def get_source_name(pkg, repometadata):
         return get_src_name(pkgpath)
     else:
         return None
-
-def get_release_no(repometadata, distro="meego"):
-    import subprocess
-
-    cpio = find_binary_path("cpio")
-    rpm2cpio = find_binary_path("rpm2cpio")
-    release_pkg = get_package("%s-release" % distro, repometadata)
-    if release_pkg:
-        tmpdir = mkdtemp()
-        oldcwd = os.getcwd()
-        os.chdir(tmpdir)
-        p1 = subprocess.Popen([rpm2cpio, release_pkg], stdout = subprocess.PIPE)
-        p2 = subprocess.Popen([cpio, "-idv"], stdin = p1.stdout, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-        p2.communicate()
-        f = open("%s/etc/%s-release" % (tmpdir, distro), "r")
-        content = f.read()
-        f.close()
-        os.chdir(oldcwd)
-        shutil.rmtree(tmpdir, ignore_errors = True)
-        return content.split(" ")[2]
-    else:
-        return "UNKNOWN"
-
-def get_kickstarts_from_repos(repometadata):
-    kickstarts = []
-    for repo in repometadata:
-        try:
-            root = xmlparse(repo["repomd"])
-        except SyntaxError:
-            raise CreatorError("repomd.xml syntax error.")
-
-        ns = root.getroot().tag
-        ns = ns[0:ns.rindex("}")+1]
-
-        for elm in root.getiterator("%sdata" % ns):
-            if elm.attrib["type"] == "image-config":
-                break
-
-        if elm.attrib["type"] != "image-config":
-            continue
-
-        location = elm.find("%slocation" % ns)
-        image_config = str(repo["baseurl"] + "/" + location.attrib["href"])
-        filename = str("%s/%s/image-config.xml%s" % (repo["cachedir"], repo["name"], suffix))
-
-        image_config = get_uncompressed_data_from_url(image_config,filename,repo["proxies"])
-
-        try:
-            root = xmlparse(image_config)
-        except SyntaxError:
-            raise CreatorError("image-config.xml syntax error.")
-
-        for elm in root.getiterator("config"):
-            path = elm.find("path").text
-            path = path.replace("images-config", "image-config")
-            description = elm.find("description").text
-            makedirs(os.path.dirname("%s/%s/%s" % (repo["cachedir"], repo["name"], path)))
-            url = path
-            if "http" not in path:
-                url = str(repo["baseurl"] + "/" + path)
-            filename = str("%s/%s/%s" % (repo["cachedir"], repo["name"], path))
-            path = myurlgrab(url, filename, repo["proxies"])
-            kickstarts.append({"filename":path,"description":description})
-        return kickstarts
-
-def select_ks(ksfiles):
-    msger.info("Available kickstart files:")
-    i = 0
-    for ks in ksfiles:
-        i += 1
-        msger.raw("\t%d. %s (%s)" % (i, ks["description"], os.path.basename(ks["filename"])))
-
-    while True:
-        choice = raw_input("Please input your choice and press ENTER. [1..%d] ? " % i)
-        if choice.lower() == "q":
-            sys.exit(1)
-        if choice.isdigit():
-            choice = int(choice)
-            if choice >= 1 and choice <= i:
-                break
-
-    return ksfiles[choice-1]["filename"]
 
 def get_pkglist_in_patterns(group, patterns):
     found = False
