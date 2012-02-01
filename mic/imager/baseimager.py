@@ -906,7 +906,6 @@ class BaseImageCreator(object):
             self._pkgs_content = pkg_manager.getAllContent()
             self._pkgs_license = pkg_manager.getPkgsLicense()
 
-            pkg_manager.closeRpmDB()
             pkg_manager.close()
             os.unlink(yum_conf)
 

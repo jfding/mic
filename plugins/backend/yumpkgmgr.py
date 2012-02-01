@@ -83,10 +83,13 @@ class Yum(BackendPlugin, yum.YumBase):
             os.unlink(self.conf.installroot + "/yum.conf")
         except:
             pass
-        self.closeRpmDB()
-        yum.YumBase.close(self)
+
+        if self.ts:
+            self.ts.close()
         self._delRepos()
         self._delSacks()
+        yum.YumBase.close(self)
+        self.closeRpmDB()
 
         if not os.path.exists("/etc/fedora-release") and not os.path.exists("/etc/meego-release"):
             for i in range(3, os.sysconf("SC_OPEN_MAX")):
