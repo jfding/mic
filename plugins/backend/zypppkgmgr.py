@@ -29,6 +29,7 @@ if not hasattr(zypp, 'PoolQuery') or not hasattr(zypp.RepoManager, 'loadSolvFile
 from mic import msger
 from mic.kickstart import ksparser
 from mic.utils import rpmmisc
+from mic.utils import misc
 from mic.utils.proxy import get_proxy_for
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
@@ -366,12 +367,15 @@ class Zypp(BackendPlugin):
                     else:
                         download_total_size -= int(po.downloadSize())
                         cached_count += 1
+        cache_avail_size = misc.get_filesystem_avail(self.cachedir)
+        if cache_avail_size < download_total_size:
+            raise CreatorError("No enough space used for downloading.")
 
         # record the total size of installed pkgs
         install_total_size = sum(map(lambda x: int(x.installSize()), dlpkgs))
         # check needed size before actually download and install
-        if checksize and download_total_size + install_total_size > checksize:
-            raise CreatorError("No enough space used for downloading and installing")
+        if checksize and install_total_size > checksize:
+            raise CreatorError("No enough space used for installing, please resize partition size in ks file")
 
         download_count =  total_count - cached_count
         msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, download_count))

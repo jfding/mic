@@ -24,6 +24,7 @@ import yum
 from mic import msger
 from mic.kickstart import ksparser
 from mic.utils import rpmmisc
+from mic.utils import misc
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
 
@@ -294,6 +295,9 @@ class Yum(BackendPlugin, yum.YumBase):
             else:
                 download_total_size -= int(po.packagesize)
                 cached_count +=1
+        cache_avail_size = misc.get_filesystem_avail(self.cachedir)
+        if cache_avail_size < download_total_size:
+            raise CreatorError("No enough space used for downloading.")
 
         # record the total size of installed pkgs
         pkgs_total_size = 0L
@@ -304,8 +308,8 @@ class Yum(BackendPlugin, yum.YumBase):
                 pkgs_total_size += int(x.size)
 
         # check needed size before actually download and install
-        if checksize and pkgs_total_size + download_total_size > checksize:
-            raise CreatorError("No enough space used for downloading and installing")
+        if checksize and pkgs_total_size > checksize:
+            raise CreatorError("No enough space used for installing, please resize partition size in ks file")
 
         msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, total_count - cached_count))
         try:
