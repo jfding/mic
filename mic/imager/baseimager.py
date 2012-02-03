@@ -865,10 +865,8 @@ class BaseImageCreator(object):
             self._excluded_pkgs = None
             self._required_groups = None
 
-        yum_conf = self._mktemp(prefix = "yum.conf-")
-
         pkg_manager = self.get_pkg_manager()
-        pkg_manager.setup(yum_conf, self._instroot)
+        pkg_manager.setup()
 
         for repo in kickstart.get_repos(self.ks, repo_urls):
             (name, baseurl, mirrorlist, inc, exc,
@@ -907,7 +905,6 @@ class BaseImageCreator(object):
             self._pkgs_license = pkg_manager.getPkgsLicense()
 
             pkg_manager.close()
-            os.unlink(yum_conf)
 
         # do some clean up to avoid lvm info leakage.  this sucks.
         for subdir in ("cache", "backup", "archive"):

@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os, sys, re
+import os, sys, re, tempfile
 
 import rpmUtils
 import yum
@@ -81,6 +81,7 @@ class Yum(BackendPlugin, yum.YumBase):
 
     def close(self):
         try:
+            os.unlink(self.confpath)
             os.unlink(self.conf.installroot + "/yum.conf")
         except:
             pass
@@ -126,10 +127,15 @@ class Yum(BackendPlugin, yum.YumBase):
         for f in glob.glob(installroot + "/var/lib/rpm/__db*"):
             os.unlink(f)
 
-    def setup(self, confpath, installroot):
-        self._writeConf(confpath, installroot)
-        self._cleanupRpmdbLocks(installroot)
-        self.doConfigSetup(fn = confpath, root = installroot)
+    def setup(self):
+        # create yum.conf
+        (fn, self.confpath) = tempfile.mkstemp(dir=self.cachedir,
+                                               prefix='yum.conf-')
+        os.close(fn)
+        self._writeConf(self.confpath, self.instroot)
+        self._cleanupRpmdbLocks(self.instroot)
+        # do setup
+        self.doConfigSetup(fn = self.confpath, root = self.instroot)
         self.conf.cache = 0
         self.doTsSetup()
         self.doRpmDBSetup()

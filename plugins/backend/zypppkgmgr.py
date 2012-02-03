@@ -108,9 +108,7 @@ class Zypp(BackendPlugin):
         for f in glob.glob(installroot + "/var/lib/rpm/__db*"):
             os.unlink(f)
 
-    def setup(self, confpath=None, instroot=None):
-        if not self.instroot:
-            self.instroot = instroot
+    def setup(self):
         self._cleanupRpmdbLocks(self.instroot)
 
     def whatObsolete(self, pkg):
