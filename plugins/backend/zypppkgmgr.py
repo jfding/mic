@@ -19,17 +19,17 @@ import os
 import shutil
 import urlparse
 import rpm
-from mic.utils import runner, fs_related
 
 import zypp
-if not hasattr(zypp, 'PoolQuery') or not hasattr(zypp.RepoManager, 'loadSolvFile'):
-    raise ImportError("python-zypp in host system cannot support PoolQuery or loadSolvFile interface, "
-                      "please update it to enhanced version which can be found in repo.meego.com/tools")
+if not hasattr(zypp, 'PoolQuery') or \
+   not hasattr(zypp.RepoManager, 'loadSolvFile'):
+    raise ImportError("python-zypp in host system cannot support PoolQuery or "
+                      "loadSolvFile interface, please update it to enhanced "
+                      "version which can be found in repo.meego.com/tools")
 
 from mic import msger
 from mic.kickstart import ksparser
-from mic.utils import rpmmisc
-from mic.utils import misc
+from mic.utils import misc, rpmmisc, runner, fs_related
 from mic.utils.proxy import get_proxy_for
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
@@ -90,8 +90,11 @@ class Zypp(BackendPlugin):
         if self.ts:
             self.ts.closeDB()
             self.ts = None
+
         self.closeRpmDB()
-        if not os.path.exists("/etc/fedora-release") and not os.path.exists("/etc/meego-release"):
+
+        if not os.path.exists("/etc/fedora-release") and \
+           not os.path.exists("/etc/meego-release"):
             for i in range(3, os.sysconf("SC_OPEN_MAX")):
                 try:
                     os.close(i)
@@ -133,7 +136,10 @@ class Zypp(BackendPlugin):
         return name, arch
 
     def selectPackage(self, pkg):
-        """ Select a given package or package pattern, can be specified with name.arch or name* or *name """
+        """Select a given package or package pattern, can be specified
+        with name.arch or name* or *name
+        """
+
         if not self.Z:
             self.__initialize_zypp()
 
@@ -151,6 +157,7 @@ class Zypp(BackendPlugin):
 
         q = zypp.PoolQuery()
         q.addKind(zypp.ResKind.package)
+
         if ispattern:
             if startx and not endx:
                 pattern = '%s$' % (pkg[1:])
@@ -160,18 +167,27 @@ class Zypp(BackendPlugin):
                 pattern = '%s' % (pkg[1:-1])
             q.setMatchRegex()
             q.addAttribute(zypp.SolvAttr.name,pattern)
+
         elif arch:
             q.setMatchExact()
             q.addAttribute(zypp.SolvAttr.name,name)
+
         else:
             q.setMatchExact()
             q.addAttribute(zypp.SolvAttr.name,pkg)
 
-        for item in sorted(q.queryResults(self.Z.pool()), key=lambda item: str(item.edition()), reverse=True):
-            if item.name() in self.excpkgs.keys() and self.excpkgs[item.name()] == item.repoInfo().name():
+        for item in sorted(
+                        q.queryResults(self.Z.pool()),
+                        key=lambda item: str(item.edition()),
+                        reverse=True):
+
+            if item.name() in self.excpkgs.keys() and \
+               self.excpkgs[item.name()] == item.repoInfo().name():
                 continue
-            if item.name() in self.incpkgs.keys() and self.incpkgs[item.name()] != item.repoInfo().name():
+            if item.name() in self.incpkgs.keys() and \
+               self.incpkgs[item.name()] != item.repoInfo().name():
                 continue
+
             found = True
             obspkg = self.whatObsolete(item.name())
             if arch:
@@ -181,26 +197,38 @@ class Zypp(BackendPlugin):
                 markPoolItem(obspkg, item)
             if not ispattern:
                 break
-        # Can't match using package name, then search from packge provides infomation
+
+        # Can't match using package name, then search from packge
+        # provides infomation
         if found == False and not ispattern:
             q.addAttribute(zypp.SolvAttr.provides, pkg)
             q.addAttribute(zypp.SolvAttr.name,'')
-            for item in sorted(q.queryResults(self.Z.pool()), key=lambda item: str(item.edition()), reverse=True):
-                if item.name() in self.excpkgs.keys() and self.excpkgs[item.name()] == item.repoInfo().name():
+
+            for item in sorted(
+                            q.queryResults(self.Z.pool()),
+                            key=lambda item: str(item.edition()),
+                            reverse=True):
+                if item.name() in self.excpkgs.keys() and \
+                   self.excpkgs[item.name()] == item.repoInfo().name():
                     continue
-                if item.name() in self.incpkgs.keys() and self.incpkgs[item.name()] != item.repoInfo().name():
+                if item.name() in self.incpkgs.keys() and \
+                   self.incpkgs[item.name()] != item.repoInfo().name():
                     continue
+
                 found = True
                 obspkg = self.whatObsolete(item.name())
                 markPoolItem(obspkg, item)
                 break
+
         if found:
             return None
         else:
             raise CreatorError("Unable to find package: %s" % (pkg,))
 
     def inDeselectPackages(self, item):
-        """check if specified pacakges are in the list of inDeselectPackages"""
+        """check if specified pacakges are in the list of inDeselectPackages
+        """
+
         name = item.name()
         for pkg in self.to_deselect:
             startx = pkg.startswith("*")
@@ -219,6 +247,7 @@ class Zypp(BackendPlugin):
                         return True;
                 if endx and name.startswith(pkg[:-1]):
                         return True;
+
         return False;
 
     def deselectPackage(self, pkg):
@@ -241,16 +270,27 @@ class Zypp(BackendPlugin):
 
         if found:
             if include == ksparser.GROUP_REQUIRED:
-                map(lambda p: self.deselectPackage(p), grp.default_packages.keys())
+                map(
+                    lambda p: self.deselectPackage(p),
+                    grp.default_packages.keys())
+
             return None
         else:
             raise CreatorError("Unable to find pattern: %s" % (grp,))
 
-    def addRepository(self, name, url = None, mirrorlist = None, proxy = None,
-                      proxy_username = None, proxy_password = None,
-                      inc = None, exc = None, ssl_verify = True, cost=None,
-                      priority=None):
+    def addRepository(self, name,
+                            url = None,
+                            mirrorlist = None,
+                            proxy = None,
+                            proxy_username = None,
+                            proxy_password = None,
+                            inc = None,
+                            exc = None,
+                            ssl_verify = True,
+                            cost=None,
+                            priority=None):
         # TODO: Handle cost attribute for repos
+
         if not self.repo_manager:
             self.__initialize_repo_manager()
 
@@ -294,22 +334,31 @@ class Zypp(BackendPlugin):
             if not ssl_verify:
                 baseurl.setQueryParam("ssl_verify", "no")
             if proxy:
-                (scheme, host, path, parm, query, frag) = urlparse.urlparse(proxy)
+                scheme, host, path, parm, query, frag = urlparse.urlparse(proxy)
+
                 proxyinfo = host.split(":")
                 host = proxyinfo[0]
+
                 port = "80"
                 if len(proxyinfo) > 1:
                     port = proxyinfo[1]
+
                 if proxy.startswith("socks") and len(proxy.rsplit(':', 1)) == 2:
                     host = proxy.rsplit(':', 1)[0]
                     port = proxy.rsplit(':', 1)[1]
+
                 baseurl.setQueryParam ("proxy", host)
                 baseurl.setQueryParam ("proxyport", port)
+
             repo_info.addBaseUrl(baseurl)
+
             if repo.priority:
                 repo_info.setPriority(repo.priority)
+
             self.repo_manager.addRepository(repo_info)
+
             self.__build_repo_cache(name)
+
         except RuntimeError, e:
             raise CreatorError(str(e))
 
@@ -327,7 +376,8 @@ class Zypp(BackendPlugin):
         installed_pkgs = todo._toInstall
         dlpkgs = []
         for item in installed_pkgs:
-            if not zypp.isKindPattern(item) and not self.inDeselectPackages(item):
+            if not zypp.isKindPattern(item) and \
+               not self.inDeselectPackages(item):
                 dlpkgs.append(item)
 
         # record all pkg and the content
@@ -336,13 +386,24 @@ class Zypp(BackendPlugin):
             license = ''
             if pkg.name() in localpkgs:
                 hdr = rpmmisc.readRpmHeader(self.ts, self.localpkgs[pkg.name()])
-                pkg_long_name = "%s.%s %s-%s" % (hdr['name'], hdr['arch'], hdr['version'], hdr['release'])
+                pkg_long_name = "%s.%s %s-%s" \
+                                % (hdr['name'],
+                                   hdr['arch'],
+                                   hdr['version'],
+                                   hdr['release'])
                 license = hdr['license']
+
             else:
-                pkg_long_name = "%s.%s %s" % (pkg.name(), pkg.arch(), pkg.edition())
+                pkg_long_name = "%s.%s %s" \
+                                % (pkg.name(),
+                                   pkg.arch(),
+                                   pkg.edition())
+
                 package = zypp.asKindPackage(pkg)
                 license = package.license()
+
             self.__pkgs_content[pkg_long_name] = {} #TBD: to get file list
+
             if license in self.__pkgs_license.keys():
                 self.__pkgs_license[license].append(pkg_long_name)
             else:
@@ -352,9 +413,10 @@ class Zypp(BackendPlugin):
         cached_count = 0
         download_total_size = sum(map(lambda x: int(x.downloadSize()), dlpkgs))
         localpkgs = self.localpkgs.keys()
+
         msger.info("Checking packages cache and packages integrity ...")
         for po in dlpkgs:
-            """ Check if it is cached locally """
+            # Check if it is cached locally
             if po.name() in localpkgs:
                 cached_count += 1
             else:
@@ -373,14 +435,20 @@ class Zypp(BackendPlugin):
         install_total_size = sum(map(lambda x: int(x.installSize()), dlpkgs))
         # check needed size before actually download and install
         if checksize and install_total_size > checksize:
-            raise CreatorError("No enough space used for installing, please resize partition size in ks file")
+            raise CreatorError("No enough space used for installing, "
+                               "please resize partition size in ks file")
 
         download_count =  total_count - cached_count
-        msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, download_count))
+        msger.info("%d packages to be installed, "
+                   "%d packages gotten from cache, "
+                   "%d packages to be downloaded" \
+                   % (total_count, cached_count, download_count))
+
         try:
             if download_count > 0:
                 msger.info("Downloading packages ...")
             self.downloadPkgs(dlpkgs, download_count)
+
             self.installPkgs(dlpkgs)
 
         except RepoError, e:
@@ -398,7 +466,7 @@ class Zypp(BackendPlugin):
         if self.repo_manager:
             return
 
-        """ Clean up repo metadata """
+        # Clean up repo metadata
         shutil.rmtree(self.cachedir + "/etc", ignore_errors = True)
         shutil.rmtree(self.cachedir + "/solv", ignore_errors = True)
         shutil.rmtree(self.cachedir + "/raw", ignore_errors = True)
@@ -408,12 +476,24 @@ class Zypp(BackendPlugin):
                                      | zypp.KeyRing.ACCEPT_UNKNOWNKEY
                                      | zypp.KeyRing.TRUST_KEY_TEMPORARILY
                                      )
-        self.repo_manager_options = zypp.RepoManagerOptions(zypp.Pathname(self.instroot))
-        self.repo_manager_options.knownReposPath = zypp.Pathname(self.cachedir + "/etc/zypp/repos.d")
-        self.repo_manager_options.repoCachePath = zypp.Pathname(self.cachedir)
-        self.repo_manager_options.repoRawCachePath = zypp.Pathname(self.cachedir + "/raw")
-        self.repo_manager_options.repoSolvCachePath = zypp.Pathname(self.cachedir + "/solv")
-        self.repo_manager_options.repoPackagesCachePath = zypp.Pathname(self.cachedir + "/packages")
+
+        self.repo_manager_options = \
+                zypp.RepoManagerOptions(zypp.Pathname(self.instroot))
+
+        self.repo_manager_options.knownReposPath = \
+                zypp.Pathname(self.cachedir + "/etc/zypp/repos.d")
+
+        self.repo_manager_options.repoCachePath = \
+                zypp.Pathname(self.cachedir)
+
+        self.repo_manager_options.repoRawCachePath = \
+                zypp.Pathname(self.cachedir + "/raw")
+
+        self.repo_manager_options.repoSolvCachePath = \
+                zypp.Pathname(self.cachedir + "/solv")
+
+        self.repo_manager_options.repoPackagesCachePath = \
+                zypp.Pathname(self.cachedir + "/packages")
 
         self.repo_manager = zypp.RepoManager(self.repo_manager_options)
 
@@ -421,6 +501,7 @@ class Zypp(BackendPlugin):
         repo = self.repo_manager.getRepositoryInfo(name)
         if self.repo_manager.isCached(repo) or not repo.enabled():
             return
+
         self.repo_manager.buildCache(repo, zypp.RepoManager.BuildIfNeeded)
 
     def __initialize_zypp(self):
@@ -429,13 +510,13 @@ class Zypp(BackendPlugin):
 
         zconfig = zypp.ZConfig_instance()
 
-        """ Set system architecture """
+        # Set system architecture
         if self.target_arch:
             zconfig.setSystemArchitecture(zypp.Arch(self.target_arch))
 
         msger.info("zypp architecture is <%s>" % zconfig.systemArchitecture())
 
-        """ repoPackagesCachePath is corrected by this """
+        # repoPackagesCachePath is corrected by this
         self.repo_manager = zypp.RepoManager(self.repo_manager_options)
         repos = self.repo_manager.knownRepositories()
         for repo in repos:
@@ -447,12 +528,15 @@ class Zypp(BackendPlugin):
         self.Z.initializeTarget(zypp.Pathname(self.instroot))
         self.Z.target().load()
 
-
     def buildTransaction(self):
         if not self.Z.resolver().resolvePool():
-            msger.warning("Problem count: %d" % len(self.Z.resolver().problems()))
+            msger.warning("Problem count: %d" \
+                          % len(self.Z.resolver().problems()))
+
             for problem in self.Z.resolver().problems():
-                msger.warning("Problem: %s, %s" % (problem.description().decode("utf-8"), problem.details().decode("utf-8")))
+                msger.warning("Problem: %s, %s" \
+                              % (problem.description().decode("utf-8"),
+                                 problem.details().decode("utf-8")))
 
     def getLocalPkgPath(self, po):
         repoinfo = po.repoInfo()
@@ -465,46 +549,62 @@ class Zypp(BackendPlugin):
     def installLocal(self, pkg, po=None, updateonly=False):
         if not self.ts:
             self.__initialize_transaction()
+
         solvfile = "%s/.solv" % (self.cachedir)
-        rc, out = runner.runtool([fs_related.find_binary_path("rpms2solv"), pkg])
+
+        rc, out = runner.runtool([fs_related.find_binary_path("rpms2solv"),
+                                  pkg])
         if rc == 0:
             f = open(solvfile, "w+")
             f.write(out)
             f.close()
-            warnmsg = self.repo_manager.loadSolvFile(solvfile , os.path.basename(pkg))
+
+            warnmsg = self.repo_manager.loadSolvFile(solvfile,
+                                                     os.path.basename(pkg))
             if warnmsg:
                 msger.warning(warnmsg)
+
             os.unlink(solvfile)
         else:
             msger.warning('Can not get %s solv data.' % pkg)
+
         hdr = rpmmisc.readRpmHeader(self.ts, pkg)
         arch = zypp.Arch(hdr['arch'])
         sysarch = zypp.Arch(self.target_arch)
+
         if arch.compatible_with (sysarch):
             pkgname = hdr['name']
             self.localpkgs[pkgname] = pkg
             self.selectPackage(pkgname)
             msger.info("Marking %s to be installed" % (pkg))
+
         else:
-            msger.warning ("Cannot add package %s to transaction. Not a compatible architecture: %s" % (pkg, hdr['arch']))
+            msger.warning("Cannot add package %s to transaction. "
+                          "Not a compatible architecture: %s" \
+                          % (pkg, hdr['arch']))
 
     def downloadPkgs(self, package_objects, count):
         localpkgs = self.localpkgs.keys()
         progress_obj = rpmmisc.TextProgress(count)
+
         for po in package_objects:
             if po.name() in localpkgs:
                 continue
+
             filename = self.getLocalPkgPath(po)
             if os.path.exists(filename):
                 if self.checkPkg(filename) == 0:
                     continue
+
             dirn = os.path.dirname(filename)
             if not os.path.exists(dirn):
                 os.makedirs(dirn)
+
             baseurl = str(po.repoInfo().baseUrls()[0])
             index = baseurl.find("?")
             if index > -1:
                 baseurl = baseurl[:index]
+
             proxy = self.get_proxy(po.repoInfo())
             proxies = {}
             if proxy:
@@ -514,9 +614,14 @@ class Zypp(BackendPlugin):
             location = str(location.filename())
             if location.startswith("./"):
                 location = location[2:]
+
             url = baseurl + "/%s" % location
+
             try:
-                filename = rpmmisc.myurlgrab(url, filename, proxies, progress_obj)
+                filename = rpmmisc.myurlgrab(url,
+                                             filename,
+                                             proxies,
+                                             progress_obj)
             except CreatorError:
                 self.close()
                 raise
@@ -525,29 +630,35 @@ class Zypp(BackendPlugin):
         if not self.ts:
             self.__initialize_transaction()
 
-        """ Set filters """
+        # Set filters
         probfilter = 0
         for flag in self.probFilterFlags:
             probfilter |= flag
         self.ts.setProbFilter(probfilter)
 
         localpkgs = self.localpkgs.keys()
+
         for po in package_objects:
             pkgname = po.name()
             if pkgname in localpkgs:
                 rpmpath = self.localpkgs[pkgname]
             else:
                 rpmpath = self.getLocalPkgPath(po)
+
             if not os.path.exists(rpmpath):
-                """ Maybe it is a local repo """
+                # Maybe it is a local repo
                 baseurl = str(po.repoInfo().baseUrls()[0])
                 baseurl = baseurl.strip()
+
                 location = zypp.asKindPackage(po).location()
                 location = str(location.filename())
+
                 if baseurl.startswith("file:/"):
                     rpmpath = baseurl[5:] + "/%s" % (location)
+
             if not os.path.exists(rpmpath):
                 raise RpmError("Error: %s doesn't exist" % rpmpath)
+
             h = rpmmisc.readRpmHeader(self.ts, rpmpath)
             self.ts.addInstall(h, rpmpath, 'u')
 
@@ -556,23 +667,33 @@ class Zypp(BackendPlugin):
             self.ts.order()
             cb = rpmmisc.RPMInstallCallback(self.ts)
             installlogfile = "%s/__catched_stderr.buf" % (self.instroot)
+
+            # start to catch stderr output from librpm
             msger.enable_logstderr(installlogfile)
+
             errors = self.ts.run(cb.callback, '')
             if errors is None:
                 pass
+
             elif len(errors) == 0:
-                msger.warning('scriptlet or other non-fatal errors occurred during transaction.')
+                msger.warning('scriptlet or other non-fatal errors occurred '
+                              'during transaction.')
+
             else:
                 for e in errors:
                     msger.warning(e[0])
                 msger.error('Could not run transaction.')
+
+            # stop catch
             msger.disable_logstderr()
 
             self.ts.closeDB()
             self.ts = None
+
         else:
             for pkg, need, needflags, sense, key in unresolved_dependencies:
                 package = '-'.join(pkg)
+
                 if needflags == rpm.RPMSENSE_LESS:
                     deppkg = ' < '.join(need)
                 elif needflags == rpm.RPMSENSE_EQUAL:
@@ -583,9 +704,11 @@ class Zypp(BackendPlugin):
                     deppkg = '-'.join(need)
 
                 if sense == rpm.RPMDEP_SENSE_REQUIRES:
-                    msger.warning ("[%s] Requires [%s], which is not provided" % (package, deppkg))
+                    msger.warning("[%s] Requires [%s], which is not provided" \
+                                  % (package, deppkg))
+
                 elif sense == rpm.RPMDEP_SENSE_CONFLICTS:
-                    msger.warning ("[%s] Conflicts with [%s]" % (package, deppkg))
+                    msger.warning("[%s] Conflicts with [%s]" %(package,deppkg))
 
             raise RepoError("Unresolved dependencies, transaction failed.")
 
@@ -601,7 +724,8 @@ class Zypp(BackendPlugin):
             return ret
         ret = rpmmisc.checkRpmIntegrity('rpm', pkg)
         if ret != 0:
-            msger.warning("package %s is damaged: %s" % (os.path.basename(pkg), pkg))
+            msger.warning("package %s is damaged: %s" \
+                          % (os.path.basename(pkg), pkg))
 
         return ret
 

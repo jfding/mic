@@ -16,26 +16,47 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os, sys, re, tempfile
+import os, sys
+import re
+import tempfile
+import glob
+from string import Template
 
 import rpmUtils
 import yum
 
 from mic import msger
 from mic.kickstart import ksparser
-from mic.utils import rpmmisc
-from mic.utils import misc
+from mic.utils import misc, rpmmisc
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
 
-class MyYumRepository(yum.yumRepo.YumRepository):
+YUMCONF_TEMP = """[main]
+installroot=$installroot
+cachedir=/var/cache/yum
+persistdir=/var/lib/yum
+plugins=0
+reposdir=
+failovermethod=priority
+http_caching=packages
+sslverify=1
+"""
 
+class MyYumRepository(yum.yumRepo.YumRepository):
     def __del__(self):
         pass
 
-    def _getFile(self, url=None, relative=None, local=None, start=None, end=None,
-            copy_local=None, checkfunc=None, text=None, reget='simple',
-            cache=True, size=None):
+    def _getFile(self, url=None,
+                       relative=None,
+                       local=None,
+                       start=None,
+                       end=None,
+                       copy_local=None,
+                       checkfunc=None,
+                       text=None,
+                       reget='simple',
+                       cache=True,
+                       size=None):
 
         m2c_connection = None
         if not self.sslverify:
@@ -43,10 +64,20 @@ class MyYumRepository(yum.yumRepo.YumRepository):
             m2c_connection = M2Crypto.SSL.Connection.clientPostConnectionCheck
             M2Crypto.SSL.Connection.clientPostConnectionCheck = None
 
-        rvalue = super(MyYumRepository, self)._getFile(url, relative, local,
-            start, end, copy_local, checkfunc, text, reget, cache, size)
+        rvalue = super(MyYumRepository, self)._getFile(url,
+                                                       relative,
+                                                       local,
+                                                       start,
+                                                       end,
+                                                       copy_local,
+                                                       checkfunc,
+                                                       text,
+                                                       reget,
+                                                       cache,
+                                                       size)
 
-        if m2c_connection and not M2Crypto.SSL.Connection.clientPostConnectionCheck:
+        if m2c_connection and \
+           not M2Crypto.SSL.Connection.clientPostConnectionCheck:
             M2Crypto.SSL.Connection.clientPostConnectionCheck = m2c_connection
 
         return rvalue
@@ -93,7 +124,8 @@ class Yum(BackendPlugin, yum.YumBase):
         yum.YumBase.close(self)
         self.closeRpmDB()
 
-        if not os.path.exists("/etc/fedora-release") and not os.path.exists("/etc/meego-release"):
+        if not os.path.exists("/etc/fedora-release") and \
+           not os.path.exists("/etc/meego-release"):
             for i in range(3, os.sysconf("SC_OPEN_MAX")):
                 try:
                     os.close(i)
@@ -104,15 +136,7 @@ class Yum(BackendPlugin, yum.YumBase):
         pass
 
     def _writeConf(self, confpath, installroot):
-        conf  = "[main]\n"
-        conf += "installroot=%s\n" % installroot
-        conf += "cachedir=/var/cache/yum\n"
-        conf += "persistdir=/var/lib/yum\n"
-        conf += "plugins=0\n"
-        conf += "reposdir=\n"
-        conf += "failovermethod=priority\n"
-        conf += "http_caching=packages\n"
-        conf += "sslverify=1\n"
+        conf = Template(YUMCONF_TEMP).safe_substitute(installroot=installroot)
 
         f = file(confpath, "w+")
         f.write(conf)
@@ -123,7 +147,6 @@ class Yum(BackendPlugin, yum.YumBase):
     def _cleanupRpmdbLocks(self, installroot):
         # cleans up temporary files left by bdb so that differing
         # versions of rpm don't cause problems
-        import glob
         for f in glob.glob(installroot + "/var/lib/rpm/__db*"):
             os.unlink(f)
 
@@ -143,7 +166,10 @@ class Yum(BackendPlugin, yum.YumBase):
         self.doSackSetup()
 
     def selectPackage(self, pkg):
-        """Select a given package.  Can be specified with name.arch or name*"""
+        """Select a given package.
+        Can be specified with name.arch or name*
+        """
+
         try:
             self.install(pattern = pkg)
             return None
@@ -155,14 +181,19 @@ class Yum(BackendPlugin, yum.YumBase):
             raise CreatorError("Unable to install: %s" % (e,))
 
     def deselectPackage(self, pkg):
-        """Deselect package.  Can be specified as name.arch or name*"""
+        """Deselect package.  Can be specified as name.arch or name*
+        """
+
         sp = pkg.rsplit(".", 2)
         txmbrs = []
         if len(sp) == 2:
             txmbrs = self.tsInfo.matchNaevr(name=sp[0], arch=sp[1])
 
         if len(txmbrs) == 0:
-            exact, match, unmatch = yum.packages.parsePackages(self.pkgSack.returnPackages(), [pkg], casematch=1)
+            exact, match, unmatch = yum.packages.parsePackages(
+                                            self.pkgSack.returnPackages(),
+                                            [pkg],
+                                            casematch=1)
             for p in exact + match:
                 txmbrs.append(p)
 
@@ -211,7 +242,7 @@ class Yum(BackendPlugin, yum.YumBase):
 
         repo = MyYumRepository(name)
 
-        """Set proxy"""
+        # Set proxy
         repo.proxy = proxy
         repo.proxy_username = proxy_username
         repo.proxy_password = proxy_password
@@ -254,17 +285,25 @@ class Yum(BackendPlugin, yum.YumBase):
         try:
             hdr = rpmUtils.miscutils.hdrFromPackage(ts, pkg)
         except rpmUtils.RpmUtilsError, e:
-            raise yum.Errors.MiscError, 'Could not open local rpm file: %s: %s' % (pkg, e)
+            raise yum.Errors.MiscError, \
+                  'Could not open local rpm file: %s: %s' % (pkg, e)
+
         self.deselectPackage(hdr['name'])
         yum.YumBase.installLocal(self, pkg, po, updateonly)
 
     def installHasFile(self, file):
         provides_pkg = self.whatProvides(file, None, None)
-        dlpkgs = map(lambda x: x.po, filter(lambda txmbr: txmbr.ts_state in ("i", "u"), self.tsInfo.getMembers()))
+        dlpkgs = map(
+                    lambda x: x.po,
+                    filter(
+                        lambda txmbr: txmbr.ts_state in ("i", "u"),
+                        self.tsInfo.getMembers()))
+
         for p in dlpkgs:
             for q in provides_pkg:
                 if (p == q):
                     return True
+
         return False
 
     def runInstall(self, checksize = 0):
@@ -273,10 +312,16 @@ class Yum(BackendPlugin, yum.YumBase):
             (res, resmsg) = self.buildTransaction()
         except yum.Errors.RepoError, e:
             raise CreatorError("Unable to download from repo : %s" %(e,))
-        if res != 2:
-            raise CreatorError("Failed to build transaction : %s" % str.join("\n", resmsg))
 
-        dlpkgs = map(lambda x: x.po, filter(lambda txmbr: txmbr.ts_state in ("i", "u"), self.tsInfo.getMembers()))
+        if res != 2:
+            raise CreatorError("Failed to build transaction : %s" \
+                               % str.join("\n", resmsg))
+
+        dlpkgs = map(
+                    lambda x: x.po,
+                    filter(
+                        lambda txmbr: txmbr.ts_state in ("i", "u"),
+                        self.tsInfo.getMembers()))
 
         # record all pkg and the content
         for pkg in dlpkgs:
@@ -291,16 +336,19 @@ class Yum(BackendPlugin, yum.YumBase):
         total_count = len(dlpkgs)
         cached_count = 0
         download_total_size = sum(map(lambda x: int(x.packagesize), dlpkgs))
+
         msger.info("\nChecking packages cache and packages integrity ...")
         for po in dlpkgs:
             local = po.localPkg()
             if not os.path.exists(local):
                 continue
             if not self.verifyPkg(local, po, False):
-                msger.warning("Package %s is damaged: %s" % (os.path.basename(local), local))
+                msger.warning("Package %s is damaged: %s" \
+                              % (os.path.basename(local), local))
             else:
                 download_total_size -= int(po.packagesize)
                 cached_count +=1
+
         cache_avail_size = misc.get_filesystem_avail(self.cachedir)
         if cache_avail_size < download_total_size:
             raise CreatorError("No enough space used for downloading.")
@@ -315,38 +363,49 @@ class Yum(BackendPlugin, yum.YumBase):
 
         # check needed size before actually download and install
         if checksize and pkgs_total_size > checksize:
-            raise CreatorError("No enough space used for installing, please resize partition size in ks file")
+            raise CreatorError("No enough space used for installing, "
+                               "please resize partition size in ks file")
 
-        msger.info("%d packages to be installed, %d packages gotten from cache, %d packages to be downloaded" % (total_count, cached_count, total_count - cached_count))
+        msger.info("%d packages to be installed, "
+                   "%d packages gotten from cache, "
+                   "%d packages to be downloaded" \
+                   % (total_count, cached_count, total_count - cached_count))
+
         try:
             repos = self.repos.listEnabled()
             for repo in repos:
-                repo.setCallback(rpmmisc.TextProgress(total_count - cached_count))
+                repo.setCallback(
+                            rpmmisc.TextProgress(total_count - cached_count))
+
             self.downloadPkgs(dlpkgs)
             # FIXME: sigcheck?
 
             self.initActionTs()
             self.populateTs(keepold=0)
+
             deps = self.ts.check()
             if len(deps) != 0:
-                """ This isn't fatal, Ubuntu has this issue but it is ok. """
+                # This isn't fatal, Ubuntu has this issue but it is ok.
                 msger.debug(deps)
                 msger.warning("Dependency check failed!")
 
             rc = self.ts.order()
             if rc != 0:
-                raise CreatorError("ordering packages for installation failed!")
+                raise CreatorError("ordering packages for installation failed")
 
             # FIXME: callback should be refactored a little in yum
             cb = rpmmisc.RPMInstallCallback(self.ts)
             cb.tsInfo = self.tsInfo
             cb.filelog = False
 
-            msger.warning('\nCaution, do NOT interrupt the installation, else mic cannot finish the cleanup.')
+            msger.warning('\nCaution, do NOT interrupt the installation, '
+                          'else mic cannot finish the cleanup.')
+
             installlogfile = "%s/__catched_stderr.buf" % (self.instroot)
             msger.enable_logstderr(installlogfile)
             self.runTransaction(cb)
             self._cleanupRpmdbLocks(self.conf.installroot)
+
         except rpmUtils.RpmUtilsError, e:
             raise CreatorError("mic does NOT support delta rpm: %s" % e)
         except yum.Errors.RepoError, e:
