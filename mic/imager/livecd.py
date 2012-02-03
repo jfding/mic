@@ -118,17 +118,17 @@ class LiveImageCreatorBase(LoopImageCreator):
 
             A sensible default implementation is provided.
         """
+
         if self.ks is None:
-            r = "ro liveimg quiet"
-            if os.path.exists(self._instroot + "/usr/bin/rhgb"):
-                r += " rhgb"
-            if os.path.exists(self._instroot + "/usr/bin/plymouth"):
-                r += " rhgb"
-            return r
-        r = kickstart.get_kernel_args(self.ks)
+            r = "ro liveimg"
+        else:
+            r = kickstart.get_kernel_args(self.ks)
+
         if os.path.exists(self._instroot + "/usr/bin/rhgb") or \
-           os.path.exists(self._instroot + "/usr/bin/plymouth"):
-            r += " rhgb"
+           os.path.exists(self._instroot + "/usr/bin/plymouth") and \
+           ' rhgb' not in r:
+            r += ' rhgb'
+
         return r
 
     def _get_mkisofs_options(self, isodir):

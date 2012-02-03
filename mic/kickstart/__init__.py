@@ -45,8 +45,8 @@ def read_kickstart(path):
     be then passed to an ImageCreator constructor.
 
     If an error occurs, a CreatorError exception is thrown.
-
     """
+
     #version = ksversion.makeVersion()
     #ks = ksparser.KickstartParser(version)
 
@@ -649,7 +649,7 @@ def get_kernel_args(ks, default = "ro liveimg"):
         return default
     return "%s %s" %(default, ks.handler.bootloader.appendLine)
 
-def get_menu_args(ks, default = "liveinst"):
+def get_menu_args(ks, default = ""):
     if not hasattr(ks.handler.bootloader, "menus"):
         return default
     if ks.handler.bootloader.menus in (None, ""):
