@@ -17,7 +17,7 @@ corresponding subcommand. (Details in the following sections)
 
 It supports native running in many mainstream Linux distributions, including:
 
-* Fedora (13 and above)
+* Fedora (14 and above)
 * openSUSE (11.3 and above)
 * Ubuntu (10.04 and above)
 * Debian (5.0 and above)
@@ -36,16 +36,17 @@ please see the following list. And you can get the corresponding repository on
 If there is no the distribution you want in the list, please install it from
 source code.
 
-* Debian 5.0
-* Fedora 13
+* Debian 6.0
 * Fedora 14
 * Fedora 15
+* Fedora 16
 * openSUSE 11.3
 * openSUSE 11.4
+* openSUSE 12.1
 * Ubuntu 10.04
 * Ubuntu 10.10
-
-*Tips*: Debian 6.0 can use the repository of Debian 5.0.
+* Ubuntu 11.04
+* Ubuntu 11.10
 
 Binary Installation
 -------------------
