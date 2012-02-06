@@ -8,7 +8,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 Name:       mic
 Summary:    Image Creator for Linux Distributions
-Version:    0.4
+Version:    0.5
 Release:    1
 Group:      System/Base
 License:    GPLv2
@@ -37,7 +37,22 @@ Requires:   btrfsprogs
 %else
 Requires:   btrfs-progs
 %endif
-Requires:   python-zypp >= 0.5.7
+
+%if 0%{?fedora_version}
+Requires:   m2crypto 
+%else
+Requires:   python-M2Crypto
+%endif
+
+%if 0%{?fedora_version} == 16
+Requires:   syslinux-extlinux
+%endif
+
+%if 0%{?suse_version} == 1210
+Requires:   python-zypp == 0.5.50
+%else
+Requires:   python-zypp >= 0.5.9.1
+%endif
 BuildRequires:  python-devel
 Conflicts:   mic2
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
