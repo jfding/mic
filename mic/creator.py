@@ -98,7 +98,7 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('', '--copy-kernel', action='store_true',
                              dest='copy_kernel',
                              help='Copy kernel files from image /boot directory'
-                                  'to the image output directory.')
+                                  ' to the image output directory.')
         return optparser
 
     def preoptparse(self, argv):

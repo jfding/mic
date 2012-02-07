@@ -27,7 +27,7 @@ class MicCmd(cmdln.Cmdln):
     Usage: mic SUBCOMMAND [OPTS] [ARGS...]
 
     mic Means the Image Creation tool
-    Try 'mic help SUBCOMAND' for help on a specific subcommand.
+    Try 'mic help SUBCOMMAND' for help on a specific subcommand.
 
     ${command_list}
     global ${option_list}
