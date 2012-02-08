@@ -109,7 +109,8 @@ Ubuntu/Debian Installation
   > deb http://download.meego.com/live/devel:/tools:/building/<Ubuntu/Debian>_<VERSION>/ /
   > REPO
 
-*Tips*: for Ubuntu 10.10, you should use xUbuntu_10.10 to replace <Ubuntu/Debian>_<VERSIN>.
+*Tips*: for Ubuntu 10.10, you need to use xUbuntu_10.10 to replace
+<Ubuntu/Debian>_<VERSIN>.
 
 2. Update repolist:
 ::
@@ -243,7 +244,9 @@ or ::
 
   $ sudo mic cr fs test.ks --outdir output
 
-*Tips*: if you failed to create armv7* image, the reason may be qemu/qemu-arm on your host is lower than required, please update qemu/qemu-arm higher than 0.13.0.
+*Tips*: if you failed to create armv7* image, the reason may be: qemu/qemu-arm
+on your host is lower than required, please upgrade qemu/qemu-arm higher than
+version 0.13.0.
 
 Running 'mic chroot'
 --------------------
@@ -287,10 +290,23 @@ of ks file, example as follows: ::
 
 Multiple running instances support
 ----------------------------------
-mic support running multi-instance, but cache dir can't be shared between instances,
-so you should specify different cachedir for different instance using `--cachedir`.
-Also outdir should be specified to a different directory for each  instance  using
-`--outdir`, example as follows: ::
+mic support running multi-instance, but cache dir can't be shared between
+instances, so you should specify different cachedir for different instance
+using `--cachedir`. Also outdir should be specified to a different directory
+for each instance using `--outdir`, example as follows: ::
 
     mic cr fs netbook1.ks --cachedir=/var/tmp/cache/mic1 --outdir=out1
     mic cr fs netbook2.ks --cachedir=/var/tmp/cache/mic2 --outdir=out2
+
+Known Issues
+============
+
+Bug of latest "syslinux" package
+--------------------------------
+In some new Linux distributions, the "syslinux" package in their official
+software repositories is the version 4.04. It will cause segment fault for
+a fatal bug, and mic will failed with syslinux installation errors.
+
+The solution is to install the patched "syslinux" package in MeeGo or Tizen's
+tools repos, until the official released one being fixed.
+

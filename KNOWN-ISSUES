@@ -1,0 +1,11 @@
+Known Issues
+============
+
+Bug of latest "syslinux" package
+--------------------------------
+In some new Linux distributions, the "syslinux" package in their official
+software repositories is the version 4.04. It will cause segment fault for
+a fatal bug, and mic will failed with syslinux installation errors.
+
+The solution is to install the patched "syslinux" package in MeeGo or Tizen's
+tools repos, until the official released one being fixed.
