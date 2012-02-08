@@ -82,7 +82,7 @@ def _general_print(head, color, msg = None, stream = None, level = 'normal'):
         if errormsg:
             LOG_CONTENT += errormsg
 
-        save_msg = msg.strip()
+        save_msg = msg.strip() if msg else None
         if save_msg:
             global HOST_TIMEZONE
             timestr = time.strftime("[%m/%d %H:%M:%S] ",
