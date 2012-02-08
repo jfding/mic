@@ -325,7 +325,11 @@ class Yum(BackendPlugin, yum.YumBase):
 
         # record all pkg and the content
         for pkg in dlpkgs:
-            pkg_long_name = "%s.%s %s" % (pkg.name, pkg.arch, pkg.printVer())
+            pkg_long_name = misc.RPM_FMT % {
+                                'name': pkg.name,
+                                'arch': pkg.arch,
+                                'ver_rel': pkg.printVer(),
+                            }
             self.__pkgs_content[pkg_long_name] = pkg.files
             license = pkg.license
             if license in self.__pkgs_license.keys():

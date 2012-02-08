@@ -49,6 +49,10 @@ import runner
 
 from mic import msger
 
+RPM_RE  = re.compile("(.*)\.(.*) (.*)-(.*)")
+RPM_FMT = "%(name)s.%(arch)s %(ver_rel)s"
+SRPM_RE = re.compile("(.*)-(\d+.*)-(\d+\.\d+).src.rpm")
+
 def get_md5sum(fpath):
     blksize = 65536 # should be optimized enough
 
@@ -477,13 +481,13 @@ def get_package(pkg, repometadata, arch = None):
 def get_source_name(pkg, repometadata):
 
     def get_bin_name(pkg):
-        m = re.match("(.*)\.(.*) (.*)-(.*)", pkg)
+        m = RPM_RE.match(pkg)
         if m:
             return m.group(1)
         return None
 
     def get_src_name(srpm):
-        m = re.match("(.*)-(\d+.*)-(\d+\.\d+).src.rpm", srpm)
+        m = SRPM_RE.match(srpm)
         if m:
             return m.group(1)
         return None
@@ -664,7 +668,7 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
         return None
 
     def get_src_name(srpm):
-        m = re.match("(.*)-(\d+.*)-(\d+\.\d+).src.rpm", srpm)
+        m = SRPM_RE.match(srpm)
         if m:
             return m.group(1)
         return None

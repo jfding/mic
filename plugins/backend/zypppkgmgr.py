@@ -386,18 +386,20 @@ class Zypp(BackendPlugin):
             license = ''
             if pkg.name() in localpkgs:
                 hdr = rpmmisc.readRpmHeader(self.ts, self.localpkgs[pkg.name()])
-                pkg_long_name = "%s.%s %s-%s" \
-                                % (hdr['name'],
-                                   hdr['arch'],
-                                   hdr['version'],
-                                   hdr['release'])
+                pkg_long_name = misc.RPM_FMT % {
+                                    'name': hdr['name'],
+                                    'arch': hdr['arch'],
+                                    'ver_rel': '%s-%s' % (hdr['version'],
+                                                          hdr['release']),
+                                }
                 license = hdr['license']
 
             else:
-                pkg_long_name = "%s.%s %s" \
-                                % (pkg.name(),
-                                   pkg.arch(),
-                                   pkg.edition())
+                pkg_long_name = misc.RPM_FMT % {
+                                    'name': pkg.name(),
+                                    'arch': pkg.arch(),
+                                    'ver_rel': pkg.edition(),
+                                }
 
                 package = zypp.asKindPackage(pkg)
                 license = package.license()
