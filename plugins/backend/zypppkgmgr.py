@@ -294,6 +294,9 @@ class Zypp(BackendPlugin):
         if not self.repo_manager:
             self.__initialize_repo_manager()
 
+        if not proxy and url:
+            proxy = get_proxy_for(url)
+
         repo = RepositoryStub()
         repo.name = name
         repo.id = name
