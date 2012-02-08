@@ -477,7 +477,7 @@ def get_package(pkg, repometadata, arch = None):
 def get_source_name(pkg, repometadata):
 
     def get_bin_name(pkg):
-        m = re.match("(.*)-(.*)-(.*)\.(.*)\.rpm", pkg)
+        m = re.match("(.*)\.(.*) (.*)-(.*)", pkg)
         if m:
             return m.group(1)
         return None
