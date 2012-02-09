@@ -41,7 +41,11 @@ Requires:   btrfs-progs
 %if 0%{?fedora_version}
 Requires:   m2crypto 
 %else
+%if 0%{?suse_version} == 1210
 Requires:   python-M2Crypto
+%else
+Requires:   python-m2crypto
+%endif
 %endif
 
 %if 0%{?fedora_version} == 16
