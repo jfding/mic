@@ -48,6 +48,12 @@ class BaseImageCreator(object):
 
     """
 
+    # supported compression methods, and their corresponding cmd
+    zips = {
+        'gz': 'gzip',
+        'bz2': 'bzip2'
+    }
+
     def __del__(self):
         self.cleanup()
 
@@ -77,11 +83,6 @@ class BaseImageCreator(object):
 
         # If the kernel is save to the destdir when copy_kernel cmd is called.
         self._need_copy_kernel = False
-
-        # Eeach image type can change these values as they might be image type
-        # specific
-        if not hasattr(self, "_valid_compression_methods"):
-            self._valid_compression_methods = ['bz2']
 
         # The compression method for disk image.
         self._img_compression_method = None
@@ -176,11 +177,11 @@ class BaseImageCreator(object):
             os.makedirs(self.cachedir)
 
         if self._img_compression_method != None and \
-           self._img_compression_method not in self._valid_compression_methods:
+           self._img_compression_method not in self.zips:
             raise CreatorError("Given disk image compression method ('%s') is "
-                               "not valid. Valid values are '%s'." \
+                               "not valid. Valid values are: %s." \
                                % (self._img_compression_method,
-                                  ' '.join(self._valid_compression_methods)))
+                                  ', '.join(self.zips.keys())))
 
 
     #
@@ -1038,27 +1039,31 @@ class BaseImageCreator(object):
         if self._img_compression_method:
             if not self._img_name:
                 raise CreatorError("Image name not set.")
+
             rc = None
             img_location = os.path.join(self._outdir,self._img_name)
-            if self._img_compression_method == "bz2":
-                bzip2 = fs.find_binary_path('bzip2')
-                msger.info("Compressing %s with bzip2. Please wait..." \
-                           % img_location)
-                rc = runner.show([bzip2, "-f", img_location])
-                if rc:
-                    raise CreatorError("Failed to compress image %s with %s." \
-                                % (img_location, self._img_compression_method))
+            zipcmd = self.zips[self._img_compression_method]
 
-                for bootimg in glob.glob(os.path.dirname(img_location) + \
-                                         "/*-boot.bin"):
-                    msger.info("Compressing %s with bzip2. Please wait..." \
-                               % bootimg)
-                    rc = runner.show([bzip2, "-f", bootimg])
-                    if rc:
-                        raise CreatorError("Failed to compress image %s with "
-                                           "%s." \
-                                           % (bootimg,
-                                              self._img_compression_method))
+            # confirm the existing of zip command
+            fs.find_binary_path(zipcmd)
+
+            msger.info("Compressing %s with %s. Please wait ..." \
+                       % (img_location, zipcmd))
+            rc = runner.show([zipcmd, "-f", img_location])
+            if rc:
+                raise CreatorError("Failed to compress image %s with %s." \
+                            % (img_location, self._img_compression_method))
+
+            for bootimg in glob.glob(os.path.dirname(img_location) + \
+                                     "/*-boot.bin"):
+                msger.info("Compressing %s with %s. Please wait..." \
+                           % (bootimg, zipcmd))
+                rc = runner.show([zipcmd, "-f", bootimg])
+                if rc:
+                    raise CreatorError("Failed to compress image %s with "
+                                       "%s." \
+                                       % (bootimg,
+                                          self._img_compression_method))
 
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
