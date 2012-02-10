@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os, sys
+import os, sys, re
 import shutil
 import subprocess
 import time
@@ -65,9 +65,16 @@ def read_kickstart(path):
 
     try:
         ks.readKickstart(path)
-    except kserrors.KickstartError, e:
-        raise errors.KsError("'%s': %s" % (path, str(e)))
     except kserrors.KickstartParseError, e:
+        msgptn = re.compile("^\D*(\d+).*(Section does not end with.*)$", re.S)
+        m = msgptn.match(str(e))
+        if m:
+            lineno = m.group(1)
+            wrnmsg = m.group(2)
+            msger.warning("'%s:%s': %s" % (path, lineno, wrnmsg))
+        else:
+            raise errors.KsError("'%s': %s" % (path, str(e)))
+    except kserrors.KickstartError, e:
         raise errors.KsError("'%s': %s" % (path, str(e)))
     return ks
 
