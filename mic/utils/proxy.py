@@ -33,29 +33,21 @@ def set_proxy_environ():
     os.environ["no_proxy"] = _my_noproxy
 
 def unset_proxy_environ():
-   if os.environ.has_key("http_proxy"):
-       del os.environ["http_proxy"]
-   if os.environ.has_key("https_proxy"):
-       del os.environ["https_proxy"]
-   if os.environ.has_key("ftp_proxy"):
-       del os.environ["ftp_proxy"]
-   if os.environ.has_key("all_proxy"):
-       del os.environ["all_proxy"]
-   if os.environ.has_key("no_proxy"):
-       del os.environ["no_proxy"]
-   if os.environ.has_key("HTTP_PROXY"):
-       del os.environ["HTTP_PROXY"]
-   if os.environ.has_key("HTTPS_PROXY"):
-       del os.environ["HTTPS_PROXY"]
-   if os.environ.has_key("FTP_PROXY"):
-       del os.environ["FTP_PROXY"]
-   if os.environ.has_key("ALL_PROXY"):
-       del os.environ["ALL_PROXY"]
-   if os.environ.has_key("NO_PROXY"):
-       del os.environ["NO_PROXY"]
+    for env in ('http_proxy',
+                'https_proxy',
+                'ftp_proxy',
+                'all_proxy'):
+        if env in os.environ:
+            del os.environ[env]
+
+        ENV=env.upper()
+        if ENV in os.environ:
+            del os.environ[ENV]
 
 def _set_proxies(proxy = None, no_proxy = None):
-    """Return a dictionary of scheme -> proxy server URL mappings."""
+    """Return a dictionary of scheme -> proxy server URL mappings.
+    """
+
     global _my_noproxy, _my_proxies
     _my_proxies = {}
     _my_noproxy = None
@@ -65,11 +57,11 @@ def _set_proxies(proxy = None, no_proxy = None):
     if no_proxy:
        proxies.append(("no_proxy", no_proxy))
 
-    """Get proxy settings from environment variables if not provided"""
+    # Get proxy settings from environment if not provided
     if not proxy and not no_proxy:
        proxies = os.environ.items()
 
-       """ Remove proxy env variables, urllib2 can't handle them correctly """
+       # Remove proxy env variables, urllib2 can't handle them correctly
        unset_proxy_environ()
 
     for name, value in proxies:
@@ -112,14 +104,17 @@ def _set_noproxy_list():
         item = item.strip()
         if not item:
             continue
+
         if item[0] != '.' and item.find("/") == -1:
-            """ Need to match it """
+            # Need to match it
             _my_noproxy_list.append({"match":0,"needle":item})
+
         elif item[0] == '.':
-            """ Need to match at tail """
+            # Need to match at tail
             _my_noproxy_list.append({"match":1,"needle":item})
+
         elif item.find("/") > 3:
-            """ IP/MASK, need to match at head """
+            # IP/MASK, need to match at head
             needle = item[0:item.find("/")].strip()
             ip = _ip_to_int(needle)
             netmask = 0
@@ -136,27 +131,35 @@ def _set_noproxy_list():
                     netmask |= int(dec) << shift
                     shift -= 8
                 ip &= netmask
+
             _my_noproxy_list.append({"match":2,"needle":ip,"netmask":netmask})
 
 def _isnoproxy(url):
     (scheme, host, path, parm, query, frag) = urlparse.urlparse(url)
+
     if '@' in host:
         user_pass, host = host.split('@', 1)
+
     if ':' in host:
         host, port = host.split(':', 1)
+
     hostisip = _isip(host)
     for item in _my_noproxy_list:
         if hostisip and item["match"] <= 1:
             continue
+
         if item["match"] == 2 and hostisip:
             if (_ip_to_int(host) & item["netmask"]) == item["needle"]:
                 return True
+
         if item["match"] == 0:
             if host == item["needle"]:
                 return True
+
         if item["match"] == 1:
             if host.rfind(item["needle"]) > 0:
                 return True
+
     return False
 
 def set_proxies(proxy = None, no_proxy = None):
@@ -165,8 +168,9 @@ def set_proxies(proxy = None, no_proxy = None):
     set_proxy_environ()
 
 def get_proxy_for(url):
-    if url[0:4] == "file" or _isnoproxy(url):
+    if url.startswith('file:') or _isnoproxy(url):
         return None
+
     type = url[0:url.index(":")]
     proxy = None
     if _my_proxies.has_key(type):
@@ -175,5 +179,5 @@ def get_proxy_for(url):
         proxy = _my_proxies["http"]
     else:
         proxy = None
-    return proxy
 
+    return proxy
