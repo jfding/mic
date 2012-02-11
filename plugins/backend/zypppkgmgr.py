@@ -31,7 +31,7 @@ from mic import msger
 from mic.kickstart import ksparser
 from mic.utils import misc, rpmmisc, runner, fs_related
 from mic.utils.proxy import get_proxy_for
-from mic.utils.errors import CreatorError
+from mic.utils.errors import CreatorError, RepoError, RpmError
 from mic.imager.baseimager import BaseImageCreator
 
 class RepositoryStub:
@@ -47,12 +47,6 @@ class RepositoryStub:
         self.autorefresh = True
         self.keeppackages = True
         self.priority = None
-
-class RepoError(CreatorError):
-    pass
-
-class RpmError(CreatorError):
-    pass
 
 from mic.pluginbase import BackendPlugin
 class Zypp(BackendPlugin):
@@ -535,13 +529,15 @@ class Zypp(BackendPlugin):
 
     def buildTransaction(self):
         if not self.Z.resolver().resolvePool():
-            msger.warning("Problem count: %d" \
-                          % len(self.Z.resolver().problems()))
+            probs = self.Z.resolver().problems()
 
-            for problem in self.Z.resolver().problems():
-                msger.warning("Problem: %s, %s" \
+            for problem in probs:
+                msger.warning("repo problem: %s, %s" \
                               % (problem.description().decode("utf-8"),
                                  problem.details().decode("utf-8")))
+
+            raise RepoError("found %d resolver problem, abort!" \
+                            % len(probs))
 
     def getLocalPkgPath(self, po):
         repoinfo = po.repoInfo()

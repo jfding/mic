@@ -41,6 +41,12 @@ class ConfigError(CreatorError):
 class KsError(CreatorError):
     keyword = '<kickstart>'
 
+class RepoError(CreatorError):
+    keyword = '<repo>'
+
+class RpmError(CreatorError):
+    keyword = '<rpm>'
+
 class MountError(CreatorError):
     keyword = '<mount>'
 
