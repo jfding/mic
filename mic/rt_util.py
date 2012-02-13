@@ -117,8 +117,15 @@ def select_bootstrap(repomd, cachedir, bootstrapdir):
         repolist = []
         for repo in bsrepo.keys():
             repolist.append(bsrepo[repo])
-        repomd = misc.get_metadata_from_repos(repolist, cachedir)
-        rpmver = misc.get_rpmver_in_repo(repomd)
+
+        rpmver = None
+        try:
+            repomd = misc.get_metadata_from_repos(repolist, cachedir)
+            rpmver = misc.get_rpmver_in_repo(repomd)
+        except errors.CreatorError, e:
+            msger.set_loglevel(lvl)
+            raise
+
         if not rpmver:
             continue
         if compare_rpmversion(repo_rpmver, rpmver):
