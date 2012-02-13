@@ -156,8 +156,10 @@ def runmic_in_bootstrap(name, argv, opts, ksfile, repolist):
     if opts['logfile']:
         logfile = os.path.abspath(os.path.expanduser(opts['logfile']))
         lst.append(os.path.dirname(logfile))
+    if opts['local_pkgs_path']:
+        lppdir = os.path.abspath(os.path.expanduser(opts['local_pkgs_path']))
+        lst.append(lppdir)
 
-    # TBD local package path
     # TBD local repo
 
     # make unique and remain the original order
