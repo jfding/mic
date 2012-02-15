@@ -1079,6 +1079,7 @@ class BaseImageCreator(object):
         # Ensure all data is flushed to _outdir
         runner.quiet('sync')
 
+        misc.check_space_pre_cp(self._outdir, destdir)
         for f in os.listdir(self._outdir):
             shutil.move(os.path.join(self._outdir, f),
                         os.path.join(destdir, f))

@@ -53,6 +53,22 @@ RPM_RE  = re.compile("(.*)\.(.*) (.*)-(.*)")
 RPM_FMT = "%(name)s.%(arch)s %(ver_rel)s"
 SRPM_RE = re.compile("(.*)-(\d+.*)-(\d+\.\d+).src.rpm")
 
+def human_size(size):
+    # make Bytes size readable by human
+    import math
+    measure = ['B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+    expo = int(math.log(size, 1024))
+    mant = float(size/math.pow(1024, expo))
+    return "{0:.1f}{1:s}".format(mant, measure[expo])
+
+def check_space_pre_cp(src, dst):
+    # check whether space is enough before 'cp'
+    srcsize = get_file_size(src) * 1024 * 1024
+    dstsize = get_filesystem_avail(dst)
+    if srcsize > dstsize:
+        raise CreatorError("Space on %s (%s) is not enough than needed (%s)"
+                           % (dst, human_size(dstsize), human_size(srcsize)))
+
 def get_md5sum(fpath):
     blksize = 65536 # should be optimized enough
 

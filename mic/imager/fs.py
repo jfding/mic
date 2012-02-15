@@ -19,7 +19,7 @@ import os, sys
 
 from baseimager import BaseImageCreator
 from mic import msger
-from mic.utils import runner
+from mic.utils import runner, misc
 from mic.utils.fs_related import *
 from subprocess import call
 
@@ -48,6 +48,7 @@ class FsImageCreator(BaseImageCreator):
         if self._img_compression_method == None:
             fsdir = os.path.join(destdir, self.name)
 
+            misc.check_space_pre_cp(self._instroot, destdir)
             msger.info("Copying %s to %s ..." % (self._instroot, fsdir))
             runner.show(['cp', "-af", self._instroot, fsdir])
 
