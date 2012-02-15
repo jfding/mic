@@ -26,7 +26,7 @@ from mic import msger
 from mic import chroot
 from mic.plugin import pluginmgr
 from mic.utils import proxy
-from mic.utils import rpmmisc
+from mic.utils import misc
 from mic.utils import errors
 
 minibase_pkgs = [ "kernel", "rpm", "setup", "filesystem", "basesystem",
@@ -61,7 +61,12 @@ def query_package_metadat(root='/', tag='name', pattern=None):
         raise errors.BootstrapError("Load %s/.metadata error" % root)
     else:
         for pkg in metadata.keys():
-            (n, v, r, e, a) = rpmmisc.splitFilename(pkg)
+            m = misc.RPM_RE.match(pkg)
+            if m:
+                (n, a, v, r) = m.groups()
+            else:
+                raise errors.BootstrapError("Wrong Format .metadata in %s"
+                                            % root)
             if n == pattern:
                 version = v
     return (name, version)
