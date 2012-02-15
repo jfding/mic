@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os
+import os, re
 import ConfigParser
 
 import msger
@@ -132,6 +132,17 @@ class ConfigMgr(object):
             if section != "common" and not section.startswith('bootstrap'):
                 getattr(self, section).update(self.common)
 
+        if self.create['proxy']:
+            urlptn = re.compile('://')
+            m = urlptn.search(self.create['proxy'])
+            if m:
+                scheme = self.create['proxy'].split(':')[0]
+                if scheme not in ('http', 'https', 'ftp', 'socks'):
+                    msger.error("%s: proxy scheme is incorrect" % siteconf)
+            else:
+                msger.warning("%s: proxy set without scheme, use http default"
+                              % siteconf)
+                self.create['proxy'] = "http://%s" % self.create['proxy']
         proxy.set_proxies(self.create['proxy'], self.create['no_proxy'])
 
         for section in parser.sections():
