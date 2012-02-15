@@ -132,6 +132,20 @@ class MicCmd(cmdln.Cmdln):
            raise errors.CreatorError("Can't convert from %s to %s" \
                                      % (srcformat, destformat))
         else:
+            maptab = {"livecd": "iso",
+                      "liveusb": "usbimg",
+                      "loop": "img"
+                     }
+            if destformat in maptab.keys():
+                imgname = os.path.splitext(os.path.basename(srcimg))[0]
+                dstname = "{0}.{1}".format(imgname, maptab[destformat])
+                if os.path.exists(dstname):
+                    if msger.ask("Converted image %s seems existed, "
+                                 "remove and continue?" % dstname):
+                        os.unlink(dstname)
+                    else:
+                        raise errors.Abort("Canceled")
+
             base_on = srcimager.do_unpack(srcimg)
             destimager.do_pack(base_on)
 
