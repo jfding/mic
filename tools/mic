@@ -131,14 +131,18 @@ class MicCmd(cmdln.Cmdln):
         if (srcimager and destimager) is None:
            raise errors.CreatorError("Can't convert from %s to %s" \
                                      % (srcformat, destformat))
+
         else:
-            maptab = {"livecd": "iso",
-                      "liveusb": "usbimg",
-                      "loop": "img"
+            maptab = {
+                        "livecd": "iso",
+                        "liveusb": "usbimg",
+                        "loop": "img",
                      }
-            if destformat in maptab.keys():
+
+            if destformat in maptab:
                 imgname = os.path.splitext(os.path.basename(srcimg))[0]
                 dstname = "{0}.{1}".format(imgname, maptab[destformat])
+
                 if os.path.exists(dstname):
                     if msger.ask("Converted image %s seems existed, "
                                  "remove and continue?" % dstname):

@@ -132,17 +132,18 @@ class ConfigMgr(object):
             if section != "common" and not section.startswith('bootstrap'):
                 getattr(self, section).update(self.common)
 
+        # check and normalize the scheme of proxy url
         if self.create['proxy']:
-            urlptn = re.compile('://')
-            m = urlptn.search(self.create['proxy'])
+            m = re.match('^(\w+)://.*', self.create['proxy'])
             if m:
-                scheme = self.create['proxy'].split(':')[0]
+                scheme = m.group(1)
                 if scheme not in ('http', 'https', 'ftp', 'socks'):
                     msger.error("%s: proxy scheme is incorrect" % siteconf)
             else:
-                msger.warning("%s: proxy set without scheme, use http default"
+                msger.warning("%s: proxy url w/o scheme, use http as default"
                               % siteconf)
-                self.create['proxy'] = "http://%s" % self.create['proxy']
+                self.create['proxy'] = "http://" + self.create['proxy']
+
         proxy.set_proxies(self.create['proxy'], self.create['no_proxy'])
 
         for section in parser.sections():
