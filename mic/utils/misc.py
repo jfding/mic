@@ -376,7 +376,7 @@ def get_metadata_from_repos(repostrs, cachedir):
             repokey = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, "repodata/repomd.xml.key")
         except CreatorError:
             repokey = None
-            msger.warning("\ncan't get %s/%s" % (baseurl, "repodata/repomd.xml.key"))
+            msger.debug("\ncan't get %s/%s" % (baseurl, "repodata/repomd.xml.key"))
 
         my_repo_metadata.append({"name":reponame, "baseurl":baseurl, "repomd":repomd, "primary":primary, "cachedir":cachedir, "proxies":proxies, "patterns":patterns, "comps":comps, "repokey":repokey})
 

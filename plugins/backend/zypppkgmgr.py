@@ -501,6 +501,7 @@ class Zypp(BackendPlugin):
         if self.repo_manager.isCached(repo) or not repo.enabled():
             return
 
+        msger.info('Refreshing repository: %s ...' % name)
         self.repo_manager.buildCache(repo, zypp.RepoManager.BuildIfNeeded)
 
     def __initialize_zypp(self):
