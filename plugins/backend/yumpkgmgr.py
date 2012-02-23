@@ -64,6 +64,7 @@ class MyYumRepository(yum.yumRepo.YumRepository):
             m2c_connection = M2Crypto.SSL.Connection.clientPostConnectionCheck
             M2Crypto.SSL.Connection.clientPostConnectionCheck = None
 
+        size = int(size) if size else None
         rvalue = super(MyYumRepository, self)._getFile(url,
                                                        relative,
                                                        local,
