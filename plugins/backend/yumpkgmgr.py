@@ -266,7 +266,7 @@ class Yum(BackendPlugin, yum.YumBase):
 
         repo.sslverify = ssl_verify
 
-        repo.basecachedir = self.conf.cachedir
+        repo.basecachedir = self.cachedir
         repo.base_persistdir = self.conf.persistdir
         repo.failovermethod = "priority"
         repo.metadata_expire = 0

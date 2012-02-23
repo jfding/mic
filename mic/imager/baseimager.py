@@ -615,7 +615,7 @@ class BaseImageCreator(object):
         if cachedir:
             self.cachedir = cachedir
         else:
-            self.cachedir = self.__builddir + "/yum-cache"
+            self.cachedir = self.__builddir + "/mic-cache"
         fs.makedirs(self.cachedir)
         return self.cachedir
 
@@ -692,7 +692,6 @@ class BaseImageCreator(object):
                   "/etc",
                   "/boot",
                   "/var/log",
-                  "/var/cache/yum",
                   "/sys",
                   "/proc",
                   "/usr/bin"):
@@ -708,8 +707,7 @@ class BaseImageCreator(object):
         for (f, dest) in [("/sys", None),
                           ("/proc", None),
                           ("/proc/sys/fs/binfmt_misc", None),
-                          ("/dev/pts", None),
-                          (self.get_cachedir(), "/var/cache/yum")]:
+                          ("/dev/pts", None)]:
             self.__bindmounts.append(fs.BindChrootMount(f, self._instroot, dest))
 
         self._do_bindmounts()
@@ -750,9 +748,6 @@ class BaseImageCreator(object):
             instroot_pdir = os.path.dirname(self._instroot + self._instroot)
             if os.path.exists(instroot_pdir):
                 shutil.rmtree(instroot_pdir, ignore_errors = True)
-            yumcachedir = self._instroot + "/var/cache/yum"
-            if os.path.exists(yumcachedir):
-                shutil.rmtree(yumcachedir, ignore_errors = True)
             yumlibdir = self._instroot + "/var/lib/yum"
             if os.path.exists(yumlibdir):
                 shutil.rmtree(yumlibdir, ignore_errors = True)
