@@ -269,6 +269,7 @@ def chroot(chrootdir, bindmounts = None, execute = "/bin/bash"):
 
         if savefs:
             msger.info("Saving image to directory %s" % saveto)
+            fs_related.makedirs(os.path.dirname(saveto))
             runner.quiet("cp -af %s %s" % (chrootdir, saveto))
             devs = ['dev/fd',
                     'dev/stdin',
