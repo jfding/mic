@@ -548,7 +548,7 @@ class Zypp(BackendPlugin):
         cacheroot = repoinfo.packagesPath()
         location= zypp.asKindPackage(po).location()
         rpmpath = str(location.filename())
-        pkgpath = "%s/%s" % (cacheroot, rpmpath)
+        pkgpath = "%s/%s" % (cacheroot, os.path.basename(rpmpath))
         return pkgpath
 
     def installLocal(self, pkg, po=None, updateonly=False):

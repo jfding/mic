@@ -46,6 +46,13 @@ class MyYumRepository(yum.yumRepo.YumRepository):
     def __del__(self):
         pass
 
+    def dirSetup(self):
+        super(MyYumRepository, self).dirSetup()
+        # relocate package dir
+        pkgdir = os.path.join(self.basecachedir, 'packages', self.id)
+        self.setAttribute('_dir_setup_pkgdir', pkgdir)
+        self._dirSetupMkdir_p(self.pkgdir)
+
     def _getFile(self, url=None,
                        relative=None,
                        local=None,
