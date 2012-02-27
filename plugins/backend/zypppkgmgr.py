@@ -433,9 +433,12 @@ class Zypp(BackendPlugin):
         # record the total size of installed pkgs
         install_total_size = sum(map(lambda x: int(x.installSize()), dlpkgs))
         # check needed size before actually download and install
-        if checksize and install_total_size > checksize:
-            raise CreatorError("No enough space used for installing, "
-                               "please resize partition size in ks file")
+
+        # FIXME: for multiple partitions for loop type, check fails
+        #        skip the check temporarily
+        #if checksize and install_total_size > checksize:
+        #    raise CreatorError("No enough space used for installing, "
+        #                       "please resize partition size in ks file")
 
         download_count =  total_count - cached_count
         msger.info("%d packages to be installed, "
@@ -674,23 +677,20 @@ class Zypp(BackendPlugin):
             msger.enable_logstderr(installlogfile)
 
             errors = self.ts.run(cb.callback, '')
-            if errors is None:
-                pass
-
-            elif len(errors) == 0:
-                msger.warning('scriptlet or other non-fatal errors occurred '
-                              'during transaction.')
-
-            else:
-                for e in errors:
-                    msger.warning(e[0])
-                msger.error('Could not run transaction.')
-
             # stop catch
             msger.disable_logstderr()
-
             self.ts.closeDB()
             self.ts = None
+
+            if errors is not None:
+                if len(errors) == 0:
+                    msger.warning('scriptlet or other non-fatal errors occurred '
+                                  'during transaction.')
+
+                else:
+                    for e in errors:
+                        msger.warning(e[0])
+                    raise RepoError('Could not run transaction.')
 
         else:
             for pkg, need, needflags, sense, key in unresolved_dependencies:
