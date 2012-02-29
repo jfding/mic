@@ -184,7 +184,7 @@ class TimezoneConfig(KickstartConfig):
         try:
             shutil.copyfile(tz_source, tz_dest)
         except (IOError, OSError), (errno, msg):
-            raise errors.KickstartError("Error copying timezone info from "
+            raise errors.KsError("Error copying timezone info from "
                                         "'%s' to '%s': %s" \
                                         % (tz_source, tz_dest, msg))
 
