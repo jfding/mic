@@ -120,6 +120,9 @@ def _color_print(head, color, msg, stream, level):
                 newline = True
 
     if msg is not None:
+        if isinstance(msg, unicode):
+            msg = msg.encode('utf8', 'ignore')
+
         stream.write('%s%s' % (head, msg))
         if newline:
             stream.write('\n')
