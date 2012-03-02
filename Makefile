@@ -32,7 +32,7 @@ dist-gz: dist-common
 	tar zcpf $(PKGNAME)-$(TAGVER).tar.gz $(PKGNAME)-$(TAGVER)
 	rm -rf $(PKGNAME)-$(TAGVER)
 
-man: README.rst
+man: USAGE.rst
 	rst2man $< >mic.1
 
 install: build
