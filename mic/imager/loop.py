@@ -34,6 +34,10 @@ def save_mountpoints(dpath, loops):
     :loops, list of tuple (mp, label, name, size, fstype)
     """
 
+    # quick dirty fix: odin decline any extra file in tarball
+    # FIXME: better solution to save this file outside tarball
+    return None
+
     if not loops:
         return None
 
@@ -84,7 +88,10 @@ class LoopImageCreator(BaseImageCreator):
         """
 
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
+
         self.taring_to = taring_to
+        if taring_to and '@NAME@' in taring_to:
+            self.taring_to = taring_to.replace('@NAME@', self.name)
 
         self.__fslabel = None
         self.fslabel = self.name
