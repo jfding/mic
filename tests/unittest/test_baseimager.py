@@ -121,9 +121,9 @@ class BaseImgrTest(unittest.TestCase):
         
         creator.cleanup()
         # Test recore_pkgs option
-        pkglist = ['A-0.1-1.i586.rpm', 'ABC-0.1-1.i586.rpm', 'C-0.2-1.i686.rpm',
-                   'D-0.1-1.i586.rpm', 'E-0.1-1.i586.rpm', 'F-0.1-1.noarch.rpm',
-                   'G-0.1-1.i586.rpm', 'H-0.1-1.noarch.rpm']
+        pkglist = ['A.i586 0.1-1', 'ABC.i586 0.1-1', 'C.i686 0.2-1',
+                   'D.i586 0.1-1', 'E.i586 0.1-1', 'F.noarch 0.1-1',
+                   'G.i586 0.1-1', 'H.noarch 0.1-1']
         f = open ("%s/%s.packages" % (self.rootdir, creator.name))
         real_pkglist = f.read()
         self.assertEqual(real_pkglist, '\n'.join(pkglist))
