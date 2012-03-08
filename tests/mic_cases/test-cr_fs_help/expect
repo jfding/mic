@@ -1,0 +1,8 @@
+fs: create fs image
+
+Usage:
+    mic create(cr) fs <ksfile> [OPTS]
+
+Options:
+    -h, --help     show this help message and exit
+    --include-src  Generate a image with source rpms included

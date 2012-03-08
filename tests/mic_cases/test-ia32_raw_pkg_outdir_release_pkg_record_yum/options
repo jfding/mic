@@ -1,1 +1,1 @@
-mic cr raw --pkgmgr=yum --outdir=outdir6 --release=XXX --logfile=logfile5 --local-pkgs-path=package_ia32 --record-pkgs=license
+mic cr raw --pkgmgr=yum --outdir=outdir6 --release=XXX --logfile=logfile5 --record-pkgs=license

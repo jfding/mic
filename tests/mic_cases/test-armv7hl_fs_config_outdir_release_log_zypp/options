@@ -1,1 +1,1 @@
-mic cr fs --arch=armv7hl --config=customer.conf --pkgmgr=zypp --outdir=outdir10 --release=XXX --logfile=logfile9 --local-pkgs-path=package_armv7hl --record-pkgs=name
+mic cr fs --arch=armv7hl --config=customer.conf --pkgmgr=zypp --outdir=outdir10 --release=XXX --logfile=logfile9  --record-pkgs=name

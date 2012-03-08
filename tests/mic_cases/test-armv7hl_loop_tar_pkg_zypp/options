@@ -1,1 +1,1 @@
-mic cr loop --taring-to=XXX --local-pkgs-path=package_mixed --pkgmgr=zypp 
+mic cr loop --taring-to=XXX --pkgmgr=zypp 

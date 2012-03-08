@@ -1,0 +1,7 @@
+livecd: create livecd image
+
+Usage:
+    mic create(cr) livecd <ksfile> [OPTS]
+
+Options:
+    -h, --help  show this help message and exit

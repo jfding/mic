@@ -1,0 +1,40 @@
+mic create(cr): create an image
+
+Usage:
+    mic create(cr) SUBCOMMAND <ksfile> [OPTS]
+
+Commands:
+    fs             create fs image
+    help (?)       give detailed help on a specific sub-command
+    livecd         create livecd image
+    liveusb        create liveusb image
+    loop           create loop image
+    raw            create raw image
+
+Options:
+    -h, --help          show this help message and exit
+    --logfile=LOGFILE   Path of logfile
+    -c CONFIG, --config=CONFIG
+                        Specify config file for mic
+    -k CACHEDIR, --cachedir=CACHEDIR
+                        Cache directory to store the downloaded
+    -o OUTDIR, --outdir=OUTDIR
+                        Output directory
+    -A ARCH, --arch=ARCH
+                        Specify repo architecture
+    --release=RID       Generate a release of RID with all necessary files,
+                        when @BUILD_ID@ is contained in kickstart file, it
+                        will be replaced by RID
+    --record-pkgs=RECORD_PKGS
+                        Record the info of installed packages, multiple values
+                        can be specified which joined by ",", valid values:
+                        "name", "content", "license"
+    --pkgmgr=PKGMGR     Specify backend package manager
+    --local-pkgs-path=LOCAL_PKGS_PATH
+                        Path for local pkgs(rpms) to be installed
+    --runtime=RUNTIME   Specify  runtime mode, avaiable: bootstrap
+    --compress-disk-image=COMPRESS_DISK_IMAGE
+                        Sets the disk image compression. NOTE: The available
+                        values might depend on the used filesystem type.
+    --copy-kernel       Copy kernel files from image /boot directory to the
+                        image output directory.

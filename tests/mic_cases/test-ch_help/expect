@@ -1,0 +1,9 @@
+chroot (ch): chroot into an image
+
+Usage:
+    mic chroot <imagefile>
+
+Options:
+    -h, --help          show this help message and exit
+    -s SAVETO, --saveto=SAVETO
+                        Save the unpacked image to specified dir

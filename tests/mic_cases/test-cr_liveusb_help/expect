@@ -1,0 +1,7 @@
+liveusb: create liveusb image
+
+Usage:
+    mic create(cr) liveusb <ksfile> [OPTS]
+
+Options:
+    -h, --help  show this help message and exit

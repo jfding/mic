@@ -1,0 +1,10 @@
+loop: create loop image
+
+Usage:
+    mic create(cr) loop <ksfile> [OPTS]
+
+Options:
+    -h, --help          show this help message and exit
+    --taring-to=TARING_TO
+                        Specify the filename for packaging all loop images
+                        into a single tarball

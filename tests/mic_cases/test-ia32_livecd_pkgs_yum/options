@@ -1,1 +1,1 @@
-mic create livecd  --pkgmgr=yum --local-pkgs-path=package_ia32
+mic create livecd  --pkgmgr=yum 

@@ -1,0 +1,8 @@
+convert (cv): convert image format
+
+Usage:
+    mic convert <imagefile> <destformat>
+
+Options:
+    -h, --help   show this help message and exit
+    -S, --shell  Launch shell before packaging the converted image

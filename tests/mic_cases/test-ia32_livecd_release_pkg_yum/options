@@ -1,1 +1,1 @@
-mic cr livecd  --pkgmgr=yum --release=XXX --local-pkgs-path=package_ia32
+mic cr livecd  --pkgmgr=yum --release=XXX
