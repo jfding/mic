@@ -453,10 +453,10 @@ class Zypp(BackendPlugin):
 
             self.installPkgs(dlpkgs)
 
-        except RepoError, e:
-            raise CreatorError("Unable to download from repo : %s" % (e,))
-        except RpmError, e:
-            raise CreatorError("Unable to install: %s" % (e,))
+        except (RepoError, RpmError):
+            raise
+        except Exception, e:
+            raise CreatorError("Package installation failed: %s" % (e,))
 
     def getAllContent(self):
         return self.__pkgs_content
