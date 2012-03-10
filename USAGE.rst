@@ -114,12 +114,15 @@ a fatal bug, and mic will failed with syslinux installation errors.
 The solution is to install the patched "syslinux" package in MeeGo or Tizen's
 tools repos, until the official released one being fixed.
 
-Failed to create btrfs image in OpenSUSE
+Failed to create btrfs image in openSUSE
 ----------------------------------------
-When creating btrfs image in OpenSUSE, it would hang up with showing image kernel 
-panic. This issue impact all OpenSUSE distributions: 12.1, 11.4, 11.3, etc 
+When creating btrfs image in openSUSE, it would hang up with showing image kernel 
+panic. This issue impact all openSUSE distributions: 12.1, 11.4, 11.3, etc 
 
 REPORTING BUGS
 ==============
-Report mic bugs to Tizen JIRA <https://sa.otcshare.org/jira>
+The source code is tracked in github.com:
 
+    https://github.com/jfding/mic
+
+Please report issues for bugs or feature requests.
