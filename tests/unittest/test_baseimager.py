@@ -100,7 +100,7 @@ class BaseImgrTest(unittest.TestCase):
             os.makedirs(RPMLOCK_PATH)
         else:
             RPMLOCK_PATH = "%s/var/lib/rpm" % creator._instroot
-        exp_mount_list = ['/sys', '/proc', '/proc/sys/fs/binfmt_misc', '/dev/pts', CACHEDIR]
+        exp_mount_list = ['/sys', '/proc', '/proc/sys/fs/binfmt_misc', '/dev/pts']
         exp_mount_list.sort()
         real_mount_list = self.getMountList(creator._instroot)
         self.assertEqual(real_mount_list, exp_mount_list)
