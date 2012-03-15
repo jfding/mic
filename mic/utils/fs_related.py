@@ -810,54 +810,122 @@ def load_module(module):
         msger.info("Loading %s..." % module)
         runner.quiet(['modprobe', module])
 
-def get_loop_device(losetupcmd, lofile):
-    """ Get a lock to synchronize getting a loopback device """
+class LoopDevice(object):
+    def __init__(self, loopid=None):
+        self.device = None
+        self.loopid = loopid
+        self.created = False
+        self.kpartxcmd = find_binary_path("kpartx")
+        self.losetupcmd = find_binary_path("losetup")
 
-    # internal class for simple lock
-    class FileLock(object):
-        def __init__(self, filename):
-            self.filename = filename
-            self.fd = None
+        import atexit
+        atexit.register(self.close)
 
-            import atexit
-            atexit.register(self.release)
+    def _genloopid(self):
+        import glob
+        maxid = 1 + max(filter(lambda x: x<100,
+                               map(lambda x: int(x[9:]),
+                                   glob.glob("/dev/loop[0-9]*"))))
+        if maxid < 10: maxid = 10
+        if maxid >= 100: raise
+        return maxid
 
-        def acquire(self):
-            try:
-                self.fd = os.open(self.filename, os.O_CREAT | os.O_EXCL)
+    def _kpseek(self, device):
+        rc, out = runner.runtool([self.kpartxcmd, '-l', '-v', device])
+        if rc != 0:
+            raise MountError("Can't query dm snapshot on %s" % device)
+        for line in out.splitlines():
+            if line and line.startswith("loop"):
                 return True
-            except OSError:
-                self.fd = None
-                return False
+        return False
 
-        def release(self):
+    def _loseek(self, device):
+        import re
+        rc, out = runner.runtool([self.losetupcmd, '-a'])
+        if rc != 0:
+            raise MountError("Failed to run 'losetup -a'")
+        for line in out.splitlines():
+            m = re.match("([^:]+): .*", line)
+            if m and m.group(1) == device:
+                return True
+        return False
+
+    def create(self):
+        if not self.created:
+            if not self.loopid:
+                self.loopid = self._genloopid()
+            self.device = "/dev/loop%d" % self.loopid
+            if os.path.exists(self.device):
+                if self._loseek(self.device):
+                    raise MountError("Device busy: %s" % self.device)
+                else:
+                    self.created = True
+                    return
             try:
-                if self.fd is not None:
-                    os.close(self.fd)
-                    os.remove(self.filename)
+                os.mknod(self.device,
+                         0664 | stat.S_IFBLK,
+                         os.makedev(7, self.loopid))
             except:
-                pass
+                raise MountError("Failed to create device %s" % self.device)
+            else:
+                self.created = True
 
-    lock = FileLock("/var/lock/._mic_loopdev.lock")
-    timeout = 30
-    while not lock.acquire():
-        if timeout == 0:
-            raise MountError("Timeout! Failed to find a free loop device")
-        time.sleep(2)
-        timeout -= 2
+    def close(self):
+        if self.created:
+            try:
+                self.cleanup()
+                self.device = None
+            except MountError, e:
+                msger.error("%s" % e)
 
-    rc, losetupOutput  = runner.runtool([losetupcmd, "-f"])
+    def cleanup(self):
 
-    if rc != 0:
-        lock.release()
-        raise MountError("Failed to allocate loop device for '%s'" % lofile)
+        if self.device is None:
+            return
 
-    loopdev = losetupOutput.split()[0]
+
+        if self._kpseek(self.device):
+            if self.created:
+                for i in range(3, os.sysconf("SC_OPEN_MAX")):
+                    try:
+                        os.close(i)
+                    except:
+                        pass
+            runner.quiet([self.kpartxcmd, "-d", self.device])
+        if self._loseek(self.device):
+            runner.quiet([self.losetupcmd, "-d", self.device])
+        # FIXME: should sleep a while between two loseek
+        if self._loseek(self.device):
+            msger.warning("Can't cleanup loop device %s" % self.device)
+        else:
+            os.unlink(self.device)
+
+def get_loop_device(losetupcmd, lofile):
+    import fcntl
+    fp = open("/var/lock/__mic_loopdev.lock", 'w')
+    fcntl.flock(fp, fcntl.LOCK_EX)
+    try:
+        devinst = LoopDevice()
+        devinst.create()
+    except:
+        rc, out = runner.runtool([losetupcmd, "-f"])
+        if rc != 0:
+            raise MountError("1-Failed to allocate loop device for '%s'" % lofile)
+        loopdev = out.split()[0]
+    else:
+        loopdev = devinst.device
+    finally:
+        try:
+            fcntl.flock(fp, fcntl.LOCK_UN)
+            fp.close()
+            os.unlink('/var/lock/__mic_loopdev.lock')
+        except:
+            pass
 
     rc = runner.show([losetupcmd, loopdev, lofile])
-    lock.release()
-
     if rc != 0:
-        raise MountError("Failed to allocate loop device for '%s'" % lofile)
+        raise MountError("2-Failed to allocate loop device for '%s'" % lofile)
 
     return loopdev
+
+
