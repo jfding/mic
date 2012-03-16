@@ -63,9 +63,9 @@ def runtool(cmdln_or_args, catch=1):
 
     try:
         p = Popen(cmdln_or_args, stdout=sout, stderr=serr, shell=shell)
-        out = p.communicate()[0]
-        if out is None:
-            out = ''
+        (sout, serr) = p.communicate()
+        # combine stdout and stderr, filter None out
+        out = ''.join(filter(None, [sout, serr]))
     except OSError, e:
         if e.errno == 2:
             # [Errno 2] No such file or directory
