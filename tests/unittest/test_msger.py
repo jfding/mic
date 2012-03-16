@@ -16,6 +16,7 @@ class MsgerTest(unittest.TestCase):
         self.stderr = sys.stderr
         sys.stdout = StringIO.StringIO()
         sys.stderr = StringIO.StringIO()
+        msger.set_loglevel('normal')
         self.loglevel = msger.LOG_LEVEL
 
     def tearDown(self):
