@@ -1,0 +1,40 @@
+Source: mic
+Section: devel
+Priority: extra
+Maintainer: Jian-feng Ding <jian-feng.ding@intel.com>
+Build-Depends: debhelper (>= 7.0.15), cdbs, python-dev, python-support
+Standards-Version: 3.8.0
+Homepage: http://www.tizen.org
+
+Package: mic
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends},
+ python-rpm,
+ bzip2,
+ dmsetup,
+ dosfstools,
+ e2fsprogs (>= 1.41),
+ isomd5sum,
+ genisoimage,
+ kpartx,
+ parted,
+ psmisc,
+ squashfs-tools (>= 4.0),
+ qemu-user-static,
+ syslinux (>= 3.82),
+ yum (>= 3.2),
+ libzypp,
+ python-zypp
+Recommends:
+ binfmt-support,
+ btrfs-tools,
+ extlinux,
+ udisks | hal
+Replaces:
+ mic2
+Description: image creator for Linux distributions
+  The tool mic is used to create and manipulate images for Linux distributions.
+  It is composed of three subcommand\: create, convert, chroot. Subcommand create
+  is used to create images with different types; subcommand convert is used to
+  convert an image to a specified type; subcommand chroot is used to chroot into
+  an image.

@@ -54,6 +54,9 @@ Requires:   python-zypp == 0.5.50
 Requires:   python-zypp >= 0.5.9.1
 %endif
 BuildRequires:  python-devel
+
+Obsoletes:  mic2
+
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
 
