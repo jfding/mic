@@ -1,3 +1,4 @@
+%define is_tizen %(test -e /etc/tizen-release -o -e /etc/meego-release && echo 1 || echo 0)
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 Name:       mic
 Summary:    Image Creator for Linux Distributions
@@ -8,12 +9,15 @@ License:    GPLv2
 BuildArch:  noarch
 URL:        http://www.tizen.org
 Source0:    %{name}-%{version}.tar.gz
+Requires:   rpm-python
 Requires:   util-linux
 Requires:   coreutils
 Requires:   python >= 2.5
 Requires:   e2fsprogs
 Requires:   dosfstools >= 2.11-8
+%if 0%{is_tizen} == 0
 Requires:   yum >= 3.2.24
+%endif
 %if 0%{?suse_version} == 1210
 Requires:   syslinux == 4.04.1
 %else
@@ -34,7 +38,7 @@ Requires:   btrfsprogs
 Requires:   btrfs-progs
 %endif
 
-%if 0%{?fedora_version} || "0%{?meego_version}" != "0"
+%if 0%{?fedora_version} || 0%{is_tizen} == 1
 Requires:   m2crypto
 %else
 %if 0%{?suse_version} == 1210
@@ -85,6 +89,10 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 # install man page
+# remove yum backend for tizen
+%if 0%{is_tizen} == 1
+rm -rf %{buildroot}/%{_prefix}/lib/%{name}/plugins/backend/yumpkgmgr.py
+%endif
 mkdir -p %{buildroot}/%{_prefix}/share/man/man1
 install -m644 doc/mic.1 %{buildroot}/%{_prefix}/share/man/man1
 
