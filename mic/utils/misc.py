@@ -57,6 +57,8 @@ def human_size(size):
     """Return human readable string for Bytes size
     """
 
+    if size <= 0:
+        return "0M"
     import math
     measure = ['B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
     expo = int(math.log(size, 1024))
