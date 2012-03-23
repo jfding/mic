@@ -25,6 +25,12 @@ from mic.utils import runner
 from mic.utils.errors import MountError
 from mic.utils.fs_related import *
 
+# Lenght of MBR in sectors
+MBR_SECTOR_LEN = 1
+
+# Size of a sector in bytes
+SECTOR_SIZE = 512
+
 class PartitionedMount(Mount):
     def __init__(self, disks, mountdir, skipformat = False):
         Mount.__init__(self, mountdir)
@@ -37,9 +43,8 @@ class PartitionedMount(Mount):
                                  # Partitions with part num higher than 3 will
                                  # be put inside extended partition.
                                  'extended': 0, # Size of extended partition
-                                 # Sector 0 is used by the MBR and can't be used
-                                 # as the start, so setting offset to 1.
-                                 'offset': 1 } # Offset of next partition (in sectors)
+                                 # Offset of next partition (in sectors)
+                                 'offset': 0 }
 
         self.partitions = []
         self.subvolumes = []
@@ -55,10 +60,10 @@ class PartitionedMount(Mount):
         self.skipformat = skipformat
         self.snapshot_created = self.skipformat
         # Size of a sector used in calculations
-        self.sector_size = 512
+        self.sector_size = SECTOR_SIZE
 
-    def add_partition(self, size, disk, mountpoint, fstype = None, fsopts = None, boot = False):
-        # Converting M to s for parted
+    def add_partition(self, size, disk, mountpoint, fstype = None, fsopts = None, boot = False, align = None):
+        # Converting MB to sectors for parted
         size = size * 1024 * 1024 / self.sector_size
 
         """ We need to handle subvolumes for btrfs """
@@ -102,12 +107,14 @@ class PartitionedMount(Mount):
                                     'device': None, # kpartx device node for partition
                                     'mount': None, # Mount object
                                     'num': None, # Partition number
-                                    'boot': boot}) # Bootable flag
+                                    'boot': boot, # Bootable flag
+                                    'align': align}) # Partition alignment
 
-    def __create_part_to_image(self,device, parttype, fstype, start, size):
+    def __create_part_to_image(self, device, parttype, fstype, start, size):
         # Start is included to the size so we need to substract one from the end.
         end = start+size-1
-        msger.debug("Added '%s' part at %d of size %d" % (parttype,start,end))
+        msger.debug("Added '%s' part at Sector %d with size %d sectors" %
+                    (parttype, start, end))
         part_cmd = [self.parted, "-s", device, "unit", "s", "mkpart", parttype]
         if fstype:
             part_cmd.extend([fstype])
@@ -123,22 +130,52 @@ class PartitionedMount(Mount):
     def __format_disks(self):
         msger.debug("Assigning partitions to disks")
 
-        mbr_sector_skipped = False
-
+        # Go through partitions in the order they are added in .ks file
         for n in range(len(self.partitions)):
             p = self.partitions[n]
 
             if not self.disks.has_key(p['disk']):
                 raise MountError("No disk %s for partition %s" % (p['disk'], p['mountpoint']))
 
-            if not mbr_sector_skipped:
-                # This hack is used to remove one sector from the first partition,
-                # that is the used to the MBR.
-                p['size'] -= 1
-                mbr_sector_skipped = True
-
+            # Get the disk where the partition is located
             d = self.disks[p['disk']]
             d['numpart'] += 1
+
+            # alignment in sectors
+            align_sectors = None
+            # if first partition then we need to skip the first sector
+            # where the MBR is located, if the alignment isn't set
+            # See: https://wiki.linaro.org/WorkingGroups/Kernel/Projects/FlashCardSurvey
+            if d['numpart'] == 1:
+                if p['align'] and p['align'] > 0:
+                    align_sectors = p['align'] * 1024 / self.sector_size
+                else:
+                    align_sectors = MBR_SECTOR_LEN
+            elif p['align']:
+                # If not first partition and we do have alignment set we need
+                # to align the partition.
+                # FIXME: This leaves a empty spaces to the disk. To fill the
+                # gaps we could enlargea the previous partition?
+
+                # Calc how much the alignment is off.
+                align_sectors = d['offset'] % (p['align'] * 1024 / self.sector_size)
+                # We need to move forward to the next alignment point
+                align_sectors = (p['align'] * 1024 / self.sector_size) - align_sectors
+
+            if align_sectors:
+                if p['align'] and p['align'] > 0:
+                    msger.debug("Realignment for %s%s with %s sectors, original"
+                                " offset %s, target alignment is %sK." %
+                                (p['disk'], d['numpart'], align_sectors,
+                                 d['offset'], p['align']))
+                # p['size'] already converted in secctors
+                if p['size'] <= align_sectors:
+                    raise MountError("Partition for %s is too small to handle "
+                                     "the alignment change." % p['mountpoint'])
+
+                # increase the offset so we actually start the partition on right alignment
+                d['offset'] += align_sectors
+
             if d['numpart'] > 3:
                 # Increase allocation of extended partition to hold this partition
                 d['extended'] += p['size']
@@ -151,7 +188,10 @@ class PartitionedMount(Mount):
             p['start'] = d['offset']
             d['offset'] += p['size']
             d['partitions'].append(n)
-            msger.debug("Assigned %s to %s%d at %d at size %d" % (p['mountpoint'], p['disk'], p['num'], p['start'], p['size']))
+            msger.debug("Assigned %s to %s%d at Sector %d with size %d sectors "
+                        "/ %d bytes." % (p['mountpoint'], p['disk'], p['num'],
+                                         p['start'], p['size'],
+                                         p['size'] * self.sector_size))
 
         if self.skipformat:
             msger.debug("Skipping disk format, because skipformat flag is set.")

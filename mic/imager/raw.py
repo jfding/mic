@@ -23,7 +23,7 @@ from pykickstart.urlgrabber import progress
 
 from mic import kickstart, msger
 from mic.utils import fs_related, runner
-from mic.utils.partitionedfs import PartitionedMount
+from mic.utils.partitionedfs import PartitionedMount, MBR_SECTOR_LEN, SECTOR_SIZE
 from mic.utils.errors import CreatorError, MountError
 
 from baseimager import BaseImageCreator
@@ -154,6 +154,11 @@ class RawImageCreator(BaseImageCreator):
 
             size =   parts[i].size * 1024L * 1024L
 
+            # If we have alignment set for partition we need to enlarge the
+            # drive, so that the alignment changes fits there as well
+            if parts[i].align:
+                size += parts[i].align * 1024L
+
             found = False
             for j in range(len(self._diskinfo)):
                 if self._diskinfo[j]['name'] == disk:
@@ -165,6 +170,11 @@ class RawImageCreator(BaseImageCreator):
 
             if not found:
                 self._diskinfo.append({ 'name': disk, 'size': size })
+
+        # We need to add a bit space for the disk for the MBR.
+        # NOTE: This could be optimized in some cases when alignment is used.
+        for j in range(len(self._diskinfo)):
+            self._diskinfo[j]['size'] += MBR_SECTOR_LEN * SECTOR_SIZE
 
         return self._diskinfo
 
@@ -178,10 +188,10 @@ class RawImageCreator(BaseImageCreator):
 
         #create disk
         for item in self.get_diskinfo():
-            msger.debug("Adding disk %s as %s/%s-%s.raw" % (item['name'],
-                                                            self.__imgdir,
-                                                            self.name,
-                                                            item['name']))
+            msger.debug("Adding disk %s as %s/%s-%s.raw with size %s bytes" %
+                        (item['name'], self.__imgdir, self.name, item['name'],
+                         item['size']))
+
             disk = fs_related.SparseLoopbackDisk("%s/%s-%s.raw" % (
                                                                 self.__imgdir,
                                                                 self.name,
@@ -197,7 +207,8 @@ class RawImageCreator(BaseImageCreator):
                                           p.mountpoint,
                                           p.fstype,
                                           fsopts = p.fsopts,
-                                          boot = p.active)
+                                          boot = p.active,
+                                          align = p.align)
 
         self.__instloop.mount()
         self._create_mkinitrd_config()
