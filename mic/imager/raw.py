@@ -284,7 +284,7 @@ class RawImageCreator(BaseImageCreator):
                              % (self.distro_name.lower(), footlabel)
             syslinux_conf += "\tmenu label %s (%s)\n" % (self.distro_name, v)
             syslinux_conf += "\tkernel vmlinuz-%s\n" % v
-            syslinux_conf += "\tappend ro root=%s quiet vga=current %s\n" \
+            syslinux_conf += "\tappend ro root=%s %s\n" \
                              % (rootdev, options)
             if footlabel == 0:
                syslinux_conf += "\tmenu default\n"
