@@ -185,7 +185,7 @@ class Creator(cmdln.Cmdln):
             else:
                 raise errors.Usage('Invalid architecture: "%s".\n'
                                    '  Supported architectures are: \n'
-                                   '  %s\n' % (self.options.arch,
+                                   '  %s' % (self.options.arch,
                                                ', '.join(supported_arch)))
 
         if self.options.pkgmgr is not None:
