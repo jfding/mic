@@ -629,6 +629,7 @@ def checkRepositoryEULA(name, repo):
             break
 
     if not baseurl:
+        shutil.rmtree(repo_lic_dir) #cleanup
         return True
 
     # show the license file
