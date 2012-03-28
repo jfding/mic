@@ -23,7 +23,7 @@ from pykickstart.urlgrabber import progress
 
 from mic import kickstart, msger
 from mic.utils import fs_related, runner
-from mic.utils.partitionedfs import PartitionedMount, MBR_SECTOR_LEN, SECTOR_SIZE
+from mic.utils.partitionedfs import PartitionedMount
 from mic.utils.errors import CreatorError, MountError
 
 from baseimager import BaseImageCreator
@@ -170,11 +170,6 @@ class RawImageCreator(BaseImageCreator):
 
             if not found:
                 self._diskinfo.append({ 'name': disk, 'size': size })
-
-        # We need to add a bit space for the disk for the MBR.
-        # NOTE: This could be optimized in some cases when alignment is used.
-        for j in range(len(self._diskinfo)):
-            self._diskinfo[j]['size'] += MBR_SECTOR_LEN * SECTOR_SIZE
 
         return self._diskinfo
 
