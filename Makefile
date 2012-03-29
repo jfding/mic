@@ -23,6 +23,7 @@ dist-common: man
 	git archive --format=tar --prefix=$(PKGNAME)-$(TAGVER)/ $(TAG) | tar xpf -
 	git show $(TAG) --oneline | head -1 > $(PKGNAME)-$(TAGVER)/commit-id
 	mkdir $(PKGNAME)-$(TAGVER)/doc; mv mic.1 $(PKGNAME)-$(TAGVER)/doc
+	rm -rf $(PKGNAME)-$(TAGVER)/tests
 
 dist-bz2: dist-common
 	tar jcpf $(PKGNAME)-$(TAGVER).tar.bz2 $(PKGNAME)-$(TAGVER)
