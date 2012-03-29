@@ -107,7 +107,7 @@ class FsPlugin(ImagerPlugin):
             if opts.include_src:
                 installed_pkgs =  creator.get_installed_packages()
                 msger.info('--------------------------------------------------')
-                msger.info('Generating the image with source rpms included, The number of source packages is %d.' %(len(installed_pkgs)))
+                msger.info('Generating the image with source rpms included ...')
                 if not misc.SrcpkgsDownload(installed_pkgs, creatoropts["repomd"], creator._instroot, creatoropts["cachedir"]):
                     msger.warning("Source packages can't be downloaded")
 

@@ -736,7 +736,7 @@ def SrcpkgsDownload(pkgs, repometadata, instroot, cachedir):
             if src_pkg:
                 shutil.copy(src_pkg, destdir)
                 src_pkgs.append(src_pkg)
-    msger.info("%d source packages gotten from cache" %cached_count)
+    msger.info("%d source packages gotten from cache" % cached_count)
 
     return src_pkgs
 
