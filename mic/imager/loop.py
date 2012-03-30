@@ -27,45 +27,64 @@ from baseimager import BaseImageCreator
 # The maximum string length supported for LoopImageCreator.fslabel
 FSLABEL_MAXLEN = 32
 
-def save_mountpoints(dpath, loops):
+def save_mountpoints(fpath, loops, arch = None):
     """Save mount points mapping to file
 
-    :dpath, the dir to save file
-    :loops, list of tuple (mp, label, name, size, fstype)
+    :fpath, the xml file to store partition info
+    :loops, dict of partition info
+    :arch, image arch
     """
 
-    # quick dirty fix: odin decline any extra file in tarball
-    # FIXME: better solution to save this file outside tarball
-    return None
+    if not fpath or not loops:
+        return
 
-    if not loops:
-        return None
+    from xml.dom import minidom
+    doc = minidom.Document()
+    imgroot = doc.createElement("image")
+    doc.appendChild(imgroot)
+    if arch:
+        imgroot.setAttribute('arch', arch)
+    for loop in loops:
+        part = doc.createElement("partition")
+        imgroot.appendChild(part)
+        for (key, val) in loop.items():
+            if isinstance(val, fs.Mount):
+                continue
+            part.setAttribute(key, str(val))
 
-    fname = ".mountpoints"
-    fp = os.path.join(dpath, fname)
+    with open(fpath, 'w') as wf:
+        wf.write(doc.toprettyxml(indent='  '))
 
-    with open(fp, 'w') as wf:
-        for loop in loops:
-            wf.write(':'.join(map(str, loop)) + '\n')
+    return
 
-    return fname
-
-def load_mountpoints(dpath):
+def load_mountpoints(fpath):
     """Load mount points mapping from file
 
-    :dpath, the dir to load file
+    :fpath, file path to load
     """
 
-    mps = []
-    with open(os.path.join(dpath, '.mountpoints')) as f:
-        for line in f.readlines():
-            try:
-                mp, label, name, size, fstype = line.strip().split(':')
-                size = int(size)
-                mps.append((mp, label, name, size, fstype))
-            except:
-                msger.warning("wrong format line in mountpoints mapping file")
-    return mps
+    if not fpath:
+        return
+
+    from xml.dom import minidom
+    mount_maps = []
+    with open(fpath, 'r') as rf:
+        dom = minidom.parse(rf)
+    imgroot = dom.documentElement
+    for part in imgroot.getElementsByTagName("partition"):
+        p  = dict(part.attributes.items())
+
+        try:
+            mp = (p['mountpoint'], p['label'], p['name'],
+                  int(p['size']), p['fstype'])
+        except KeyError:
+            msger.warning("Wrong format line in file: %s" % fpath)
+        except ValueError:
+            msger.warning("Invalid size '%s' in file: %s" % (p['size'], fpath))
+        else:
+            mount_maps.append(mp)
+
+    return mount_maps
 
 class LoopImageCreator(BaseImageCreator):
     """Installs a system into a loopback-mountable filesystem image.
@@ -336,35 +355,31 @@ class LoopImageCreator(BaseImageCreator):
         if self.taring_to:
             import tarfile
 
-            curdir = os.getcwd()
-            os.chdir(self.__imgdir)
             self._resparse(0)
 
             tarfile_name = self.taring_to
             if not tarfile_name.endswith('.tar'):
+                mountfp_xml = tarfile_name + ".xml"
                 tarfile_name += ".tar"
+            else:
+                mountfp_xml = os.path.splitext(tarfile_name)[0] + ".xml"
 
             msger.info("Tar all loop images together to %s" % tarfile_name)
             tar = tarfile.open(os.path.join(self._outdir, tarfile_name), 'w')
             for item in self._instloops:
+                imgfile = os.path.join(self.__imgdir, item['name'])
                 if item['fstype'] == "ext4":
                     runner.show('/sbin/tune2fs '
                                 '-O ^huge_file,extents,uninit_bg %s ' \
-                                % item['name'])
-                tar.add(item['name'])
-
-            # append mount points mapping file to tar ball
-            mountmap_fp = save_mountpoints(self.__imgdir,
-                               [(loop['mountpoint'],
-                                 loop['label'],
-                                 loop['name'],
-                                 loop['size'],
-                                 loop['fstype']) for loop in self._instloops])
-            if mountmap_fp:
-                tar.add(mountmap_fp)
+                                % imgfile)
+                tar.add(imgfile, item['name'])
 
             tar.close()
-            os.chdir(curdir)
+
+            # save mount points mapping file to xml
+            save_mountpoints(os.path.join(self._outdir, mountfp_xml),
+                             self._instloops, 
+                             self.target_arch)
 
         else:
             self._resparse()

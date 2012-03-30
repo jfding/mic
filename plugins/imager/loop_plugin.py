@@ -132,6 +132,11 @@ class LoopPlugin(ImagerPlugin):
 
     @classmethod
     def _do_chroot_tar(cls, target):
+        mountfp_xml = os.path.splitext(target)[0] + '.xml'
+        if not os.path.exists(mountfp_xml):
+            raise errors.CreatorError("No mount point file found for this tar "
+                                      "image, please check %s" % mountfp_xml)
+
         import tarfile
         tar = tarfile.open(target, 'r')
         tmpdir = misc.mkdtemp()
@@ -141,7 +146,7 @@ class LoopPlugin(ImagerPlugin):
         mntdir = misc.mkdtemp()
 
         loops = []
-        for (mp, label, name, size, fstype) in load_mountpoints(tmpdir):
+        for (mp, label, name, size, fstype) in load_mountpoints(mountfp_xml):
             if fstype in ("ext2", "ext3", "ext4"):
                 myDiskMount = fs_related.ExtDiskMount
             elif fstype == "btrfs":

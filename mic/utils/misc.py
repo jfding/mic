@@ -131,6 +131,7 @@ def get_image_type(path):
         return "fs"
 
     maptab = {
+              "tar": "loop",
               "raw":"raw",
               "vmdk":"vmdk",
               "vdi":"vdi",
@@ -139,14 +140,7 @@ def get_image_type(path):
              }
 
     extension = _get_extension_name(path)
-    if extension == "tar":
-        import tarfile
-        tar = tarfile.open(path, 'r')
-        if '.mountpoints' in tar.getnames():
-            return 'loop'
-        else:
-            raise CreatorError("Unsupported image: %s" % path)
-    elif extension in maptab:
+    if extension in maptab:
         return maptab[extension]
 
     fd = open(path, "rb")
