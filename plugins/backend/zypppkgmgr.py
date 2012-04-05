@@ -143,6 +143,11 @@ class Zypp(BackendPlugin):
             else:
                 obs.status().setToBeInstalled (zypp.ResStatus.USER)
 
+        def cmpEVR(ed1, ed2):
+            (e1, v1, r1) = map(str, [ed1.epoch(), ed1.version(), ed1.release()])
+            (e2, v2, v2) = map(str, [ed2.epoch(), ed2.version(), ed2.release()])
+            return rpm.labelCompare((e1, v1, r1), (e2, v2, r2))
+
         found = False
         startx = pkg.startswith("*")
         endx = pkg.endswith("*")
@@ -172,7 +177,7 @@ class Zypp(BackendPlugin):
 
         for item in sorted(
                         q.queryResults(self.Z.pool()),
-                        key=lambda item: str(item.edition()),
+                        cmp=lambda x,y: cmpEVR(x.edition(), y.edition()),
                         reverse=True):
 
             if item.name() in self.excpkgs.keys() and \
@@ -200,7 +205,7 @@ class Zypp(BackendPlugin):
 
             for item in sorted(
                             q.queryResults(self.Z.pool()),
-                            key=lambda item: str(item.edition()),
+                            cmp=lambda x,y: cmpEVR(x.edition(), y.edition()),
                             reverse=True):
                 if item.name() in self.excpkgs.keys() and \
                    self.excpkgs[item.name()] == item.repoInfo().name():
