@@ -223,6 +223,13 @@ def copy_mic(bootstrap_pth, bin_pth = '/usr/bin', lib_pth='/usr/lib', \
     shutil.rmtree(bs_mic_binpth, ignore_errors = True)
     shutil.copy2(mic_binpth, bs_mic_binpth)
 
+    # copy mic.conf
+    mic_cfgpth = '/etc/mic/mic.conf'
+    bs_mic_cfgpth = bootstrap_pth + mic_cfgpth
+    if not os.path.exists(os.path.dirname(bs_mic_cfgpth)):
+        os.makedirs(os.path.dirname(bs_mic_cfgpth))
+    shutil.copy2(mic_cfgpth, bs_mic_cfgpth)
+
 def clean_files(pattern, dir):
     if not os.path.exists(dir):
         return
