@@ -109,6 +109,7 @@ class RPMInstallCallback:
         self.ts = ts
         self.filelog = False
         self.logString = []
+        self.headmsg = "Installing"
 
     def _dopkgtup(self, hdr):
         tmpepoch = hdr['epoch']
@@ -217,7 +218,7 @@ class RPMInstallCallback:
                         pkgname = os.path.basename(rpmloc)
                 if self.output and (sys.stdout.isatty() or self.total_installed == self.total_actions):
                     fmt = self._makefmt(percent)
-                    msg = fmt % ("Installing", pkgname)
+                    msg = fmt % (self.headmsg, pkgname)
                     if msg != self.lastmsg:
                         self.lastmsg = msg
 

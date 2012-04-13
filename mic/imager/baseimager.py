@@ -834,6 +834,14 @@ class BaseImageCreator(object):
         for rpm_path in self._get_local_packages():
             pkg_manager.installLocal(rpm_path)
 
+    def __preinstall_packages(self, pkg_manager):
+        if not self.ks:
+            return
+
+        self._preinstall_pkgs = kickstart.get_pre_packages(self.ks)
+        for pkg in self._preinstall_pkgs:
+            pkg_manager.preInstall(pkg)
+
     def install(self, repo_urls = {}):
         """Install packages into the install root.
 
@@ -882,6 +890,7 @@ class BaseImageCreator(object):
 
         try:
             try:
+                self.__preinstall_packages(pkg_manager)
                 self.__select_packages(pkg_manager)
                 self.__select_groups(pkg_manager)
                 self.__deselect_packages(pkg_manager)

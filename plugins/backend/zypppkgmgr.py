@@ -66,9 +66,12 @@ class Zypp(BackendPlugin):
         self.repo_manager_options = None
         self.Z = None
         self.ts = None
-        self.probFilterFlags = []
+        self.ts_pre = None
         self.incpkgs = {}
         self.excpkgs = {}
+        self.pre_pkgs = []
+        self.probFilterFlags = [ rpm.RPMPROB_FILTER_OLDPACKAGE,
+                                 rpm.RPMPROB_FILTER_REPLACEPKG ]
 
         self.has_prov_query = True
 
@@ -83,6 +86,10 @@ class Zypp(BackendPlugin):
     def close(self):
         if self.ts:
             self.ts.closeDB()
+            self.ts = None
+
+        if self.ts_pre:
+            self.ts_pre.closeDB()
             self.ts = None
 
         self.closeRpmDB()
@@ -370,6 +377,9 @@ class Zypp(BackendPlugin):
     def installHasFile(self, file):
         return False
 
+    def preInstall(self, pkg):
+        self.pre_pkgs.append(pkg)
+
     def runInstall(self, checksize = 0):
         os.environ["HOME"] = "/"
         self.buildTransaction()
@@ -636,6 +646,34 @@ class Zypp(BackendPlugin):
                 self.close()
                 raise
 
+    def preinstallPkgs(self):
+        if not self.ts_pre:
+            self.__initialize_transaction()
+
+        self.ts_pre.order()
+        cb = rpmmisc.RPMInstallCallback(self.ts_pre)
+        cb.headmsg = "Preinstall"
+        installlogfile = "%s/__catched_stderr.buf" % (self.instroot)
+
+        # start to catch stderr output from librpm
+        msger.enable_logstderr(installlogfile)
+
+        errors = self.ts_pre.run(cb.callback, '')
+        # stop catch
+        msger.disable_logstderr()
+        self.ts_pre.closeDB()
+        self.ts_pre = None
+
+        if errors is not None:
+            if len(errors) == 0:
+                msger.warning('scriptlet or other non-fatal errors occurred '
+                              'during transaction.')
+
+            else:
+                for e in errors:
+                    msger.warning(e[0])
+                raise RepoError('Could not run transaction.')
+
     def installPkgs(self, package_objects):
         if not self.ts:
             self.__initialize_transaction()
@@ -645,6 +683,7 @@ class Zypp(BackendPlugin):
         for flag in self.probFilterFlags:
             probfilter |= flag
         self.ts.setProbFilter(probfilter)
+        self.ts_pre.setProbFilter(probfilter)
 
         localpkgs = self.localpkgs.keys()
 
@@ -670,10 +709,18 @@ class Zypp(BackendPlugin):
                 raise RpmError("Error: %s doesn't exist" % rpmpath)
 
             h = rpmmisc.readRpmHeader(self.ts, rpmpath)
+
+            if pkgname in self.pre_pkgs:
+                msger.verbose("pre-install package added: %s" % pkgname)
+                self.ts_pre.addInstall(h, rpmpath, 'u')
+
             self.ts.addInstall(h, rpmpath, 'u')
 
         unresolved_dependencies = self.ts.check()
         if not unresolved_dependencies:
+            if self.pre_pkgs:
+                self.preinstallPkgs()
+
             self.ts.order()
             cb = rpmmisc.RPMInstallCallback(self.ts)
             installlogfile = "%s/__catched_stderr.buf" % (self.instroot)
@@ -724,6 +771,13 @@ class Zypp(BackendPlugin):
             self.ts = rpm.TransactionSet(self.instroot)
             # Set to not verify DSA signatures.
             self.ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES|rpm._RPMVSF_NODIGESTS)
+
+        if not self.ts_pre:
+            self.ts_pre = rpm.TransactionSet(self.instroot)
+            # Just unpack the files, don't run scripts
+            self.ts_pre.setFlags(rpm.RPMTRANS_FLAG_ALLFILES | rpm.RPMTRANS_FLAG_NOSCRIPTS)
+            # Set to not verify DSA signatures.
+            self.ts_pre.setVSFlags(rpm._RPMVSF_NOSIGNATURES|rpm._RPMVSF_NODIGESTS)
 
     def checkPkg(self, pkg):
         ret = 1

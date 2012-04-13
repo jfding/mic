@@ -25,6 +25,7 @@ import string
 from mic import msger
 from mic.utils import errors, misc, runner, fs_related as fs
 
+import pykickstart.sections as kssections
 import pykickstart.commands as kscommands
 import pykickstart.constants as ksconstants
 import pykickstart.errors as kserrors
@@ -37,6 +38,21 @@ import custom_commands.desktop as desktop
 import custom_commands.moblinrepo as moblinrepo
 import custom_commands.micboot as micboot
 import custom_commands.partition as partition
+
+class PrepackageSection(kssections.Section):
+    sectionOpen = "%prepackages"
+
+    def handleLine(self, line):
+        if not self.handler:
+            return
+
+        (h, s, t) = line.partition('#')
+        line = h.rstrip()
+
+        self.handler.prepackages.add([line])
+
+    def handleHeader(self, lineno, args):
+        kssections.Section.handleHeader(self, lineno, args)
 
 def read_kickstart(path):
     """Parse a kickstart file and return a KickstartParser instance.
@@ -64,8 +80,10 @@ def read_kickstart(path):
     class KSHandlers(superclass):
         def __init__(self, mapping={}):
             superclass.__init__(self, mapping=commandMap[using_version])
+            self.prepackages = ksparser.Packages()
 
     ks = ksparser.KickstartParser(KSHandlers())
+    ks.registerSection(PrepackageSection(ks.handler))
 
     try:
         ks.readKickstart(path)
@@ -733,6 +751,9 @@ def convert_method_to_repo(ks):
         ks.handler.repo.methodToRepo()
     except (AttributeError, kserrors.KickstartError):
         pass
+
+def get_pre_packages(ks, required = []):
+    return ks.handler.prepackages.packageList + required
 
 def get_packages(ks, required = []):
     return ks.handler.packages.packageList + required

@@ -173,6 +173,10 @@ class Yum(BackendPlugin, yum.YumBase):
         self.doRepoSetup()
         self.doSackSetup()
 
+    def preInstall(self, pkg):
+        # FIXME: handle pre-install package
+        return None
+
     def selectPackage(self, pkg):
         """Select a given package.
         Can be specified with name.arch or name*
