@@ -206,10 +206,9 @@ class TimezoneConfig(KickstartConfig):
         try:
             shutil.copyfile(tz_source, tz_dest)
         except (IOError, OSError), (errno, msg):
-            raise errors.KsError("Error copying timezone info from "
+            msger.warning("Error copying timezone info from "
                                         "'%s' to '%s': %s" \
                                         % (tz_source, tz_dest, msg))
-
 
 class AuthConfig(KickstartConfig):
     """A class to apply a kickstart authconfig configuration to a system."""
@@ -293,12 +292,16 @@ class UserConfig(KickstartConfig):
             args += [ "--groups", string.join(userconfig.groups, ",") ]
         if userconfig.name:
             args.append(userconfig.name)
-            dev_null = os.open("/dev/null", os.O_WRONLY)
-            subprocess.call(args,
-                             stdout = dev_null,
-                             stderr = dev_null,
-                             preexec_fn = self.chroot)
-            os.close(dev_null)
+            try:
+                dev_null = os.open("/dev/null", os.O_WRONLY)
+                subprocess.call(args,
+                                 stdout = dev_null,
+                                 stderr = dev_null,
+                                 preexec_fn = self.chroot)
+                os.close(dev_null)
+            except:
+                msger.warning('Cannot add user using "useradd"')
+
             if userconfig.password not in (None, ""):
                 if userconfig.isCrypted:
                     self.set_encrypted_passwd(userconfig.name,

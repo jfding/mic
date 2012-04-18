@@ -152,7 +152,7 @@ class Zypp(BackendPlugin):
 
         def cmpEVR(ed1, ed2):
             (e1, v1, r1) = map(str, [ed1.epoch(), ed1.version(), ed1.release()])
-            (e2, v2, v2) = map(str, [ed2.epoch(), ed2.version(), ed2.release()])
+            (e2, v2, r2) = map(str, [ed2.epoch(), ed2.version(), ed2.release()])
             return rpm.labelCompare((e1, v1, r1), (e2, v2, r2))
 
         found = False
