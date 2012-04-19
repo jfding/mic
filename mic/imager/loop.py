@@ -108,9 +108,14 @@ class LoopImageCreator(BaseImageCreator):
 
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
 
+        if taring_to:
+            if '@NAME@' in taring_to:
+                taring_to = taring_to.replace('@NAME@', self.name)
+
+            if not taring_to.endswith('.tar'):
+                taring_to += ".tar"
+
         self.taring_to = taring_to
-        if taring_to and '@NAME@' in taring_to:
-            self.taring_to = taring_to.replace('@NAME@', self.name)
 
         self.__fslabel = None
         self.fslabel = self.name
@@ -165,7 +170,10 @@ class LoopImageCreator(BaseImageCreator):
         else:
             self.__image_size = 0
 
-        self._img_name = self.name + ".img"
+        if taring_to:
+            self._img_name = self.taring_to
+        else:
+            self._img_name = self.name + ".img"
 
     def _set_fstype(self, fstype):
         self.__fstype = fstype
@@ -358,11 +366,7 @@ class LoopImageCreator(BaseImageCreator):
             self._resparse(0)
 
             tarfile_name = self.taring_to
-            if not tarfile_name.endswith('.tar'):
-                mountfp_xml = tarfile_name + ".xml"
-                tarfile_name += ".tar"
-            else:
-                mountfp_xml = os.path.splitext(tarfile_name)[0] + ".xml"
+            mountfp_xml = os.path.splitext(tarfile_name)[0] + ".xml"
 
             msger.info("Tar all loop images together to %s" % tarfile_name)
             tar = tarfile.open(os.path.join(self._outdir, tarfile_name), 'w')
