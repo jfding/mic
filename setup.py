@@ -59,10 +59,10 @@ BACKEND_PLUGINS = glob.glob(os.path.join("plugins", "backend", "*.py"))
 
 setup(name=MOD_NAME,
       version = version,
-      description = 'New MeeGo Image Creator',
-      author='Jian-feng Ding',
-      author_email='jian-feng.ding@intel.com',
-      url='https://meego.gitorious.org/meego-developer-tools/image-creator',
+      description = 'Image Creator for Linux Distributions',
+      author='Jian-feng Ding, Qiang Zhang, Gui Chen',
+      author_email='jian-feng.ding@intel.com, qiang.z.zhang@intel.com, gui.chen@intel.com',
+      url='https://github.com/jfding/mic',
       scripts=[
           'tools/mic',
           ],
