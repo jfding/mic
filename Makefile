@@ -37,7 +37,7 @@ man: USAGE.rst
 	rst2man $< >mic.1
 
 install: build
-	$(PYTHON) setup.py install  --prefix=$(DESTDIR)/$(PREFIX)
+	$(PYTHON) setup.py install --prefix=$(DESTDIR)/$(PREFIX)
 
 develop: build
 	$(PYTHON) setup.py develop

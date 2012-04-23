@@ -2,6 +2,8 @@
 ; general settings
 distro_name = Tizen
 
+plugin_dir = @PREFIX@/lib/mic/plugins
+
 [create]
 ; settings for create subcommand
 tmpdir= /var/tmp/mic
@@ -11,13 +13,15 @@ bootstrapdir= /var/tmp/mic/bootstrap
 
 pkgmgr = zypp
 
-; proxy = http://proxy.yourcompany.com:8080/
-; no_proxy = localhost,127.0.0.0/8,.yourcompany.com
+# to set global proxy for repos
+#proxy = http://proxy.yourcompany.com:8080/
+#no_proxy = localhost,127.0.0.0/8,.yourcompany.com
 
-# Prefix that is added in front of files that are produced.
-; name_prefix = output
+# prefix will be added in front of generated files
+#name_prefix = output
 
-; ssl_verify = no
+# to skip all ssl verification for repos
+#ssl_verify = no
 
 [convert]
 ; settings for convert subcommand

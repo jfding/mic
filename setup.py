@@ -57,18 +57,45 @@ PACKAGES = [MOD_NAME,
 IMAGER_PLUGINS = glob.glob(os.path.join("plugins", "imager", "*.py"))
 BACKEND_PLUGINS = glob.glob(os.path.join("plugins", "backend", "*.py"))
 
-setup(name=MOD_NAME,
-      version = version,
-      description = 'Image Creator for Linux Distributions',
-      author='Jian-feng Ding, Qiang Zhang, Gui Chen',
-      author_email='jian-feng.ding@intel.com, qiang.z.zhang@intel.com, gui.chen@intel.com',
-      url='https://github.com/jfding/mic',
-      scripts=[
-          'tools/mic',
-          ],
-      packages = PACKAGES,
-      data_files = [("/usr/lib/mic/plugins/imager", IMAGER_PLUGINS),
-                    ("/usr/lib/mic/plugins/backend", BACKEND_PLUGINS),
-                    ("/etc/mic", ["distfiles/mic.conf"])]
-)
+# the following code to do a simple parse for '--prefix' opts
+prefix = '/usr'
+is_next = False
+for arg in sys.argv:
+    if is_next:
+        prefix = arg
+        break
+    if '--prefix=' in arg:
+        prefix = arg[9:]
+    elif '--prefix' == arg:
+        is_next = True
+
+if prefix == '/usr':
+    etc_prefix = '/etc'
+else:
+    etc_prefix = os.path.join(prefix, 'etc')
+
+# apply prefix to mic.conf.in to generate actual mic.conf
+conf_str = file('distfiles/mic.conf.in').read()
+conf_str = conf_str.replace('@PREFIX@', prefix)
+with file('distfiles/mic.conf', 'w') as wf:
+    wf.write(conf_str)
+
+try:
+    setup(name=MOD_NAME,
+          version = version,
+          description = 'Image Creator for Linux Distributions',
+          author='Jian-feng Ding, Qiang Zhang, Gui Chen',
+          author_email='jian-feng.ding@intel.com, qiang.z.zhang@intel.com, gui.chen@intel.com',
+          url='https://github.com/jfding/mic',
+          scripts=[
+              'tools/mic',
+              ],
+          packages = PACKAGES,
+          data_files = [("%s/lib/mic/plugins/imager" % prefix, IMAGER_PLUGINS),
+                        ("%s/lib/mic/plugins/backend" % prefix, BACKEND_PLUGINS),
+                        ("%s/mic" % etc_prefix, ["distfiles/mic.conf"])]
+    )
+finally:
+    # remove dynamic file distfiles/mic.conf
+    os.unlink('distfiles/mic.conf')
 
