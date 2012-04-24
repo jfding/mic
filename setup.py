@@ -58,7 +58,7 @@ IMAGER_PLUGINS = glob.glob(os.path.join("plugins", "imager", "*.py"))
 BACKEND_PLUGINS = glob.glob(os.path.join("plugins", "backend", "*.py"))
 
 # the following code to do a simple parse for '--prefix' opts
-prefix = '/usr'
+prefix = sys.prefix
 is_next = False
 for arg in sys.argv:
     if is_next:
@@ -66,10 +66,13 @@ for arg in sys.argv:
         break
     if '--prefix=' in arg:
         prefix = arg[9:]
+        break
     elif '--prefix' == arg:
         is_next = True
 
-if prefix == '/usr':
+# expand the path, for user may type some unexcepted format
+prefix = os.path.abspath(os.path.expanduser(prefix)).rstrip('/')
+if prefix.lstrip('/') == 'usr':
     etc_prefix = '/etc'
 else:
     etc_prefix = os.path.join(prefix, 'etc')

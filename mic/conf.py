@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os, re
+import os, sys, re
 import ConfigParser
 
 import msger
@@ -23,6 +23,17 @@ import kickstart
 from .utils import misc, runner, proxy, errors
 
 DEFAULT_GSITECONF = '/etc/mic/mic.conf'
+
+def get_siteconf(siteconf="etc/mic/mic.conf"):
+    mic_path = os.path.dirname(__file__)
+    path_ptn = re.compile(r"(?P<prefix>.*)\/lib(64)?\/.*")
+    m = path_ptn.match(mic_path)
+    if m:
+        if m.group('prefix') == "/usr":
+            return DEFAULT_GSITECONF
+        else:
+            return os.path.join(m.group('prefix'), siteconf)
+    return None
 
 class ConfigMgr(object):
     DEFAULTS = {'common': {
@@ -74,12 +85,13 @@ class ConfigMgr(object):
         # reset config options
         self.reset()
 
+        if not siteconf:
+            siteconf = get_siteconf()
+        if not siteconf or not os.path.exists(siteconf):
+            siteconf = DEFAULT_GSITECONF
+
         # initial options from siteconf
-        if siteconf:
-            self._siteconf = siteconf
-        else:
-            # use default site config
-            self._siteconf = DEFAULT_GSITECONF
+        self._siteconf = siteconf
 
         if ksconf:
             self._ksconf = ksconf
