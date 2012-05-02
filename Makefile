@@ -11,7 +11,7 @@ else
 endif
 
 ifndef PREFIX
-    PREFIX = "/usr"
+    PREFIX = $(shell $(PYTHON) -c "import sys;print sys.prefix")
 endif
 
 all: build

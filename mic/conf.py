@@ -29,7 +29,7 @@ def get_siteconf():
 
     m = re.match(r"(?P<prefix>.*)\/lib(64)?\/.*", mic_path)
     if m and m.group('prefix') != "/usr":
-        return os.path.join(m.group('prefix'), DEFAULT_GSITECONF)
+        return os.path.join(m.group('prefix'), "etc/mic/mic.conf")
 
     return DEFAULT_GSITECONF
 
