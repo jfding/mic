@@ -24,20 +24,19 @@ from .utils import misc, runner, proxy, errors
 
 DEFAULT_GSITECONF = '/etc/mic/mic.conf'
 
-def get_siteconf(siteconf="etc/mic/mic.conf"):
+def get_siteconf():
     mic_path = os.path.dirname(__file__)
-    path_ptn = re.compile(r"(?P<prefix>.*)\/lib(64)?\/.*")
-    m = path_ptn.match(mic_path)
-    if m:
-        if m.group('prefix') == "/usr":
-            return DEFAULT_GSITECONF
-        else:
-            return os.path.join(m.group('prefix'), siteconf)
-    return None
+
+    m = re.match(r"(?P<prefix>.*)\/lib(64)?\/.*", mic_path)
+    if m and m.group('prefix') != "/usr":
+        return os.path.join(m.group('prefix'), DEFAULT_GSITECONF)
+
+    return DEFAULT_GSITECONF
 
 class ConfigMgr(object):
     DEFAULTS = {'common': {
                     "distro_name": "Default Distribution",
+                    "plugin_dir": "/usr/lib/mic/plugins", # TODO use prefix also?
                 },
                 'create': {
                     "tmpdir": '/var/tmp/mic',
@@ -87,8 +86,6 @@ class ConfigMgr(object):
 
         if not siteconf:
             siteconf = get_siteconf()
-        if not siteconf or not os.path.exists(siteconf):
-            siteconf = DEFAULT_GSITECONF
 
         # initial options from siteconf
         self._siteconf = siteconf
@@ -129,8 +126,8 @@ class ConfigMgr(object):
             return
 
         if not os.path.exists(siteconf):
-            raise errors.ConfigError("Failed to find config file: %s" \
-                                     % siteconf)
+            msger.warning("cannot read config file: %s" % siteconf)
+            return
 
         parser = ConfigParser.SafeConfigParser()
         parser.read(siteconf)
