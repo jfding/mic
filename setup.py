@@ -88,6 +88,7 @@ with file(conffile, 'w') as wf:
     wf.write(conf_str)
 
 try:
+    os.environ['PREFIX'] = prefix
     setup(name=MOD_NAME,
           version = version,
           description = 'Image Creator for Linux Distributions',
