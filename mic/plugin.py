@@ -18,11 +18,10 @@
 import os, sys
 import msger
 import pluginbase
+from mic.conf import configmgr
 from mic.utils import errors
 
 __ALL__ = ['PluginMgr', 'pluginmgr']
-
-DEFAULT_PLUGIN_LOCATION = "/usr/lib/mic/plugins"
 
 PLUGIN_TYPES = ["imager", "backend"] # TODO  "hook"
 
@@ -38,7 +37,7 @@ class PluginMgr(object):
         return cls._instance
 
     def __init__(self):
-        pass
+        self.plugin_dir = configmgr.common['plugin_dir']
 
     def append_dirs(self, dirs):
         for path in dirs:
@@ -87,7 +86,7 @@ class PluginMgr(object):
         if ptype not in PLUGIN_TYPES:
             raise errors.CreatorError('%s is not valid plugin type' % ptype)
 
-        self._add_plugindir(os.path.join(DEFAULT_PLUGIN_LOCATION, ptype))
+        self._add_plugindir(os.path.join(self.plugin_dir, ptype))
         self._load_all()
 
         return pluginbase.get_plugins(ptype)
