@@ -70,17 +70,21 @@ for arg in sys.argv:
     elif '--prefix' == arg:
         is_next = True
 
-# expand the path, for user may type some unexcepted format
+# get the installation path of mic.conf
 prefix = os.path.abspath(os.path.expanduser(prefix)).rstrip('/')
 if prefix.lstrip('/') == 'usr':
     etc_prefix = '/etc'
 else:
     etc_prefix = os.path.join(prefix, 'etc')
 
+conffile = 'distfiles/mic.conf'
+if os.path.isfile('%s/mic/mic.conf' % etc_prefix):
+    conffile += '.new'
+
 # apply prefix to mic.conf.in to generate actual mic.conf
 conf_str = file('distfiles/mic.conf.in').read()
 conf_str = conf_str.replace('@PREFIX@', prefix)
-with file('distfiles/mic.conf', 'w') as wf:
+with file(conffile, 'w') as wf:
     wf.write(conf_str)
 
 try:
@@ -96,9 +100,9 @@ try:
           packages = PACKAGES,
           data_files = [("%s/lib/mic/plugins/imager" % prefix, IMAGER_PLUGINS),
                         ("%s/lib/mic/plugins/backend" % prefix, BACKEND_PLUGINS),
-                        ("%s/mic" % etc_prefix, ["distfiles/mic.conf"])]
+                        ("%s/mic" % etc_prefix, [conffile])]
     )
 finally:
     # remove dynamic file distfiles/mic.conf
-    os.unlink('distfiles/mic.conf')
+    os.unlink(conffile)
 
