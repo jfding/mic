@@ -842,6 +842,22 @@ class BaseImageCreator(object):
         for pkg in self._preinstall_pkgs:
             pkg_manager.preInstall(pkg)
 
+    def __attachment_packages(self, pkg_manager):
+        if not self.ks:
+            return
+
+        self._attachment = []
+        for item in kickstart.get_attachment(self.ks):
+            if item.startswith('/'):
+                self._attachment.append(item)
+                continue
+            filelist = pkg_manager.getFilelist(item)
+            if not filelist:
+                msger.warning("No files found in package: %s" % item)
+                continue
+            for pfile in pkg_manager.getFilelist(item):
+                self._attachment.append(pfile)
+
     def install(self, repo_urls = {}):
         """Install packages into the install root.
 
@@ -908,8 +924,12 @@ class BaseImageCreator(object):
         finally:
             self._pkgs_content = pkg_manager.getAllContent()
             self._pkgs_license = pkg_manager.getPkgsLicense()
+            self.__attachment_packages(pkg_manager)
 
             pkg_manager.close()
+
+        # hook post install
+        self.postinstall()
 
         # do some clean up to avoid lvm info leakage.  this sucks.
         for subdir in ("cache", "backup", "archive"):
@@ -919,6 +939,9 @@ class BaseImageCreator(object):
                     os.unlink(lvmdir + "/" + f)
             except:
                 pass
+
+    def postinstall(self):
+        self.copy_attachment()
 
     def __run_post_scripts(self):
         msger.info("Running scripts ...")
@@ -1204,6 +1227,14 @@ class BaseImageCreator(object):
             msger.info('copy kernel file %s as %s' % (os.path.basename(kernel), kernelfilename))
             shutil.copy(kernel, kernelfilename)
             self.outimage.append(kernelfilename)
+
+
+    def copy_attachment(self):
+        """ Subclass implement it to handle attachment files
+
+        NOTE: This needs to be called before unmounting the instroot.
+        """
+        pass
 
     def get_pkg_manager(self):
         return self.pkgmgr(target_arch = self.target_arch, instroot = self._instroot, cachedir = self.cachedir)

@@ -54,6 +54,21 @@ class PrepackageSection(kssections.Section):
     def handleHeader(self, lineno, args):
         kssections.Section.handleHeader(self, lineno, args)
 
+class AttachmentSection(kssections.Section):
+    sectionOpen = "%attachment"
+
+    def handleLine(self, line):
+        if not self.handler:
+            return
+
+        (h, s, t) = line.partition('#')
+        line = h.rstrip()
+
+        self.handler.attachment.add([line])
+
+    def handleHeader(self, lineno, args):
+        kssections.Section.handleHeader(self, lineno, args)
+
 def read_kickstart(path):
     """Parse a kickstart file and return a KickstartParser instance.
 
@@ -81,9 +96,11 @@ def read_kickstart(path):
         def __init__(self, mapping={}):
             superclass.__init__(self, mapping=commandMap[using_version])
             self.prepackages = ksparser.Packages()
+            self.attachment = ksparser.Packages()
 
     ks = ksparser.KickstartParser(KSHandlers())
     ks.registerSection(PrepackageSection(ks.handler))
+    ks.registerSection(AttachmentSection(ks.handler))
 
     try:
         ks.readKickstart(path)
@@ -753,6 +770,9 @@ def convert_method_to_repo(ks):
         ks.handler.repo.methodToRepo()
     except (AttributeError, kserrors.KickstartError):
         pass
+
+def get_attachment(ks, required = []):
+    return ks.handler.attachment.packageList + required
 
 def get_pre_packages(ks, required = []):
     return ks.handler.prepackages.packageList + required

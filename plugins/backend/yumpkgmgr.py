@@ -436,3 +436,13 @@ class Yum(BackendPlugin, yum.YumBase):
 
     def getPkgsLicense(self):
         return self.__pkgs_license
+
+    def getFilelist(self, pkgname):
+        if not pkgname:
+            return None
+
+        pkg = filter(lambda txmbr: txmbr.po.name == pkgname, self.tsInfo.getMembers())
+        if not pkg:
+            return None
+        return pkg[0].po.filelist
+

@@ -479,6 +479,17 @@ class Zypp(BackendPlugin):
     def getPkgsLicense(self):
         return self.__pkgs_license
 
+    def getFilelist(self, pkgname):
+        if not pkgname:
+            return None
+
+        if not self.ts:
+            self.__initialize_transaction()
+
+        mi = self.ts.dbMatch('name', pkgname)
+        for header in mi:
+            return header['FILENAMES']
+
     def __initialize_repo_manager(self):
         if self.repo_manager:
             return

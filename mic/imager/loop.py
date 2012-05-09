@@ -16,6 +16,7 @@
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 import os
+import glob
 import shutil
 
 from mic import kickstart, msger
@@ -368,15 +369,18 @@ class LoopImageCreator(BaseImageCreator):
             tarfile_name = self.taring_to
             mountfp_xml = os.path.splitext(tarfile_name)[0] + ".xml"
 
-            msger.info("Tar all loop images together to %s" % tarfile_name)
-            tar = tarfile.open(os.path.join(self._outdir, tarfile_name), 'w')
             for item in self._instloops:
                 imgfile = os.path.join(self.__imgdir, item['name'])
                 if item['fstype'] == "ext4":
                     runner.show('/sbin/tune2fs '
                                 '-O ^huge_file,extents,uninit_bg %s ' \
                                 % imgfile)
-                tar.add(imgfile, item['name'])
+
+            msger.info("Tar all loop images together to %s" % tarfile_name)
+            tar = tarfile.open(os.path.join(self._outdir, tarfile_name), 'w')
+            for item in os.listdir(self.__imgdir):
+                fpath = os.path.join(self.__imgdir, item)
+                tar.add(fpath, item)
 
             tar.close()
 
@@ -390,3 +394,18 @@ class LoopImageCreator(BaseImageCreator):
             for item in self._instloops:
                 shutil.move(os.path.join(self.__imgdir, item['name']),
                             os.path.join(self._outdir, item['name']))
+
+    def copy_attachment(self):
+        if not hasattr(self, '_attachment') or not self._attachment:
+            return 
+
+        self._check_imgdir()
+
+        msger.info("Copying attachment files...")
+        for item in self._attachment:
+            files = glob.glob("%s/%s" % (self._instroot, item))
+            for fpath in files:
+                dpath = "%s/%s" % (self.__imgdir, os.path.basename(fpath))
+                msger.verbose("Copy attachment %s to %s" % (item, dpath))
+                shutil.copy(fpath, dpath)
+
