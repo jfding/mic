@@ -53,6 +53,23 @@ RPM_RE  = re.compile("(.*)\.(.*) (.*)-(.*)")
 RPM_FMT = "%(name)s.%(arch)s %(ver_rel)s"
 SRPM_RE = re.compile("(.*)-(\d+.*)-(\d+\.\d+).src.rpm")
 
+def taring(dstfile, targetdir):
+    import tarfile
+    wf = tarfile.open(dstfile, 'w')
+    for item in os.listdir(targetdir):
+        wf.add(os.path.join(targetdir, item), item)
+    wf.close()
+
+def ziping(dstfile, targetdir):
+    import zipfile
+    wf = zipfile.ZipFile(dstfile, 'w', compression=zipfile.ZIP_DEFLATED)
+    for item in os.listdir(targetdir):
+        fpath = os.path.join(targetdir, item)
+        if not os.path.isfile(fpath):
+            continue
+        wf.write(fpath, item, zipfile.ZIP_DEFLATED)
+    wf.close()
+
 def human_size(size):
     """Return human readable string for Bytes size
     """

@@ -98,7 +98,7 @@ class LoopImageCreator(BaseImageCreator):
     will be created as a separated loop image.
     """
 
-    def __init__(self, creatoropts=None, pkgmgr=None, taring_to=None):
+    def __init__(self, creatoropts=None, pkgmgr=None, compress_to=None):
         """Initialize a LoopImageCreator instance.
 
         This method takes the same arguments as ImageCreator.__init__()
@@ -109,14 +109,18 @@ class LoopImageCreator(BaseImageCreator):
 
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
 
-        if taring_to:
-            if '@NAME@' in taring_to:
-                taring_to = taring_to.replace('@NAME@', self.name)
+        if compress_to:
+            if '@NAME@' in compress_to:
+                compress_to = compress_to.replace('@NAME@', self.name)
 
-            if not taring_to.endswith('.tar'):
-                taring_to += ".tar"
+            compress_imgdir_method = os.path.splitext(compress_to)[1]
+            if compress_imgdir_method in (".zip", ".tar"):
+                self.compress_imgdir_method = compress_imgdir_method[1:]
+            else:
+                self.compress_imgdir_method = "tar"
+                compress_to += ".tar"
 
-        self.taring_to = taring_to
+        self.compress_to = compress_to
 
         self.__fslabel = None
         self.fslabel = self.name
@@ -171,8 +175,8 @@ class LoopImageCreator(BaseImageCreator):
         else:
             self.__image_size = 0
 
-        if taring_to:
-            self._img_name = self.taring_to
+        if compress_to:
+            self._img_name = self.compress_to
         else:
             self._img_name = self.name + ".img"
 
@@ -361,13 +365,12 @@ class LoopImageCreator(BaseImageCreator):
             item['loop'].cleanup()
 
     def _stage_final_image(self):
-        if self.taring_to:
-            import tarfile
+        if self.compress_to:
 
             self._resparse(0)
 
-            tarfile_name = self.taring_to
-            mountfp_xml = os.path.splitext(tarfile_name)[0] + ".xml"
+            cfile_name = self.compress_to
+            mountfp_xml = os.path.splitext(cfile_name)[0] + ".xml"
 
             for item in self._instloops:
                 imgfile = os.path.join(self.__imgdir, item['name'])
@@ -376,13 +379,15 @@ class LoopImageCreator(BaseImageCreator):
                                 '-O ^huge_file,extents,uninit_bg %s ' \
                                 % imgfile)
 
-            msger.info("Tar all loop images together to %s" % tarfile_name)
-            tar = tarfile.open(os.path.join(self._outdir, tarfile_name), 'w')
-            for item in os.listdir(self.__imgdir):
-                fpath = os.path.join(self.__imgdir, item)
-                tar.add(fpath, item)
-
-            tar.close()
+            msger.info("Compress all loop images together to %s" % cfile_name)
+            dstfile = os.path.join(self._outdir, cfile_name)
+            if self.compress_imgdir_method == "tar":
+                misc.taring(dstfile, self.__imgdir)
+            elif self.compress_imgdir_method == "zip":
+                misc.ziping(dstfile, self.__imgdir)
+            else:
+                raise CreatorError("Unsupported compress type: %s" \
+                                   % self.compress_imgdir_method)
 
             # save mount points mapping file to xml
             save_mountpoints(os.path.join(self._outdir, mountfp_xml),
