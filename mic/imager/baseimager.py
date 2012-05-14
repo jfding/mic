@@ -32,7 +32,7 @@ import rpm
 from mic import kickstart
 from mic import msger
 from mic.utils.errors import CreatorError, Abort
-from mic.utils import misc, rpmmisc, runner, fs_related as fs
+from mic.utils import misc, rpmmisc, runner, proxy, fs_related as fs
 
 class BaseImageCreator(object):
     """Installs a system to a chroot directory.
@@ -849,14 +849,38 @@ class BaseImageCreator(object):
         self._attachment = []
         for item in kickstart.get_attachment(self.ks):
             if item.startswith('/'):
-                self._attachment.append(item)
+                fpaths = os.path.join(self._instroot, item.lstrip('/'))
+                for fpath in glob.glob(fpaths):
+                    self._attachment.append(fpath)
                 continue
             filelist = pkg_manager.getFilelist(item)
-            if not filelist:
-                msger.warning("No files found in package: %s" % item)
+            if filelist:
+                # found rpm in rootfs
+                for pfile in pkg_manager.getFilelist(item):
+                    fpath = os.path.join(self._instroot, pfile.lstrip('/'))
+                    self._attachment.append(fpath)
                 continue
-            for pfile in pkg_manager.getFilelist(item):
-                self._attachment.append(pfile)
+
+            # try to retrieve rpm file
+            url = pkg_manager.package_url(item)
+            if not url:
+                msger.warning("Can't get url from repo for %s" % item)
+                continue
+            proxies = proxy.get_proxy_for(url)
+            fpath = os.path.join(self.cachedir, os.path.basename(url))
+            if not os.path.exists(fpath):
+                # download pkgs
+                try:
+                    fpath = rpmmisc.myurlgrab(url, fpath, proxies, None)
+                except CreatorError:
+                    raise
+
+            tmpdir = self._mkdtemp()
+            misc.extract_rpm(fpath, tmpdir)
+            for (root, dirs, files) in os.walk(tmpdir):
+                for fname in files:
+                    fpath = os.path.join(root, fname)
+                    self._attachment.append(fpath)
 
     def install(self, repo_urls = {}):
         """Install packages into the install root.

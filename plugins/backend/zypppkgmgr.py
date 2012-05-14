@@ -819,3 +819,28 @@ class Zypp(BackendPlugin):
         else:
             repourl = str(repoinfo.baseUrls()[0])
             return get_proxy_for(repourl)
+
+    def package_url(self, pkg):
+
+        def cmpEVR(ed1, ed2):
+            (e1, v1, r1) = map(str, [ed1.epoch(), ed1.version(), ed1.release()])
+            (e2, v2, r2) = map(str, [ed2.epoch(), ed2.version(), ed2.release()])
+            return rpm.labelCompare((e1, v1, r1), (e2, v2, r2))
+
+        if not self.Z:
+            self.__initialize_zypp()
+
+        q = zypp.PoolQuery()
+        q.addKind(zypp.ResKind.package)
+        q.setMatchExact()
+        q.addAttribute(zypp.SolvAttr.name,pkg)
+        items = sorted(q.queryResults(self.Z.pool()),
+                       cmp=lambda x,y: cmpEVR(x.edition(), y.edition()),
+                       reverse=True)
+
+        if items:
+            baseurl = items[0].repoInfo().baseUrls()[0]
+            location = zypp.asKindPackage(items[0]).location()
+            return os.path.join(str(baseurl), str(location.filename()))
+
+        return None

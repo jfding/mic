@@ -402,15 +402,13 @@ class LoopImageCreator(BaseImageCreator):
 
     def copy_attachment(self):
         if not hasattr(self, '_attachment') or not self._attachment:
-            return 
+            return
 
         self._check_imgdir()
 
         msger.info("Copying attachment files...")
         for item in self._attachment:
-            files = glob.glob("%s/%s" % (self._instroot, item))
-            for fpath in files:
-                dpath = "%s/%s" % (self.__imgdir, os.path.basename(fpath))
-                msger.verbose("Copy attachment %s to %s" % (item, dpath))
-                shutil.copy(fpath, dpath)
+            dpath = os.path.join(self.__imgdir, os.path.basename(item))
+            msger.verbose("Copy attachment %s to %s" % (item, dpath))
+            shutil.copy(item, dpath)
 

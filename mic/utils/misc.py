@@ -23,6 +23,7 @@ import re
 import shutil
 import glob
 import hashlib
+import subprocess
 import rpmmisc
 
 try:
@@ -52,6 +53,22 @@ from mic import msger
 RPM_RE  = re.compile("(.*)\.(.*) (.*)-(.*)")
 RPM_FMT = "%(name)s.%(arch)s %(ver_rel)s"
 SRPM_RE = re.compile("(.*)-(\d+.*)-(\d+\.\d+).src.rpm")
+
+def extract_rpm(rpmfile, targetdir):
+    rpm2cpio = find_binary_path("rpm2cpio")
+    cpio = find_binary_path("cpio")
+
+    olddir = os.getcwd()
+    os.chdir(targetdir)
+
+    msger.verbose("Extract rpm file with cpio: %s" % rpmfile)
+    p1 = subprocess.Popen([rpm2cpio, rpmfile], stdout=subprocess.PIPE)
+    p2 = subprocess.Popen([cpio, "-idv"], stdin=p1.stdout,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (sout, serr) = p2.communicate()
+    msger.verbose(sout or serr)
+
+    os.chdir(olddir)
 
 def taring(dstfile, targetdir):
     import tarfile

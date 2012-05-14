@@ -446,3 +446,9 @@ class Yum(BackendPlugin, yum.YumBase):
             return None
         return pkg[0].po.filelist
 
+    def package_url(self, pkg):
+        pkgs = self.pkgSack.searchNevra(name=pkg)
+        if pkgs:
+            return pkgs[0].remote_url
+        else:
+            return None
