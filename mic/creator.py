@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os, sys
+import os, sys, re
 from optparse import SUPPRESS_HELP
 
 from mic import msger
@@ -37,6 +37,7 @@ class Creator(cmdln.Cmdln):
 
     def __init__(self, *args, **kwargs):
         cmdln.Cmdln.__init__(self, *args, **kwargs)
+        self._subcmds = []
 
         # get cmds from pluginmgr
         # mix-in do_subcmd interface
@@ -47,6 +48,7 @@ class Creator(cmdln.Cmdln):
 
             func = getattr(klass, 'do_create')
             setattr(self.__class__, "do_"+subcmd, func)
+            self._subcmds.append(subcmd)
 
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self)
@@ -197,10 +199,10 @@ class Creator(cmdln.Cmdln):
         if self.options.compress_disk_image is not None:
             configmgr.create['compress_disk_image'] = \
                                                 self.options.compress_disk_image
-        
+
         if self.options.copy_kernel:
             configmgr.create['copy_kernel'] = self.options.copy_kernel
-        
+
     def main(self, argv=None):
         if argv is None:
             argv = sys.argv
@@ -233,4 +235,62 @@ class Creator(cmdln.Cmdln):
             msger.error('root permission is required to continue, abort')
 
         return self.cmd(args)
+
+    def do_auto(self, subcmd, opts, *args):
+        """${cmd_name}: auto detect image type from magic header
+
+        Usage:
+            ${name} ${cmd_name} <ksfile>
+
+        ${cmd_option_list}
+        """
+        def parse_magic_line(re_str, pstr, ptype='mic'):
+            ptn = re.compile(re_str)
+            m = ptn.match(pstr)
+            if not m or not m.groups():
+                return None
+
+            inline_argv = m.group(1).strip()
+            if ptype == 'mic':
+                m2 = re.search('(?P<format>\w+)', inline_argv)
+            elif ptype == 'mic2':
+                m2 = re.search('(-f|--format(=)?)\s*(?P<format>\w+)',
+                               inline_argv)
+            else:
+                return None
+
+            if m2:
+                cmdname = m2.group('format')
+                inline_argv = inline_argv.replace(m2.group(0), '')
+                return (cmdname, inline_argv)
+
+            return None
+
+        if not args:
+            self.do_help(['help', subcmd])
+            return None
+
+        if len(args) != 1:
+            raise errors.Usage("Extra arguments given")
+
+        if not os.path.exists(args[0]):
+            raise errors.CreatorError("Can't find the file: %s" % args[0])
+
+        with open(args[0], 'r') as rf:
+            first_line = rf.readline()
+
+        mic_re = '^#\s*-\*-mic-options-\*-\s+(.*)\s+-\*-mic-options-\*-'
+        mic2_re = '^#\s*-\*-mic2-options-\*-\s+(.*)\s+-\*-mic2-options-\*-'
+
+        result = parse_magic_line(mic_re, first_line, 'mic') \
+                 or parse_magic_line(mic2_re, first_line, 'mic2')
+        if not result:
+            raise errors.KsError("Invalid magic line in file: %s" % args[0])
+
+        if result[0] not in self._subcmds:
+            raise errors.KsError("Unsupport format '%s' in %s"
+                                 % (result[0], args[0]))
+
+        argv = ' '.join(result + args).split()
+        self.main(argv)
 
