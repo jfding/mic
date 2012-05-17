@@ -142,6 +142,8 @@ class Creator(cmdln.Cmdln):
         return largs + rargs
 
     def postoptparse(self):
+        abspath = lambda pth: os.path.abspath(os.path.expanduser(pth))
+
         if self.options.verbose:
             msger.set_loglevel('verbose')
         if self.options.debug:
@@ -157,9 +159,9 @@ class Creator(cmdln.Cmdln):
             configmgr._siteconf = self.options.config
 
         if self.options.outdir is not None:
-            configmgr.create['outdir'] = self.options.outdir
+            configmgr.create['outdir'] = abspath(self.options.outdir)
         if self.options.cachedir is not None:
-            configmgr.create['cachedir'] = self.options.cachedir
+            configmgr.create['cachedir'] = abspath(self.options.cachedir)
         os.environ['ZYPP_LOCKFILE_ROOT'] = configmgr.create['cachedir']
         if self.options.local_pkgs_path is not None:
             if not os.path.exists(self.options.local_pkgs_path):
