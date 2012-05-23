@@ -330,7 +330,6 @@ class Zypp(BackendPlugin):
         repo.gpgcheck = 1
         if priority:
             repo.priority = priority
-        self.repos.append(repo)
 
         try:
             repo_info = zypp.RepoInfo()
@@ -358,6 +357,9 @@ class Zypp(BackendPlugin):
 
                 baseurl.setQueryParam ("proxy", host)
                 baseurl.setQueryParam ("proxyport", port)
+
+            repo.baseurl[0] = baseurl.asCompleteString()
+            self.repos.append(repo)
 
             repo_info.addBaseUrl(baseurl)
 
@@ -631,7 +633,9 @@ class Zypp(BackendPlugin):
             if not os.path.exists(dirn):
                 os.makedirs(dirn)
 
-            baseurl = str(po.repoInfo().baseUrls()[0])
+            name = str(po.repoInfo().name())
+            repo = filter(lambda r: r.name == name, self.repos)[0]
+            baseurl = repo.baseurl[0]
             index = baseurl.find("?")
             if index > -1:
                 baseurl = baseurl[:index]
