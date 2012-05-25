@@ -165,7 +165,10 @@ def setup_chrootenv(chrootdir, bindmounts = None):
             b.mount()
 
     def setup_resolv(chrootdir):
-        shutil.copyfile("/etc/resolv.conf", chrootdir + "/etc/resolv.conf")
+        try:
+            shutil.copyfile("/etc/resolv.conf", chrootdir + "/etc/resolv.conf")
+        except:
+            pass
 
     globalmounts = get_bind_mounts(chrootdir, bindmounts)
     bind_mount(globalmounts)
@@ -192,9 +195,12 @@ def cleanup_chrootenv(chrootdir, bindmounts = None, globalmounts = []):
             b.unmount()
 
     def cleanup_resolv(chrootdir):
-        fd = open(chrootdir + "/etc/resolv.conf", "w")
-        fd.truncate(0)
-        fd.close()
+        try:
+            fd = open(chrootdir + "/etc/resolv.conf", "w")
+            fd.truncate(0)
+            fd.close()
+        except:
+            pass
 
     def kill_processes(chrootdir):
         import glob

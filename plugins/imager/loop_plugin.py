@@ -181,7 +181,7 @@ class LoopPlugin(ImagerPlugin):
             loops.append(loop)
 
         try:
-            chroot.chroot(mntdir, None, "/bin/env HOME=/root /bin/bash")
+            chroot.chroot(mntdir, None, "/usr/bin/env HOME=/root /bin/bash")
         except:
             raise errors.CreatorError("Failed to chroot to %s." % target)
         finally:
@@ -228,7 +228,7 @@ class LoopPlugin(ImagerPlugin):
             raise
 
         try:
-            chroot.chroot(extmnt, None,  "/bin/env HOME=/root /bin/bash")
+            chroot.chroot(extmnt, None,  "/usr/bin/env HOME=/root /bin/bash")
         except:
             raise errors.CreatorError("Failed to chroot to %s." % img)
         finally:
