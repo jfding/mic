@@ -21,7 +21,7 @@ import re
 import tempfile
 
 from mic import chroot, msger, rt_util
-from mic.utils import misc, fs_related, errors, runner
+from mic.utils import misc, fs_related, errors, runner, cmdln
 from mic.conf import configmgr
 from mic.plugin import pluginmgr
 from mic.utils.partitionedfs import PartitionedMount
@@ -33,6 +33,12 @@ class RawPlugin(ImagerPlugin):
     name = 'raw'
 
     @classmethod
+    @cmdln.option("--compress-disk-image", dest="compress_image", type='choice',
+                  choices=("gz", "bz2"), default=None,
+                  help="Same with --compress-image")
+    @cmdln.option("--compress-image", dest="compress_image", type='choice',
+                  choices=("gz", "bz2"), default = None,
+                  help="Compress all raw images before package")
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create raw image
 
@@ -83,7 +89,7 @@ class RawPlugin(ImagerPlugin):
         if creatoropts['runtime']:
             rt_util.runmic_in_runtime(creatoropts['runtime'], creatoropts, ksconf, None)
 
-        creator = raw.RawImageCreator(creatoropts, pkgmgr)
+        creator = raw.RawImageCreator(creatoropts, pkgmgr, opts.compress_image)
 
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs

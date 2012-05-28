@@ -47,7 +47,7 @@ class FsImageCreator(BaseImageCreator):
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)
 
-        if self._img_compression_method == None:
+        if not self.pack_to:
             fsdir = os.path.join(destdir, self.name)
 
             misc.check_space_pre_cp(self._instroot, destdir)
@@ -60,10 +60,20 @@ class FsImageCreator(BaseImageCreator):
 
             self.outimage.append(fsdir)
 
-        elif self._img_compression_method == "tar.bz2":
-            dst = "%s/%s.tar.bz2" % (destdir, self.name)
-            msger.info("Creating %s (compressing %s with %s). Please wait..." \
-                       % (dst, self._instroot, self._img_compression_method))
+        else:
+            (tar, comp) = os.path.splitext(self.pack_to)
+            try:
+                tarcreat = {'.tar': '-cf',
+                            '.gz': '-czf',
+                            '.bz2': '-cjf',
+                            '.tgz': '-czf',
+                            '.tbz': '-cjf'}[comp]
+            except KeyError:
+                raise CreatorError("Unsupported comression for this image type:"
+                                   " '%s', try '.tar', '.tar.gz', etc" % comp)
+
+            dst = os.path.join(destdir, self.pack_to)
+            msger.info("Pack rootfs to %s. Please wait..." % dst)
 
             tar = find_binary_path('tar')
             tar_cmdline = [tar, "--numeric-owner",
@@ -78,15 +88,12 @@ class FsImageCreator(BaseImageCreator):
 
                 tar_cmdline.append("--exclude=%s" % (ignore_entry))
 
-            tar_cmdline.extend(["-cjf", dst, "."])
+            tar_cmdline.extend([tarcreat, dst, "."])
 
-            rc = call(tar_cmdline)
+            rc = runner.show(tar_cmdline)
             if rc:
                 raise CreatorError("Failed compress image with tar.bz2. "
                                    "Cmdline: %s" % (" ".join(tar_cmdline)))
 
             self.outimage.append(dst)
 
-        else:
-            raise CreatorError("Compression method '%s' not supported for 'fs' "
-                               "image format." % (self._img_compression_method))

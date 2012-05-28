@@ -22,7 +22,7 @@ import shutil
 from pykickstart.urlgrabber import progress
 
 from mic import kickstart, msger
-from mic.utils import fs_related, runner
+from mic.utils import fs_related, runner, misc
 from mic.utils.partitionedfs import PartitionedMount
 from mic.utils.errors import CreatorError, MountError
 
@@ -36,12 +36,12 @@ class RawImageCreator(BaseImageCreator):
     subsequently be booted in a virtual machine or accessed with kpartx
     """
 
-    def __init__(self, *args):
+    def __init__(self, creatoropts=None, pkgmgr=None, compress_image=None):
         """Initialize a ApplianceImageCreator instance.
 
             This method takes the same arguments as ImageCreator.__init__()
         """
-        BaseImageCreator.__init__(self, *args)
+        BaseImageCreator.__init__(self, creatoropts, pkgmgr)
 
         self.__instloop = None
         self.__imgdir = None
@@ -53,6 +53,7 @@ class RawImageCreator(BaseImageCreator):
         self.checksum = False
         self.appliance_version = None
         self.appliance_release = None
+        self.compress_image = compress_image
         #self.getsource = False
         #self.listpkg = False
 
@@ -370,13 +371,23 @@ class RawImageCreator(BaseImageCreator):
         """
         self._resparse()
 
-        msger.debug("moving disks to stage location")
-        for name in self.__disks.keys():
-            src = "%s/%s-%s.raw" % (self.__imgdir, self.name,name)
-            self._img_name = "%s-%s.%s" % (self.name, name, self.__disk_format)
-            dst = "%s/%s" % (self._outdir, self._img_name)
-            msger.debug("moving %s to %s" % (src,dst))
-            shutil.move(src,dst)
+        if self.compress_image:
+            for imgfile in os.listdir(self.__imgdir):
+                if imgfile.endswith('.raw') or imgfile.endswith('bin'):
+                    misc.compressing(imgfile, self.compress_image)
+
+        if self.pack_to:
+            dst = os.path.join(self._outdir, self.pack_to)
+            msger.info("Pack all raw images to %s" % dst)
+            misc.packing(dst, self.__imgdir)
+        else:
+            msger.debug("moving disks to stage location")
+	    for name in self.__disks.keys():
+                src = "%s/%s-%s.raw" % (self.__imgdir, self.name,name)
+                self._img_name = "%s-%s.%s" % (self.name, name, self.__disk_format)
+                dst = "%s/%s" % (self._outdir, self._img_name)
+                msger.debug("moving %s to %s" % (src,dst))
+                shutil.move(src,dst)
         self._write_image_xml()
 
     def _write_image_xml(self):

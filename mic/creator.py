@@ -92,11 +92,16 @@ class Creator(cmdln.Cmdln):
         optparser.add_option('', '--runtime', type='string',
                              dest='runtime', default=None,
                              help='Specify  runtime mode, avaiable: bootstrap')
-        optparser.add_option('', '--compress-disk-image', type='string',
-                             dest='compress_disk_image', default=None,
-                             help='Sets the disk image compression. NOTE: The '
-                                  'available values might depend on the used '
-                                  'filesystem type.')
+        # --taring-to is alias to --pack-to
+        optparser.add_option('', '--taring-to', type='string',
+                             dest='pack_to', default=None,
+                             help=SUPPRESS_HELP)
+        optparser.add_option('', '--pack-to', type='string',
+                             dest='pack_to', default=None,
+                             help='Pack the images together into the specified'
+                                  ' achive, extension supported: .zip, .tar, '
+                                  '.tar.gz, .tar.bz2, etc. by default, .tar '
+                                  'will be used')
         optparser.add_option('', '--copy-kernel', action='store_true',
                              dest='copy_kernel',
                              help='Copy kernel files from image /boot directory'
@@ -198,9 +203,8 @@ class Creator(cmdln.Cmdln):
         if self.options.runtime:
             configmgr.create['runtime'] = self.options.runtime
 
-        if self.options.compress_disk_image is not None:
-            configmgr.create['compress_disk_image'] = \
-                                                self.options.compress_disk_image
+        if self.options.pack_to is not None:
+            configmgr.create['pack_to'] = self.options.pack_to
 
         if self.options.copy_kernel:
             configmgr.create['copy_kernel'] = self.options.copy_kernel

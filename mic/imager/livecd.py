@@ -20,7 +20,7 @@ import glob
 import shutil
 
 from mic import kickstart, msger
-from mic.utils import fs_related, rpmmisc, runner
+from mic.utils import fs_related, rpmmisc, runner, misc
 from mic.utils.errors import CreatorError
 
 from loop import LoopImageCreator
@@ -286,6 +286,13 @@ class LiveImageCreatorBase(LoopImageCreator):
                            self.__isodir + "/LiveOS/squashfs.img")
 
             self.__create_iso(self.__isodir)
+
+            if self.pack_to:
+                isoimg = os.path.join(self._outdir, self.name + ".iso")
+                packimg = os.path.join(self._outdir, self.pack_to)
+                misc.packing(packimg, isoimg)
+                os.unlink(isoimg)
+
         finally:
             shutil.rmtree(self.__isodir, ignore_errors = True)
             self.__isodir = None

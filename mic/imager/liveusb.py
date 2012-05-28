@@ -294,6 +294,12 @@ class LiveUSBImageCreator(LiveCDImageCreator):
 
                 self._create_usbimg(isodir)
 
+                if self.pack_to:
+                    usbimg = os.path.join(self._outdir, self.name + ".usbimg")
+                    packimg = os.path.join(self._outdir, self.pack_to)
+                    misc.packing(packimg, usbimg)
+                    os.unlink(usbimg)
+
         finally:
             shutil.rmtree(isodir, ignore_errors = True)
             self._set_isodir(None)

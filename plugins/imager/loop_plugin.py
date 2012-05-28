@@ -30,12 +30,12 @@ class LoopPlugin(ImagerPlugin):
     name = 'loop'
 
     @classmethod
-    @cmdln.option("--taring-to", dest="compress_to", type='string',
-                  default=None, help="same with '--compress-to'")
-    @cmdln.option("--compress-to", dest="compress_to", type='string',
-                  default=None, help="Specify compress filename for all image "
-                  "output, compress type decided by file extension, '.zip' for "
-                  "zip format, '.tar' for tar format, default is tar format")
+    @cmdln.option("--compress-disk-image", dest="compress_image", type='choice',
+                  choices=("gz", "bz2"), default=None,
+                  help="Same with --compress-image")
+    @cmdln.option("--compress-image", dest="compress_image", type='choice',
+                  choices=("gz", "bz2"), default=None,
+                  help="Compress all loop images wiht 'gz' or 'bz2'")
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create loop image
 
@@ -92,14 +92,14 @@ class LoopPlugin(ImagerPlugin):
         if creatoropts['runtime']:
             rt_util.runmic_in_runtime(creatoropts['runtime'], creatoropts, ksconf, None)
 
-        creator = LoopImageCreator(creatoropts, pkgmgr, opts.compress_to)
+        creator = LoopImageCreator(creatoropts, pkgmgr, opts.compress_image)
 
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
         if creatoropts['release'] is None:
-            if opts.compress_to:
-                imagefile = "%s" % os.path.join(creator.destdir, creator.compress_to)
+            if creatoropts['pack_to']:
+                imagefile = "%s" % os.path.join(creator.destdir, creator.pack_to)
             else:
                 imagefile = "%s.img" % os.path.join(creator.destdir, creator.name)
 

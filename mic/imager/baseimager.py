@@ -48,12 +48,6 @@ class BaseImageCreator(object):
 
     """
 
-    # supported compression methods, and their corresponding cmd
-    zips = {
-        'gz': 'gzip',
-        'bz2': 'bzip2'
-    }
-
     def __del__(self):
         self.cleanup()
 
@@ -84,16 +78,12 @@ class BaseImageCreator(object):
         # If the kernel is save to the destdir when copy_kernel cmd is called.
         self._need_copy_kernel = False
 
-        # The compression method for disk image.
-        self._img_compression_method = None
-
         if createopts:
             # Mapping table for variables that have different names.
             optmap = {"pkgmgr" : "pkgmgr_name",
                       "outdir" : "destdir",
                       "arch" : "target_arch",
                       "local_pkgs_path" : "_local_pkgs_path",
-                      "compress_disk_image" : "_img_compression_method",
                       "copy_kernel" : "_need_copy_kernel",
                      }
     
@@ -118,6 +108,15 @@ class BaseImageCreator(object):
                         raise Abort("Canceled")
 
                     # pending FEA: save log by default for --release
+
+            if self.pack_to:
+                if '@NAME@' in self.pack_to:
+                    self.pack_to = self.pack_to.replace('@NAME@', self.name)
+                (tar, ext) = os.path.splitext(self.pack_to)
+                if ext in (".gz", ".bz2") and tar.endswith(".tar"):
+                    ext = ".tar" + ext
+                if ext not in misc.pack_formats:
+                    self.pack_to += ".tar"
 
         self._dep_checks = ["ls", "bash", "cp", "echo", "modprobe", "passwd"]
 
@@ -175,13 +174,6 @@ class BaseImageCreator(object):
             os.makedirs(self.tmpdir)
         if not os.path.exists(self.cachedir):
             os.makedirs(self.cachedir)
-
-        if self._img_compression_method != None and \
-           self._img_compression_method not in self.zips:
-            raise CreatorError("Given disk image compression method ('%s') is "
-                               "not valid. Valid values are: %s." \
-                               % (self._img_compression_method,
-                                  ', '.join(self.zips.keys())))
 
 
     #
@@ -1087,34 +1079,6 @@ class BaseImageCreator(object):
 
         if not os.path.exists(destdir):
             fs.makedirs(destdir)
-        if self._img_compression_method:
-            if not self._img_name:
-                raise CreatorError("Image name not set.")
-
-            rc = None
-            img_location = os.path.join(self._outdir,self._img_name)
-            zipcmd = self.zips[self._img_compression_method]
-
-            # confirm the existing of zip command
-            fs.find_binary_path(zipcmd)
-
-            msger.info("Compressing %s with %s. Please wait ..." \
-                       % (img_location, zipcmd))
-            rc = runner.show([zipcmd, "-f", img_location])
-            if rc:
-                raise CreatorError("Failed to compress image %s with %s." \
-                            % (img_location, self._img_compression_method))
-
-            for bootimg in glob.glob(os.path.dirname(img_location) + \
-                                     "/*-boot.bin"):
-                msger.info("Compressing %s with %s. Please wait..." \
-                           % (bootimg, zipcmd))
-                rc = runner.show([zipcmd, "-f", bootimg])
-                if rc:
-                    raise CreatorError("Failed to compress image %s with "
-                                       "%s." \
-                                       % (bootimg,
-                                          self._img_compression_method))
 
         if self._recording_pkgs:
             self._save_recording_pkgs(destdir)

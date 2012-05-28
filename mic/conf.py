@@ -55,7 +55,7 @@ class ConfigMgr(object):
                     "logfile": None,
                     "record_pkgs": [],
                     "rpmver": None,
-                    "compress_disk_image": None,
+                    "pack_to": None,
                     "name_prefix": None,
                     "proxy": None,
                     "no_proxy": None,

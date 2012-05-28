@@ -70,22 +70,70 @@ def extract_rpm(rpmfile, targetdir):
 
     os.chdir(olddir)
 
-def taring(dstfile, targetdir):
+def compressing(fpath, method):
+    comp_map = {
+        "gz": "gzip",
+        "bz2": "bzip2"
+    }
+    if method not in comp_map:
+        raise CreatorError("Unsupport compress format: %s, valid values: %s"
+                           % (method, ','.join(comp_map.keys())))
+    cmd = find_binary_path(comp_map[method])
+    rc = runner.show([cmd, "-f", fpath])
+    if rc:
+        raise CreatorError("Failed to %s file: %s" % (comp_map[method], fpath))
+
+def taring(dstfile, target):
     import tarfile
-    wf = tarfile.open(dstfile, 'w')
-    for item in os.listdir(targetdir):
-        wf.add(os.path.join(targetdir, item), item)
+    ext = os.path.splitext(dstfile)[1]
+    comp = {".tar": None,
+            ".gz": "gz", # for .tar.gz
+            ".bz2": "bz2", # for .tar.bz2
+            ".tgz": "gz",
+            ".tbz": "bz2"}[ext]
+    if not comp:
+        wf = tarfile.open(dstfile, 'w')
+    else:
+        wf = tarfile.open(dstfile, 'w:' + comp)
+    if os.path.isdir(target):
+        for item in os.listdir(target):
+            wf.add(os.path.join(target, item), item)
+    else:
+        wf.add(target, os.path.basename(target))
     wf.close()
 
-def ziping(dstfile, targetdir):
+def ziping(dstfile, target):
     import zipfile
     wf = zipfile.ZipFile(dstfile, 'w', compression=zipfile.ZIP_DEFLATED)
-    for item in os.listdir(targetdir):
-        fpath = os.path.join(targetdir, item)
-        if not os.path.isfile(fpath):
-            continue
-        wf.write(fpath, item, zipfile.ZIP_DEFLATED)
+    if os.path.isdir(target):
+        for item in os.listdir(target):
+            fpath = os.path.join(target, item)
+            if not os.path.isfile(fpath):
+                continue
+            wf.write(fpath, item, zipfile.ZIP_DEFLATED)
+    else:
+        wf.write(target, os.path.basename(target), zipfile.ZIP_DEFLATED)
     wf.close()
+
+pack_formats = {
+    ".tar": taring,
+    ".tar.gz": taring,
+    ".tar.bz2": taring,
+    ".tgz": taring,
+    ".tbz": taring,
+    ".zip": ziping,
+}
+
+def packing(dstfile, target):
+    (base, ext) = os.path.splitext(dstfile)
+    if ext in (".gz", ".bz2") and base.endswith(".tar"):
+        ext = ".tar" + ext
+    if ext not in pack_formats:
+        raise CreatorError("Unsupport pack format: %s, valid values: %s"
+                           % (ext, ','.join(pack_formats.keys())))
+    func = pack_formats[ext]
+    # func should be callable
+    func(dstfile, target)
 
 def human_size(size):
     """Return human readable string for Bytes size

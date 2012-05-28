@@ -98,7 +98,7 @@ class LoopImageCreator(BaseImageCreator):
     will be created as a separated loop image.
     """
 
-    def __init__(self, creatoropts=None, pkgmgr=None, compress_to=None):
+    def __init__(self, creatoropts=None, pkgmgr=None, compress_image=None):
         """Initialize a LoopImageCreator instance.
 
         This method takes the same arguments as ImageCreator.__init__()
@@ -109,18 +109,7 @@ class LoopImageCreator(BaseImageCreator):
 
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
 
-        if compress_to:
-            if '@NAME@' in compress_to:
-                compress_to = compress_to.replace('@NAME@', self.name)
-
-            compress_imgdir_method = os.path.splitext(compress_to)[1]
-            if compress_imgdir_method in (".zip", ".tar"):
-                self.compress_imgdir_method = compress_imgdir_method[1:]
-            else:
-                self.compress_imgdir_method = "tar"
-                compress_to += ".tar"
-
-        self.compress_to = compress_to
+        self.compress_image = compress_image
 
         self.__fslabel = None
         self.fslabel = self.name
@@ -175,10 +164,7 @@ class LoopImageCreator(BaseImageCreator):
         else:
             self.__image_size = 0
 
-        if compress_to:
-            self._img_name = self.compress_to
-        else:
-            self._img_name = self.name + ".img"
+        self._img_name = self.name + ".img"
 
     def _set_fstype(self, fstype):
         self.__fstype = fstype
@@ -365,40 +351,38 @@ class LoopImageCreator(BaseImageCreator):
             item['loop'].cleanup()
 
     def _stage_final_image(self):
-        if self.compress_to:
 
+        if self.pack_to:
             self._resparse(0)
-
-            cfile_name = self.compress_to
-            mountfp_xml = os.path.splitext(cfile_name)[0] + ".xml"
-
-            for item in self._instloops:
-                imgfile = os.path.join(self.__imgdir, item['name'])
-                if item['fstype'] == "ext4":
-                    runner.show('/sbin/tune2fs '
-                                '-O ^huge_file,extents,uninit_bg %s ' \
-                                % imgfile)
-
-            msger.info("Compress all loop images together to %s" % cfile_name)
-            dstfile = os.path.join(self._outdir, cfile_name)
-            if self.compress_imgdir_method == "tar":
-                misc.taring(dstfile, self.__imgdir)
-            elif self.compress_imgdir_method == "zip":
-                misc.ziping(dstfile, self.__imgdir)
-            else:
-                raise CreatorError("Unsupported compress type: %s" \
-                                   % self.compress_imgdir_method)
-
-            # save mount points mapping file to xml
-            save_mountpoints(os.path.join(self._outdir, mountfp_xml),
-                             self._instloops, 
-                             self.target_arch)
-
         else:
             self._resparse()
-            for item in self._instloops:
-                shutil.move(os.path.join(self.__imgdir, item['name']),
-                            os.path.join(self._outdir, item['name']))
+
+
+        for item in self._instloops:
+            imgfile = os.path.join(self.__imgdir, item['name'])
+            if item['fstype'] == "ext4":
+                runner.show('/sbin/tune2fs -O ^huge_file,extents,uninit_bg %s '
+                            % imgfile)
+            if self.compress_image:
+                misc.compressing(imgfile, self.compress_image)
+
+        if not self.pack_to:
+            for item in os.listdir(self.__imgdir):
+                shutil.move(os.path.join(self.__imgdir, item),
+                            os.path.join(self._outdir, item))
+        else:
+            msger.info("Pack all loop images together to %s" % self.pack_to)
+            dstfile = os.path.join(self._outdir, self.pack_to)
+            misc.packing(dstfile, self.__imgdir)
+
+        if self.pack_to:
+            mountfp_xml = os.path.splitext(self.pack_to)[0].rstrip('.tar') + ".xml"
+        else:
+            mountfp_xml = self.name + ".xml"
+        # save mount points mapping file to xml
+        save_mountpoints(os.path.join(self._outdir, mountfp_xml),
+                         self._instloops,
+                         self.target_arch)
 
     def copy_attachment(self):
         if not hasattr(self, '_attachment') or not self._attachment:
@@ -408,6 +392,8 @@ class LoopImageCreator(BaseImageCreator):
 
         msger.info("Copying attachment files...")
         for item in self._attachment:
+            if not os.path.exists(item):
+                continue
             dpath = os.path.join(self.__imgdir, os.path.basename(item))
             msger.verbose("Copy attachment %s to %s" % (item, dpath))
             shutil.copy(item, dpath)
