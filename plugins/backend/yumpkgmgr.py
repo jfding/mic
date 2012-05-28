@@ -320,6 +320,7 @@ class Yum(BackendPlugin, yum.YumBase):
 
     def runInstall(self, checksize = 0):
         os.environ["HOME"] = "/"
+        os.environ["LD_PRELOAD"] = ""
         try:
             (res, resmsg) = self.buildTransaction()
         except yum.Errors.RepoError, e:

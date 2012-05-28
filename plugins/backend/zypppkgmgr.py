@@ -384,6 +384,7 @@ class Zypp(BackendPlugin):
 
     def runInstall(self, checksize = 0):
         os.environ["HOME"] = "/"
+        os.environ["LD_PRELOAD"] = ""
         self.buildTransaction()
 
         todo = zypp.GetResolvablesToInsDel(self.Z.pool())
