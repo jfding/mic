@@ -216,7 +216,7 @@ class RPMInstallCallback:
                         pkgname = m.group(1)
                     else:
                         pkgname = os.path.basename(rpmloc)
-                if self.output and (sys.stdout.isatty() or self.total_installed == self.total_actions):
+                if self.output:
                     fmt = self._makefmt(percent)
                     msg = fmt % (self.headmsg, pkgname)
                     if msg != self.lastmsg:
