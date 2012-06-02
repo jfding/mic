@@ -41,7 +41,8 @@ def myurlgrab(url, filename, proxies, progress_obj = None):
         try:
             filename = g.urlgrab(url = url, filename = filename,
                 ssl_verify_host = False, ssl_verify_peer = False,
-                proxies = proxies, http_headers = (('Pragma', 'no-cache'),), progress_obj = progress_obj)
+                proxies = proxies, http_headers = (('Pragma', 'no-cache'),),
+                quote = 0, progress_obj = progress_obj)
         except URLGrabError, e:
             raise CreatorError("URLGrabber error: %s" % url)
 

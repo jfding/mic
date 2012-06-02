@@ -370,7 +370,7 @@ def _get_uncompressed_data_from_url(url, filename, proxies):
     return filename
 
 def _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, filename):
-    url = str(baseurl + "/" + filename)
+    url = os.path.join(baseurl, filename)
     filename_tmp = str("%s/%s/%s" % (cachedir, reponame, os.path.basename(filename)))
     return _get_uncompressed_data_from_url(url,filename_tmp,proxies)
 
@@ -395,9 +395,9 @@ def get_metadata_from_repos(repostrs, cachedir):
             proxy = get_proxy_for(baseurl)
         proxies = None
         if proxy:
-           proxies = {str(proxy.split(":")[0]):str(proxy)}
+           proxies = {str(baseurl.split(":")[0]):str(proxy)}
         makedirs(cachedir + "/" + reponame)
-        url = str(baseurl + "/repodata/repomd.xml")
+        url = os.path.join(baseurl, "repodata/repomd.xml")
         filename = str("%s/%s/repomd.xml" % (cachedir, reponame))
         repomd = myurlgrab(url, filename, proxies)
         try:
@@ -570,7 +570,7 @@ def get_package(pkg, repometadata, arch = None):
             con.close()
     if target_repo:
         makedirs("%s/%s/packages" % (target_repo["cachedir"], target_repo["name"]))
-        url = str(target_repo["baseurl"] + "/" + pkgpath)
+        url = os.path.join(target_repo["baseurl"], pkgpath)
         filename = str("%s/%s/packages/%s" % (target_repo["cachedir"], target_repo["name"], os.path.basename(pkgpath)))
         pkg = myurlgrab(url, filename, target_repo["proxies"])
         return pkg

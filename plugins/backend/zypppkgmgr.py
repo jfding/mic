@@ -651,7 +651,7 @@ class Zypp(BackendPlugin):
             if location.startswith("./"):
                 location = location[2:]
 
-            url = baseurl + "/%s" % location
+            url = os.path.join(baseurl, location)
 
             try:
                 filename = rpmmisc.myurlgrab(url,
