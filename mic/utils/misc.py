@@ -319,41 +319,33 @@ def get_repostrs_from_ks(ks):
         return tmpreponame
 
     kickstart_repos = []
+
     for repodata in ks.handler.repo.repoList:
-        repostr = ""
-        if hasattr(repodata, "name") and repodata.name:
-            repostr += ",name:" + repodata.name
-        if hasattr(repodata, "baseurl") and repodata.baseurl:
-            repostr += ",baseurl:" + repodata.baseurl
-        if hasattr(repodata, "mirrorlist") and repodata.mirrorlist:
-            repostr += ",mirrorlist:" + repodata.mirrorlist
-        if hasattr(repodata, "includepkgs") and repodata.includepkgs:
-            repostr += ",includepkgs:" + ";".join(repodata.includepkgs)
-        if hasattr(repodata, "excludepkgs") and repodata.excludepkgs:
-            repostr += ",excludepkgs:" + ";".join(repodata.excludepkgs)
-        if hasattr(repodata, "cost") and repodata.cost:
-            repostr += ",cost:%d" % repodata.cost
-        if hasattr(repodata, "save") and repodata.save:
-            repostr += ",save:"
-        if hasattr(repodata, "proxy") and repodata.proxy:
-            repostr += ",proxy:" + repodata.proxy
-        if hasattr(repodata, "proxyuser") and repodata.proxy_username:
-            repostr += ",proxyuser:" + repodata.proxy_username
-        if  hasattr(repodata, "proxypasswd") and repodata.proxy_password:
-            repostr += ",proxypasswd:" + repodata.proxy_password
-        if repostr.find("name:") == -1:
-            repostr = ",name:%s" % _get_temp_reponame(repodata.baseurl)
-        if hasattr(repodata, "debuginfo") and repodata.debuginfo:
-            repostr += ",debuginfo:"
-        if hasattr(repodata, "source") and repodata.source:
-            repostr += ",source:"
-        if hasattr(repodata, "gpgkey") and repodata.gpgkey:
-            repostr += ",gpgkey:" + repodata.gpgkey
-        if hasattr(repodata, "ssl_verify") and repodata.ssl_verify:
-            repostr += ",ssl_verify:" + repodata.ssl_verify
-        if hasattr(repodata, "priority") and repodata.priority:
-            repostr += ",priority:%d" % repodata.priority
-        kickstart_repos.append(repostr[1:])
+        repo = {}
+        for attr in ('name',
+                     'baseurl',
+                     'mirrorlist',
+                     'includepkgs', # val is list
+                     'excludepkgs', # val is list
+                     'cost',    # int
+                     'priority',# int
+                     'save',
+                     'proxy',
+                     'proxyuser',
+                     'proxypasswd',
+                     'proxypasswd',
+                     'debuginfo',
+                     'source',
+                     'gpgkey',
+                     'ssl_verify'):
+            if hasattr(repodata, attr) and getattr(repodata, attr):
+                repo[attr] = getattr(repodata, attr)
+
+        if 'name' not in repo:
+            repo['name'] = _get_temp_reponame(repodata.baseurl)
+
+        kickstart_repos.append(repo)
+
     return kickstart_repos
 
 def _get_uncompressed_data_from_url(url, filename, proxies):
@@ -374,31 +366,25 @@ def _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, filename):
     filename_tmp = str("%s/%s/%s" % (cachedir, reponame, os.path.basename(filename)))
     return _get_uncompressed_data_from_url(url,filename_tmp,proxies)
 
-def get_metadata_from_repos(repostrs, cachedir):
+def get_metadata_from_repos(repos, cachedir):
     my_repo_metadata = []
-    for repostr in repostrs:
-        reponame = None
-        baseurl = None
-        proxy = None
-        items = repostr.split(",")
-        for item in items:
-            subitems = item.split(":")
-            if subitems[0] == "name":
-                reponame = subitems[1]
-            if subitems[0] == "baseurl":
-                baseurl = item[8:]
-            if subitems[0] == "proxy":
-                proxy = item[6:]
-            if subitems[0] in ("http", "https", "ftp", "ftps", "file"):
-                baseurl = item
-        if not proxy:
+    for repo in repos:
+        reponame = repo['name']
+        baseurl  = repo['baseurl']
+
+
+        if 'proxy' in repo:
+            proxy = repo['proxy']
+        else:
             proxy = get_proxy_for(baseurl)
+
         proxies = None
         if proxy:
            proxies = {str(baseurl.split(":")[0]):str(proxy)}
-        makedirs(cachedir + "/" + reponame)
+
+        makedirs(os.path.join(cachedir, reponame))
         url = os.path.join(baseurl, "repodata/repomd.xml")
-        filename = str("%s/%s/repomd.xml" % (cachedir, reponame))
+        filename = os.path.join(cachedir, reponame, 'repomd.xml')
         repomd = myurlgrab(url, filename, proxies)
         try:
             root = xmlparse(repomd)
