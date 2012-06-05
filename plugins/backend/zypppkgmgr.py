@@ -825,6 +825,29 @@ class Zypp(BackendPlugin):
             repourl = str(repoinfo.baseUrls()[0])
             return get_proxy_for(repourl)
 
+    def _get_url(self, pobj):
+        if not pobj:
+            return None
+
+        name = str(pobj.repoInfo().name())
+        try:
+            repo = filter(lambda r: r.name == name, self.repos)[0]
+        except IndexError:
+            return None
+
+        baseurl = repo.baseurl[0]
+
+        index = baseurl.find("?")
+        if index > -1:
+            baseurl = baseurl[:index]
+
+        location = zypp.asKindPackage(pobj).location()
+        location = str(location.filename())
+        if location.startswith("./"):
+            location = location[2:]
+
+        return os.path.join(baseurl, location)
+
     def package_url(self, pkg):
 
         def cmpEVR(ed1, ed2):
@@ -844,8 +867,6 @@ class Zypp(BackendPlugin):
                        reverse=True)
 
         if items:
-            baseurl = items[0].repoInfo().baseUrls()[0]
-            location = zypp.asKindPackage(items[0]).location()
-            return os.path.join(str(baseurl), str(location.filename()))
+            return self._get_url(items[0])
 
         return None

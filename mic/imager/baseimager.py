@@ -858,7 +858,10 @@ class BaseImageCreator(object):
             if not url:
                 msger.warning("Can't get url from repo for %s" % item)
                 continue
-            proxies = proxy.get_proxy_for(url)
+            proxies = None
+            aproxy = proxy.get_proxy_for(url)
+            if aproxy:
+                proxies = {url.split(':')[0]: aproxy}
             fpath = os.path.join(self.cachedir, os.path.basename(url))
             if not os.path.exists(fpath):
                 # download pkgs
