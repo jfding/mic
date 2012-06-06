@@ -90,14 +90,10 @@ class FsPlugin(ImagerPlugin):
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
-        if creatoropts['release'] is None:
-            fsdir = os.path.join(creator.destdir, creator.name)
-            if os.path.exists(fsdir):
-                if msger.ask('The target dir: %s already exists, cleanup and continue?' % fsdir):
-                    import shutil
-                    shutil.rmtree(fsdir)
-                else:
-                    raise errors.Abort('Canceled')
+        self.check_image_exists(creator.destdir,
+                                creator.pack_to,
+                                [creator.name],
+                                creatoropts['release'])
 
         try:
             creator.check_depend_tools()

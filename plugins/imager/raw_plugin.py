@@ -94,14 +94,12 @@ class RawPlugin(ImagerPlugin):
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
-        if creatoropts['release'] is None:
-            for item in creator.get_diskinfo():
-                imagefile = "%s-%s.raw" % (os.path.join(creator.destdir, creator.name), item['name'])
-                if os.path.exists(imagefile):
-                    if msger.ask('The target image: %s already exists, cleanup and continue?' % imagefile):
-                       os.unlink(imagefile)
-                    else:
-                       raise errors.Abort('Canceled')
+        images = ["%s-%s.raw" % (creator.name, part['name'])
+                  for part in creator.get_diskinfo()]
+        self.check_image_exists(creator.destdir,
+                                creator.pack_to,
+                                images,
+                                creatoropts['release'])
 
         try:
             creator.check_depend_tools()

@@ -100,14 +100,7 @@ class BaseImageCreator(object):
             if 'release' in createopts and createopts['release']:
                 self.name += '-' + createopts['release']
 
-                if os.path.exists(self.destdir):
-                    if msger.ask("Image dir: %s already exists, cleanup and" \
-                                 "continue?" % self.destdir):
-                        shutil.rmtree(self.destdir, ignore_errors = True)
-                    else:
-                        raise Abort("Canceled")
-
-                    # pending FEA: save log by default for --release
+                # pending FEA: save log by default for --release
 
             if self.pack_to:
                 if '@NAME@' in self.pack_to:

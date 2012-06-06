@@ -89,13 +89,10 @@ class LiveCDPlugin(ImagerPlugin):
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs
 
-        if creatoropts['release'] is None:
-            imagefile = "%s.iso" % os.path.join(creator.destdir, creator.name)
-            if os.path.exists(imagefile):
-                if msger.ask('The target image: %s already exists, cleanup and continue?' % imagefile):
-                    os.unlink(imagefile)
-                else:
-                    raise errors.Abort('Canceled')
+        self.check_image_exists(creator.destdir,
+                                creator.pack_to,
+                                [creator.name + ".iso"],
+                                creatoropts['release'])
 
         try:
             creator.check_depend_tools()

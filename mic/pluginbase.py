@@ -15,7 +15,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc., 59
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import os
+import shutil
 from mic import msger
+from mic.utils import errors
 
 class _Plugin(object):
     class __metaclass__(type):
@@ -39,6 +42,34 @@ class _Plugin(object):
 
 class ImagerPlugin(_Plugin):
     mic_plugin_type = "imager"
+
+    @classmethod
+    def check_image_exists(self, destdir, apacking=None, images=[], release=None):
+        # if it's a packing file, reset images
+        if apacking:
+            images = [apacking]
+
+        # release option will override images
+        if release is not None:
+            images = [os.path.basename(destdir.rstrip('/'))]
+            destdir = os.path.dirname(destdir.rstrip('/'))
+
+        for name in images:
+            if not name:
+                continue
+
+            image = os.path.join(destdir, name)
+            if not os.path.exists(image):
+                continue
+
+            if msger.ask("Target image/dir: %s already exists, "
+                         "clean up and continue?" % image):
+                if os.path.isdir(image):
+                    shutil.rmtree(image)
+                else:
+                    os.unlink(image)
+            else:
+                raise errors.Abort("Cancled")
 
     def do_create(self):
         pass
