@@ -67,6 +67,11 @@ class LiveImageCreatorBase(LoopImageCreator):
         else:
             self._default_kernel = None
 
+        if self.ks:
+            parts = kickstart.get_partitions(self.ks)
+            if len(parts) > 1:
+                raise CreatorError("Can't support multi partitions in ks file "
+                                   "for this image type")
 
         self.__isodir = None
 
