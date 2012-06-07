@@ -32,6 +32,7 @@ Requires:   isomd5sum
 Requires:   gzip
 Requires:   bzip2
 Requires:   squashfs-tools >= 4.0
+Requires:   python-urlgrabber
 %if 0%{?suse_version}
 Requires:   btrfsprogs
 %else

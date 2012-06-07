@@ -21,14 +21,15 @@ Depends: ${misc:Depends}, ${python:Depends},
  psmisc,
  squashfs-tools (>= 4.0),
  qemu-user-static | qemu-arm-static,
- syslinux (>= 3.82),
+ syslinux (>= 4.05),
+ extlinux (>= 4.05),
  yum (>= 3.2),
  libzypp,
- python-zypp
+ python-zypp,
+ python-urlgrabber
 Recommends:
  binfmt-support,
  btrfs-tools,
- extlinux | syslinux,
  udisks | hal
 Replaces:
  mic2

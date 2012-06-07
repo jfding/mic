@@ -19,7 +19,7 @@ import os
 import stat
 import shutil
 
-from pykickstart.urlgrabber import progress
+from urlgrabber import progress
 
 from mic import kickstart, msger
 from mic.utils import fs_related, runner, misc

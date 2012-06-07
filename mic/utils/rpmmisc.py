@@ -24,11 +24,13 @@ from mic import msger
 from .errors import CreatorError
 from .proxy import get_proxy_for
 import runner
+from urlgrabber import grabber, __version__ as grabber_version
+if rpm.labelCompare(grabber_version.split('.'), '3.9.0'.split('.')) == -1:
+    msger.warning("Version of python-urlgrabber is %s, lower than '3.9.0', "
+                  "you may encounter some network issues" % grbber_version)
 
 def myurlgrab(url, filename, proxies, progress_obj = None):
-    from pykickstart.urlgrabber.grabber import URLGrabber, URLGrabError
-
-    g = URLGrabber()
+    g = grabber.URLGrabber()
     if progress_obj is None:
         progress_obj = TextProgress()
 
@@ -43,7 +45,7 @@ def myurlgrab(url, filename, proxies, progress_obj = None):
                 ssl_verify_host = False, ssl_verify_peer = False,
                 proxies = proxies, http_headers = (('Pragma', 'no-cache'),),
                 quote = 0, progress_obj = progress_obj)
-        except URLGrabError, e:
+        except grabber.URLGrabError, e:
             raise CreatorError("URLGrabber error: %s" % url)
 
     return filename
