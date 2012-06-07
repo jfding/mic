@@ -197,7 +197,7 @@ class RawImageCreator(BaseImageCreator):
 
         self.__instloop = PartitionedMount(self.__disks, self._instroot)
 
-        for p in parts:
+        for p in sorted(parts, key=lambda p: p.mountpoint):
             self.__instloop.add_partition(int(p.size),
                                           p.disk,
                                           p.mountpoint,
