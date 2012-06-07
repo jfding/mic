@@ -200,9 +200,6 @@ class Creator(cmdln.Cmdln):
         if self.options.pkgmgr is not None:
             configmgr.create['pkgmgr'] = self.options.pkgmgr
 
-        if self.options.runtime:
-            configmgr.create['runtime'] = self.options.runtime
-
         if self.options.pack_to is not None:
             configmgr.create['pack_to'] = self.options.pack_to
 
