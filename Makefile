@@ -10,9 +10,6 @@ else
 	TAG = "HEAD"
 endif
 
-ifndef PREFIX
-    PREFIX = $(shell $(PYTHON) -c "import sys;print sys.prefix")
-endif
 
 all: build
 
@@ -37,7 +34,7 @@ man: USAGE.rst
 	rst2man $< >mic.1
 
 install: build
-	$(PYTHON) setup.py install --prefix=$(DESTDIR)/$(PREFIX)
+	$(PYTHON) setup.py install
 
 develop: build
 	$(PYTHON) setup.py develop
