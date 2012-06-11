@@ -182,37 +182,6 @@ class ConfigMgr(object):
 
                 self.bootstraps[name] = repostr
 
-    def _selinux_check(self, arch, ks):
-        """If a user needs to use btrfs or creates ARM image,
-        selinux must be disabled at start.
-        """
-
-        for path in ["/usr/sbin/getenforce",
-                     "/usr/bin/getenforce",
-                     "/sbin/getenforce",
-                     "/bin/getenforce",
-                     "/usr/local/sbin/getenforce",
-                     "/usr/locla/bin/getenforce"
-                     ]:
-            if os.path.exists(path):
-                selinux_status = runner.outs([path])
-                if arch and arch.startswith("arm") \
-                        and selinux_status == "Enforcing":
-                    raise errors.ConfigError("Can't create arm image if "
-                          "selinux is enabled, please disable it and try again")
-
-                use_btrfs = False
-                for part in ks.handler.partition.partitions:
-                    if part.fstype == "btrfs":
-                        use_btrfs = True
-                        break
-
-                if use_btrfs and selinux_status == "Enforcing":
-                    raise errors.ConfigError("Can't create image using btrfs "
-                                           "filesystem if selinux is enabled, "
-                                           "please disable it and try again.")
-                break
-
     def _parse_kickstart(self, ksconf=None):
         if not ksconf:
             return
@@ -225,8 +194,6 @@ class ConfigMgr(object):
         if self.create['name_prefix']:
             self.create['name'] = "%s-%s" % (self.create['name_prefix'],
                                              self.create['name'])
-
-        self._selinux_check (self.create['arch'], ks)
 
         msger.info("Retrieving repo metadata:")
         ksrepos = misc.get_repostrs_from_ks(ks)
@@ -256,5 +223,9 @@ class ConfigMgr(object):
                                          % ', '.join(archlist))
 
         kickstart.resolve_groups(self.create, self.create['repomd'])
+
+        # check selinux, it will block arm and btrfs image creation
+        misc.selinux_check(self.create['arch'],
+                           [p.fstype for p in ks.handler.partition.partitions])
 
 configmgr = ConfigMgr()

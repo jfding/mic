@@ -200,6 +200,22 @@ def _check_meego_chroot(rootdir):
 
     return
 
+def selinux_check(arch, fstypes):
+    try:
+        getenforce = find_binary_path('getenforce')
+    except CreatorError:
+        return
+
+    selinux_status = runner.outs([getenforce])
+    if arch and arch.startswith("arm") and selinux_status == "Enforcing":
+        raise CreatorError("Can't create arm image if selinux is enabled, "
+                           "please run 'setenforce 0' to disable selinux")
+
+    use_btrfs = filter(lambda typ: typ == 'btrfs', fstypes)
+    if use_btrfs and selinux_status == "Enforcing":
+        raise CreatorError("Can't create btrfs image if selinux is enabled,"
+                           " please run 'setenforce 0' to disable selinux")
+
 def get_image_type(path):
     def _get_extension_name(path):
         match = re.search("(?<=\.)\w+$", path)
