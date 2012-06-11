@@ -374,7 +374,8 @@ class RawImageCreator(BaseImageCreator):
         if self.compress_image:
             for imgfile in os.listdir(self.__imgdir):
                 if imgfile.endswith('.raw') or imgfile.endswith('bin'):
-                    misc.compressing(imgfile, self.compress_image)
+                    imgpath = os.path.join(self.__imgdir, imgfile)
+                    misc.compressing(imgpath, self.compress_image)
 
         if self.pack_to:
             dst = os.path.join(self._outdir, self.pack_to)
@@ -382,10 +383,9 @@ class RawImageCreator(BaseImageCreator):
             misc.packing(dst, self.__imgdir)
         else:
             msger.debug("moving disks to stage location")
-	    for name in self.__disks.keys():
-                src = "%s/%s-%s.raw" % (self.__imgdir, self.name,name)
-                self._img_name = "%s-%s.%s" % (self.name, name, self.__disk_format)
-                dst = "%s/%s" % (self._outdir, self._img_name)
+	    for imgfile in os.listdir(self.__imgdir):
+                src = os.path.join(self.__imgdir, imgfile)
+                dst = os.path.join(self._outdir, imgfile)
                 msger.debug("moving %s to %s" % (src,dst))
                 shutil.move(src,dst)
         self._write_image_xml()
