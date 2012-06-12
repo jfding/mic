@@ -574,7 +574,7 @@ def get_package(pkg, repometadata, arch = None):
         makedirs("%s/%s/packages" % (target_repo["cachedir"], target_repo["name"]))
         url = os.path.join(target_repo["baseurl"], pkgpath)
         filename = str("%s/%s/packages/%s" % (target_repo["cachedir"], target_repo["name"], os.path.basename(pkgpath)))
-        pkg = myurlgrab(url, filename, target_repo["proxies"])
+        pkg = myurlgrab(str(url), filename, target_repo["proxies"])
         return pkg
     else:
         return None
