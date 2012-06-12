@@ -74,6 +74,7 @@ class BaseImageCreator(object):
         self.destdir = "."
         self.target_arch = "noarch"
         self._local_pkgs_path = None
+        self.pack_to = None
 
         # If the kernel is save to the destdir when copy_kernel cmd is called.
         self._need_copy_kernel = False
