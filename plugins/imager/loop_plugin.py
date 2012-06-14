@@ -30,12 +30,15 @@ class LoopPlugin(ImagerPlugin):
     name = 'loop'
 
     @classmethod
-    @cmdln.option("--compress-disk-image", dest="compress_image", type='choice',
-                  choices=("gz", "bz2"), default=None,
+    @cmdln.option("--compress-disk-image", dest="compress_image",
+                  type='choice', choices=("gz", "bz2"), default=None,
                   help="Same with --compress-image")
-    @cmdln.option("--compress-image", dest="compress_image", type='choice',
-                  choices=("gz", "bz2"), default=None,
+                  # alias to compress-image for compatibility
+    @cmdln.option("--compress-image", dest="compress_image",
+                  type='choice', choices=("gz", "bz2"), default=None,
                   help="Compress all loop images wiht 'gz' or 'bz2'")
+    @cmdln.option("--shrink", action='store_true', default=False,
+                  help="Whether to shrink loop images to minimal size")
     def do_create(self, subcmd, opts, *args):
         """${cmd_name}: create loop image
 
@@ -92,7 +95,10 @@ class LoopPlugin(ImagerPlugin):
         if creatoropts['runtime']:
             rt_util.runmic_in_runtime(creatoropts['runtime'], creatoropts, ksconf, None)
 
-        creator = LoopImageCreator(creatoropts, pkgmgr, opts.compress_image)
+        creator = LoopImageCreator(creatoropts,
+                                   pkgmgr,
+                                   opts.compress_image,
+                                   opts.shrink)
 
         if len(recording_pkgs) > 0:
             creator._recording_pkgs = recording_pkgs

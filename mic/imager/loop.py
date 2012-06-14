@@ -98,7 +98,9 @@ class LoopImageCreator(BaseImageCreator):
     will be created as a separated loop image.
     """
 
-    def __init__(self, creatoropts=None, pkgmgr=None, compress_image=None):
+    def __init__(self, creatoropts=None, pkgmgr=None,
+                 compress_image=None,
+                 shrink_image=False):
         """Initialize a LoopImageCreator instance.
 
         This method takes the same arguments as ImageCreator.__init__()
@@ -110,6 +112,7 @@ class LoopImageCreator(BaseImageCreator):
         BaseImageCreator.__init__(self, creatoropts, pkgmgr)
 
         self.compress_image = compress_image
+        self.shrink_image = shrink_image
 
         self.__fslabel = None
         self.fslabel = self.name
@@ -352,11 +355,10 @@ class LoopImageCreator(BaseImageCreator):
 
     def _stage_final_image(self):
 
-        if self.pack_to:
+        if self.pack_to or self.shrink_image:
             self._resparse(0)
         else:
             self._resparse()
-
 
         for item in self._instloops:
             imgfile = os.path.join(self.__imgdir, item['name'])
