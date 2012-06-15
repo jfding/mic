@@ -634,24 +634,8 @@ class Zypp(BackendPlugin):
             if not os.path.exists(dirn):
                 os.makedirs(dirn)
 
-            name = str(po.repoInfo().name())
-            repo = filter(lambda r: r.name == name, self.repos)[0]
-            baseurl = repo.baseurl[0]
-            index = baseurl.find("?")
-            if index > -1:
-                baseurl = baseurl[:index]
-
-            proxy = self.get_proxy(po.repoInfo())
-            proxies = {}
-            if proxy:
-                proxies = {str(proxy.split(":")[0]):str(proxy)}
-
-            location = zypp.asKindPackage(po).location()
-            location = str(location.filename())
-            if location.startswith("./"):
-                location = location[2:]
-
-            url = os.path.join(baseurl, location)
+            url = self.get_url(po)
+            proxies = self.get_proxies(po)
 
             try:
                 filename = rpmmisc.myurlgrab(url,
@@ -811,21 +795,27 @@ class Zypp(BackendPlugin):
            if flag not in self.probFilterFlags:
                self.probFilterFlags.append(flag)
 
-    def get_proxy(self, repoinfo):
+    def get_proxies(self, pobj):
+        if not pobj:
+            return None
+
         proxy = None
+        proxies = None
+        repoinfo = pobj.repoInfo()
         reponame = "%s" % repoinfo.name()
-        for repo in self.repos:
-            if repo.name == reponame:
-                proxy = repo.proxy
-                break
+        repos = filter(lambda r: r.name == reponame, self.repos)
+        repourl = str(repoinfo.baseUrls()[0])
 
+        if repos:
+            proxy = repos[0].proxy
+        if not proxy:
+            proxy = get_proxy_for(repourl)
         if proxy:
-            return proxy
-        else:
-            repourl = str(repoinfo.baseUrls()[0])
-            return get_proxy_for(repourl)
+            proxies = {str(repourl.split(':')[0]): str(proxy)}
 
-    def _get_url(self, pobj):
+        return proxies
+
+    def get_url(self, pobj):
         if not pobj:
             return None
 
@@ -867,6 +857,6 @@ class Zypp(BackendPlugin):
                        reverse=True)
 
         if items:
-            return self._get_url(items[0])
+            return self.get_url(items[0])
 
         return None
