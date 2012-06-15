@@ -32,7 +32,7 @@ import rpm
 from mic import kickstart
 from mic import msger
 from mic.utils.errors import CreatorError, Abort
-from mic.utils import misc, rpmmisc, runner, proxy, fs_related as fs
+from mic.utils import misc, rpmmisc, runner, fs_related as fs
 
 class BaseImageCreator(object):
     """Installs a system to a chroot directory.
@@ -839,6 +839,7 @@ class BaseImageCreator(object):
                 for fpath in glob.glob(fpaths):
                     self._attachment.append(fpath)
                 continue
+
             filelist = pkg_manager.getFilelist(item)
             if filelist:
                 # found rpm in rootfs
@@ -848,14 +849,10 @@ class BaseImageCreator(object):
                 continue
 
             # try to retrieve rpm file
-            url = pkg_manager.package_url(item)
+            (url, proxies) = pkg_manager.package_url(item)
             if not url:
                 msger.warning("Can't get url from repo for %s" % item)
                 continue
-            proxies = None
-            aproxy = proxy.get_proxy_for(url)
-            if aproxy:
-                proxies = {url.split(':')[0]: aproxy}
             fpath = os.path.join(self.cachedir, os.path.basename(url))
             if not os.path.exists(fpath):
                 # download pkgs

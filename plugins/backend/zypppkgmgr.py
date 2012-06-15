@@ -838,7 +838,7 @@ class Zypp(BackendPlugin):
 
         return os.path.join(baseurl, location)
 
-    def package_url(self, pkg):
+    def package_url(self, pkgname):
 
         def cmpEVR(ed1, ed2):
             (e1, v1, r1) = map(str, [ed1.epoch(), ed1.version(), ed1.release()])
@@ -851,12 +851,14 @@ class Zypp(BackendPlugin):
         q = zypp.PoolQuery()
         q.addKind(zypp.ResKind.package)
         q.setMatchExact()
-        q.addAttribute(zypp.SolvAttr.name,pkg)
+        q.addAttribute(zypp.SolvAttr.name, pkgname)
         items = sorted(q.queryResults(self.Z.pool()),
                        cmp=lambda x,y: cmpEVR(x.edition(), y.edition()),
                        reverse=True)
 
         if items:
-            return self.get_url(items[0])
+            url = self.get_url(items[0])
+            proxies = self.get_proxies(items[0])
+            return (url, proxies)
 
-        return None
+        return (None, None)

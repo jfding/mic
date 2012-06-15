@@ -28,6 +28,7 @@ import yum
 from mic import msger
 from mic.kickstart import ksparser
 from mic.utils import misc, rpmmisc
+from mic.utils.proxy import get_proxy_for
 from mic.utils.errors import CreatorError
 from mic.imager.baseimager import BaseImageCreator
 
@@ -447,9 +448,22 @@ class Yum(BackendPlugin, yum.YumBase):
             return None
         return pkg[0].po.filelist
 
-    def package_url(self, pkg):
-        pkgs = self.pkgSack.searchNevra(name=pkg)
+    def package_url(self, pkgname):
+        pkgs = self.pkgSack.searchNevra(name=pkgname)
         if pkgs:
-            return pkgs[0].remote_url
-        else:
-            return None
+            proxy = None
+            proxies = None
+            url = pkgs[0].remote_url
+            repoid = pkgs[0].repoid
+            repos = filter(lambda r: r.id == repoid, self.repos.listEnabled())
+
+            if repos:
+                proxy = repos[0].proxy
+            if not proxy:
+                proxy = get_proxy_for(url)
+            if proxy:
+                proxies = {str(url.split(':')[0]): str(proxy)}
+
+            return (url, proxies)
+
+        return (None, None)
