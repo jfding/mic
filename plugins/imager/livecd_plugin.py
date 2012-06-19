@@ -62,7 +62,10 @@ class LiveCDPlugin(ImagerPlugin):
         if creatoropts['release'] is not None:
             if 'name' not in recording_pkgs:
                 recording_pkgs.append('name')
-            ksconf = misc.save_ksconf_file(ksconf, creatoropts['release'])
+
+        ksconf = misc.normalize_ksfile(ksconf,
+                                       creatoropts['release'],
+                                       creatoropts['arch'])
 
         configmgr._ksconf = ksconf
     

@@ -170,14 +170,26 @@ def get_md5sum(fpath):
             md5sum.update(data)
     return md5sum.hexdigest()
 
-def save_ksconf_file(ksconf, release="latest", arch="ia32"):
+def normalize_ksfile(ksconf, release, arch):
+    def _clrtempks():
+        try:
+            os.unlink(ksconf)
+        except:
+            pass
+
     if not os.path.exists(ksconf):
         return
+
+    if not release:
+        release = "latest"
+    if not arch or re.match(r'i.86', arch):
+        arch = "ia32"
 
     with open(ksconf) as f:
         ksc = f.read()
 
     if "@ARCH@" in ksc or "@BUILD_ID@" in ksc:
+        msger.info("Substitute macro variable @BUILD_ID@/@ARCH in ks: %s" % ksconf)
         ksc = ksc.replace("@ARCH@", arch)
         ksc = ksc.replace("@BUILD_ID@", release)
         fd, ksconf = tempfile.mkstemp(prefix=os.path.basename(ksconf), dir="/tmp/")
@@ -185,6 +197,9 @@ def save_ksconf_file(ksconf, release="latest", arch="ia32"):
         os.close(fd)
 
         msger.debug('new ks path %s' % ksconf)
+
+        import atexit
+        atexit.register(_clrtempks)
 
     return ksconf
 
