@@ -71,6 +71,10 @@ def _general_print(head, color, msg = None, stream = None, level = 'normal'):
         # skip
         return
 
+    # encode raw 'unicode' str to utf8 encoded str
+    if msg and isinstance(msg, unicode):
+        msg = msg.encode('utf-8', 'ignore')
+
     errormsg = ''
     if CATCHERR_BUFFILE_FD > 0:
         size = os.lseek(CATCHERR_BUFFILE_FD , 0, os.SEEK_END)
