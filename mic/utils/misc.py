@@ -91,16 +91,19 @@ def taring(dstfile, target):
             ".bz2": "bz2", # for .tar.bz2
             ".tgz": "gz",
             ".tbz": "bz2"}[ext]
-    if not comp:
-        wf = tarfile.open(dstfile, 'w')
-    else:
-        wf = tarfile.open(dstfile, 'w:' + comp)
+
+    wf = tarfile.open(dstfile, 'w')
+
     if os.path.isdir(target):
         for item in os.listdir(target):
             wf.add(os.path.join(target, item), item)
     else:
         wf.add(target, os.path.basename(target))
     wf.close()
+
+    if comp:
+        compressing(dstfile, comp)
+        shutil.move("%s.%s" % (dstfile, comp), dstfile)
 
 def ziping(dstfile, target):
     import zipfile
