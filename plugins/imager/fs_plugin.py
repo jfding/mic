@@ -19,7 +19,7 @@ import os
 import sys
 
 from mic import chroot, msger, rt_util
-from mic.utils import cmdln, misc, errors
+from mic.utils import cmdln, misc, errors, fs_related
 from mic.imager import fs
 from mic.conf import configmgr
 from mic.plugin import pluginmgr
@@ -128,7 +128,12 @@ class FsPlugin(ImagerPlugin):
     @classmethod
     def do_chroot(self, target):#chroot.py parse opts&args
             try:
-                chroot.chroot(target, None, "/bin/env HOME=/root /bin/bash")
+                envcmd = fs_related.find_binary_inchroot("env", target)
+                if envcmd:
+                    cmdline = "%s HOME=/root /bin/bash" % envcmd
+                else:
+                    cmdline = "/bin/bash"
+                chroot.chroot(target, None, cmdline)
             finally:
                 chroot.cleanup_after_chroot("dir", None, None, None)
                 return 1

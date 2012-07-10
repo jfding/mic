@@ -228,7 +228,12 @@ class LoopPlugin(ImagerPlugin):
             raise
 
         try:
-            chroot.chroot(extmnt, None,  "/usr/bin/env HOME=/root /bin/bash")
+            envcmd = fs_related.find_binary_inchroot("env", extmnt)
+            if envcmd:
+                cmdline = "%s HOME=/root /bin/bash" % envcmd
+            else:
+                cmdline = "/bin/bash"
+            chroot.chroot(extmnt, None, cmdline)
         except:
             raise errors.CreatorError("Failed to chroot to %s." % img)
         finally:

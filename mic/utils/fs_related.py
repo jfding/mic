@@ -29,6 +29,19 @@ from errors import *
 from mic import msger
 import runner
 
+def find_binary_inchroot(binary, chroot):
+    paths = ["/usr/sbin",
+             "/usr/bin",
+             "/sbin",
+             "/bin"
+            ]
+
+    for path in paths:
+        bin_path = "%s/%s" % (path, binary)
+        if os.path.exists("%s/%s" % (chroot, bin_path)):
+            return bin_path
+    return None
+
 def find_binary_path(binary):
     if os.environ.has_key("PATH"):
         paths = os.environ["PATH"].split(":")

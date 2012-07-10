@@ -201,7 +201,12 @@ class RawPlugin(ImagerPlugin):
             raise
 
         try:
-            chroot.chroot(imgmnt, None,  "/bin/env HOME=/root /bin/bash")
+            envcmd = fs_related.find_binary_inchroot("env", imgmnt)
+            if envcmd:
+                cmdline = "%s HOME=/root /bin/bash" % envcmd
+            else:
+                cmdline = "/bin/bash"
+            chroot.chroot(imgmnt, None, cmdline) 
         except:
             raise errors.CreatorError("Failed to chroot to %s." %img)
         finally:
