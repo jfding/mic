@@ -19,34 +19,12 @@ import os, sys
 import string
 import shutil
 import re
-import platform
 
 from mic import bootstrap
 from mic import msger
 from mic.conf import configmgr
 from mic.utils import errors
 import mic.utils.misc as misc
-
-SUPPORT_DISTS = (
-    'SuSE',
-    'debian',
-    'fedora',
-    'redhat',
-    'centos',
-    'meego',
-    'moblin',
-    'tizen',
-)
-
-# detect linux distribution, support "meego"
-def linux_distribution():
-    try:
-        (dist, ver, id) = platform.linux_distribution( \
-                              supported_dists = SUPPORT_DISTS)
-    except:
-        (dist, ver, id) = platform.dist( \
-                              supported_dists = SUPPORT_DISTS)
-    return (dist, ver, id)
 
 def runmic_in_runtime(runmode, opts, ksfile, argv=None):
     if not runmode or "MeeGo" == linux_distribution()[0]:

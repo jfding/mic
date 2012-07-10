@@ -24,6 +24,7 @@ import shutil
 import glob
 import hashlib
 import subprocess
+import platform
 import rpmmisc
 
 try:
@@ -53,6 +54,30 @@ from mic import msger
 RPM_RE  = re.compile("(.*)\.(.*) (.*)-(.*)")
 RPM_FMT = "%(name)s.%(arch)s %(ver_rel)s"
 SRPM_RE = re.compile("(.*)-(\d+.*)-(\d+\.\d+).src.rpm")
+
+SUPPORT_DISTS = (
+    'SuSE',
+    'debian',
+    'fedora',
+    'redhat',
+    'centos',
+    'meego',
+    'moblin',
+    'tizen',
+)
+
+get_machine = platform.machine
+
+# detect linux distribution, support "meego"
+def get_distro():
+    try:
+        (dist, ver, id) = platform.linux_distribution( \
+                              supported_dists = SUPPORT_DISTS)
+    except:
+        (dist, ver, id) = platform.dist( \
+                              supported_dists = SUPPORT_DISTS)
+
+    return (dist, ver, id)
 
 def extract_rpm(rpmfile, targetdir):
     rpm2cpio = find_binary_path("rpm2cpio")
