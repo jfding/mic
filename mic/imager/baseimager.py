@@ -667,6 +667,9 @@ class BaseImageCreator(object):
         """
         self.__ensure_builddir()
 
+        # prevent popup dialog in Ubuntu(s)
+        misc.hide_loopdev_presentation()
+
         fs.makedirs(self._instroot)
         fs.makedirs(self._outdir)
 
@@ -739,6 +742,9 @@ class BaseImageCreator(object):
             pass
 
         self._unmount_instroot()
+
+        # reset settings of popup dialog in Ubuntu(s)
+        misc.unhide_loopdev_presentation()
 
     def cleanup(self):
         """Unmounts the target filesystem and deletes temporary files.

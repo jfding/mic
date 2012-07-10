@@ -79,6 +79,23 @@ def get_distro():
 
     return (dist, ver, id)
 
+_LOOP_RULE_PTH = "/etc/udev/rules.d/80-prevent-loop-present.rules"
+def hide_loopdev_presentation():
+    try:
+        with open(_LOOP_RULE_PTH, 'w') as wf:
+            wf.write('KERNEL=="loop*", ENV{UDISKS_PRESENTATION_HIDE}="1"')
+
+        runner.quiet('udevadm trigger')
+    except:
+        pass
+
+def unhide_loopdev_presentation():
+    try:
+        os.unlink(_LOOP_RULE_PTH)
+        runner.quiet('udevadm trigger')
+    except:
+        pass
+
 def extract_rpm(rpmfile, targetdir):
     rpm2cpio = find_binary_path("rpm2cpio")
     cpio = find_binary_path("cpio")
