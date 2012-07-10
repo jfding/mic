@@ -101,8 +101,6 @@ class BaseImageCreator(object):
             if 'release' in createopts and createopts['release']:
                 self.name += '-' + createopts['release']
 
-                # pending FEA: save log by default for --release
-
             if self.pack_to:
                 if '@NAME@' in self.pack_to:
                     self.pack_to = self.pack_to.replace('@NAME@', self.name)
@@ -1158,6 +1156,15 @@ class BaseImageCreator(object):
                 # file generates the same build even when --release= is not used.
                 wf.write(fr.read().replace("@BUILD_ID@", release))
         outimages.append(new_kspath)
+
+        # save log file, logfile is only available in creator attrs
+        if hasattr(self, 'logfile') and not self.logfile:
+            log_path = _rpath(self.name + ".log")
+            # touch the log file, else outimages will filter it out
+            with open(log_path, 'w') as wf:
+                wf.write('')
+            msger.set_logfile(log_path)
+            outimages.append(_rpath(self.name + ".log"))
 
         # rename iso and usbimg
         for f in os.listdir(destdir):

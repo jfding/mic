@@ -82,16 +82,17 @@ def _general_print(head, color, msg = None, stream = None, level = 'normal'):
         errormsg = os.read(CATCHERR_BUFFILE_FD, size)
         os.ftruncate(CATCHERR_BUFFILE_FD, 0)
 
-    if LOG_FILE_FP:
-        if errormsg:
-            LOG_CONTENT += errormsg
+    # append error msg to LOG
+    if errormsg:
+        LOG_CONTENT += errormsg
 
-        save_msg = msg.strip() if msg else None
-        if save_msg:
-            global HOST_TIMEZONE
-            timestr = time.strftime("[%m/%d %H:%M:%S] ",
-                                    time.gmtime(time.time() - HOST_TIMEZONE))
-            LOG_CONTENT += timestr + save_msg + '\n'
+    # append normal msg to LOG
+    save_msg = msg.strip() if msg else None
+    if save_msg:
+        global HOST_TIMEZONE
+        timestr = time.strftime("[%m/%d %H:%M:%S] ",
+                                time.gmtime(time.time() - HOST_TIMEZONE))
+        LOG_CONTENT += timestr + save_msg + '\n'
 
     if errormsg:
         _color_print('', NO_COLOR, errormsg, stream, level)
