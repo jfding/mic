@@ -234,6 +234,28 @@ def ask(msg, default=True):
         sys.stdout.write('\n')
         sys.exit(2)
 
+def choice(msg, choices, default=0):
+    if default >= len(choices):
+        return None
+    _general_print('\rQ', ASK_COLOR, '')
+    try:
+        msg += " [%s] " % '/'.join(choices)
+        if INTERACTIVE:
+            while True:
+                repl = raw_input(msg)
+                if repl in choices:
+                    return repl
+                elif not repl.strip():
+                    return choices[default]
+        else:
+            msg += choices[default]
+            _general_print('', NO_COLOR, msg)
+
+            return choices[default]
+    except KeyboardInterrupt:
+        sys.stdout.write('\n')
+        sys.exit(2)
+
 def pause(msg=None):
     if INTERACTIVE:
         _general_print('\rQ', ASK_COLOR, '')

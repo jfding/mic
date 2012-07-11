@@ -134,6 +134,20 @@ class RawPlugin(ImagerPlugin):
         imgloop = PartitionedMount({'/dev/sdb':disk}, imgmnt, skipformat = True)
         img_fstype = "ext3"
 
+        msger.info("Partition Table:")
+        partnum = []
+        for line in runner.outs([partedcmd, "-s", img, "print"]).splitlines():
+            # no use strip to keep line output here
+            if "Number" in line:
+                msger.raw(line)
+            if line.strip() and line.strip()[0].isdigit():
+                partnum.append(line.strip()[0])
+                msger.raw(line)
+
+        rootpart = None
+        if len(partnum) > 1:
+            rootpart = msger.choice("please choose root partition", partnum)
+
         # Check the partitions from raw disk.
         root_mounted = False
         partition_mounts = 0
@@ -173,7 +187,10 @@ class RawPlugin(ImagerPlugin):
             else:
                 raise errors.CreatorError("Could not recognize partition fs type '%s'." % partition_info[5])
 
-            if not root_mounted and fstype in ["ext2","ext3","ext4","btrfs"]:
+            if rootpart == line[0]:
+                mountpoint = '/'
+                root_mounted = True
+            elif not root_mounted and fstype in ["ext2","ext3","ext4","btrfs"]:
                 # TODO: Check that this is actually the valid root partition from /etc/fstab
                 mountpoint = "/"
                 root_mounted = True
