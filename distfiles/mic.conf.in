@@ -30,18 +30,7 @@ pkgmgr = zypp
 ; settings for chroot subcommand
 
 [bootstrap1]
-; This bootstrap can be used to create image with rpm 4.8.x
-name=meego-1.2.0
-1.2.0-oss=http://repo.meego.com/MeeGo/releases/1.2.0/repos/oss/ia32/packages/
-1.2.0-tools=http://download.meego.com/live/devel:/tools:/building/MeeGo_1.2.0/
-; 1.2.0-oss_proxy=http://proxy.yourcompany.com:port
-; 1.2.0-tools_proxy=http://proxy.yourcompany.com:port
-
-[bootstrap2]
-; This bootstrap can be used to create image with rpm 4.9.x
-name=meego-trunk
-trunk-oss=http://repo.meego.com/MeeGo/builds/trunk/latest/repos/oss/ia32/packages/
-trunk-tools=http://download.meego.com/live/devel:/tools:/building/Trunk/
-; trunk-oss_proxy=http://proxy.yourcompany.com:port
-; trunk-tools_proxy=http://proxy.yourcompany.com:port
+name=micbootstrap
+bootstrap=http://download.tizen.org/tools/micbootstrap/
+; bootstrap_proxy=http://proxy.yourcompany.com:port
 

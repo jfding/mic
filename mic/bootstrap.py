@@ -29,16 +29,10 @@ from mic.utils import proxy
 from mic.utils import misc
 from mic.utils import errors
 
-minibase_pkgs = [ "kernel", "rpm", "setup", "filesystem", "basesystem",
-                  "tzdata", "libgcc", "ncurses-base", "ncurses", "glibc",
-                  "glibc-common", "ncurses-libs", "nss-softokn-freebl",
-                  "bash", "zlib", "info", "cpio", "coreutils", "zypper" ]
-
-required_pkgs = [ "pam", "passwd", "meego-release", "nss", "genisoimage",
-                  "bzip2", "gzip", "perl", "make", "file", "psmisc", "wget",
-                  "syslinux-extlinux", "btrfs-progs", "satsolver-tools",
-                  "isomd5sum", "mtd-utils", "mtd-utils-ubi", "libzypp",
-                  "python-zypp", "grep", "sed", "qemu-arm-static", "mic" ]
+minibase_grps = [ "tizen-bootstrap" ]
+minibase_pkgs = [ ]
+required_pkgs = [ "syslinux", "syslinux-extlinux", "satsolver-tools",
+                  "libzypp", "python-zypp", "qemu-arm-static", "mic" ]
 
 
 def query_package_rpmdb(root='/', tag='name', pattern=None):
@@ -204,6 +198,8 @@ class Bootstrap(object):
         rpm.addMacro("_dbpath", "/var/lib/rpm")
         rpm.addMacro("__file_context_path", "%{nil}")
 
+        for grp in minibase_grps:
+            pkg_manager.selectGroup(grp)
         for pkg in minibase_pkgs:
             pkg_manager.selectPackage(pkg)
         for pkg in required_pkgs:
@@ -228,6 +224,9 @@ class Bootstrap(object):
         destdir= "%s/etc/zypp/repos.d/" % os.path.abspath(self.rootdir)
         shutil.rmtree(destdir, ignore_errors = True)
         shutil.copytree(srcdir, destdir)
+        # create '/tmp' in chroot
+        if not os.path.exists(os.path.join(os.path.abspath(self.rootdir), "tmp")):
+            os.makedirs(os.path.join(os.path.abspath(self.rootdir), "tmp"))
 
         msger.info("Bootstrap created.")
 

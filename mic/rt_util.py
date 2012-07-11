@@ -25,9 +25,13 @@ from mic import msger
 from mic.conf import configmgr
 from mic.utils import errors
 import mic.utils.misc as misc
+from mic.utils.proxy import get_proxy_for
+
+BOOTSTRAP_URL="http://download.tizen.org/tools/micbootstrap"
 
 def runmic_in_runtime(runmode, opts, ksfile, argv=None):
-    if not runmode or "MeeGo" == linux_distribution()[0]:
+    dist = misc.get_distro()[0]
+    if not runmode or not dist or "MeeGo" == dist:
         return
 
     if not argv:
@@ -37,7 +41,15 @@ def runmic_in_runtime(runmode, opts, ksfile, argv=None):
 
     if runmode == 'bootstrap':
         msger.info("Use bootstrap runtime environment")
-        (name, repostrs) = select_bootstrap(opts['repomd'], opts['cachedir'], opts['bootstrapdir'])
+        name = "micbootstrap"
+        try:
+            repostrs = configmgr.bootstraps[name]
+        except:
+            repostrs = "name:%s,baseurl:%s," (name, BOOTSTRAP_URL)
+            proxy = get_proxy_for(BOOTSTRAP_URL)
+            if proxy:
+                repostrs += "proxy:%s" % proxy
+
         repolist = []
         if not name:
             # use ks repo to create bootstrap
@@ -176,7 +188,7 @@ def get_mic_libpath():
 
 # the hard code path is prepared for bootstrap
 def copy_mic(bootstrap_pth, bin_pth = '/usr/bin', lib_pth='/usr/lib', \
-             pylib_pth = '/usr/lib/python2.6/site-packages'):
+             pylib_pth = '/usr/lib/python2.7/site-packages'):
     # copy python lib files
     mic_pylib = get_mic_modpath()
     bs_mic_pylib = bootstrap_pth + os.path.join(pylib_pth, 'mic')
@@ -207,6 +219,13 @@ def copy_mic(bootstrap_pth, bin_pth = '/usr/bin', lib_pth='/usr/lib', \
     if not os.path.exists(os.path.dirname(bs_mic_cfgpth)):
         os.makedirs(os.path.dirname(bs_mic_cfgpth))
     shutil.copy2(mic_cfgpth, bs_mic_cfgpth)
+
+    # remove yum backend
+    try:
+        yumpth = "/usr/lib/mic/plugins/backend/yumpkgmgr.py"
+        os.unlink(bootstrap_pth + yumpth)
+    except:
+        pass
 
 def clean_files(pattern, dir):
     if not os.path.exists(dir):
