@@ -73,7 +73,7 @@ class RawPlugin(ImagerPlugin):
                                        creatoropts['arch'])
 
         configmgr._ksconf = ksconf
-    
+
         # Called After setting the configmgr._ksconf as the creatoropts['name'] is reset there.
         if creatoropts['release'] is not None:
             creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'], creatoropts['release'], creatoropts['name'])
@@ -223,7 +223,7 @@ class RawPlugin(ImagerPlugin):
                 cmdline = "%s HOME=/root /bin/bash" % envcmd
             else:
                 cmdline = "/bin/bash"
-            chroot.chroot(imgmnt, None, cmdline) 
+            chroot.chroot(imgmnt, None, cmdline)
         except:
             raise errors.CreatorError("Failed to chroot to %s." %img)
         finally:

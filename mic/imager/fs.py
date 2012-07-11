@@ -25,8 +25,8 @@ from subprocess import call
 
 class FsImageCreator(BaseImageCreator):
     def __init__(self, cfgmgr = None, pkgmgr = None):
-        self.zips = { 
-            "tar.bz2" : "" 
+        self.zips = {
+            "tar.bz2" : ""
         }
         BaseImageCreator.__init__(self, cfgmgr, pkgmgr)
         self._fstype = None

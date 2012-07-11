@@ -115,12 +115,12 @@ class LoopPlugin(ImagerPlugin):
             creator.mount(None, creatoropts["cachedir"])
             creator.install()
             creator.configure(creatoropts["repomd"])
-            creator.copy_kernel()            
+            creator.copy_kernel()
             creator.unmount()
             creator.package(creatoropts["outdir"])
 
             if creatoropts['release'] is not None:
-                creator.release_output(ksconf, 
+                creator.release_output(ksconf,
                                        creatoropts['outdir'],
                                        creatoropts['release'])
             creator.print_outimage_info()

@@ -87,7 +87,7 @@ class BaseImageCreator(object):
                       "local_pkgs_path" : "_local_pkgs_path",
                       "copy_kernel" : "_need_copy_kernel",
                      }
-    
+
             # update setting from createopts
             for key in createopts.keys():
                 if key in optmap:
@@ -695,7 +695,9 @@ class BaseImageCreator(object):
                           ("/proc", None),
                           ("/proc/sys/fs/binfmt_misc", None),
                           ("/dev/pts", None)]:
-            self.__bindmounts.append(fs.BindChrootMount(f, self._instroot, dest))
+            self.__bindmounts.append(
+                    fs.BindChrootMount(
+                        f, self._instroot, dest))
 
         self._do_bindmounts()
 
@@ -1122,9 +1124,12 @@ class BaseImageCreator(object):
 
         if pkg == "tar":
             if comp:
-                dst = "%s/%s-%s.tar.%s" % (destdir, self.name, image_format, comp)
+                dst = "%s/%s-%s.tar.%s" %\
+                      (destdir, self.name, image_format, comp)
             else:
-                dst = "%s/%s-%s.tar" % (destdir, self.name, image_format)
+                dst = "%s/%s-%s.tar" %\
+                      (destdir, self.name, image_format)
+
             msger.info("creating %s" % dst)
             tar = tarfile.open(dst, "w:" + comp)
 
@@ -1159,7 +1164,7 @@ class BaseImageCreator(object):
         with open(config) as fr:
             with open(new_kspath, "w") as wf:
                 # When building a release we want to make sure the .ks
-                # file generates the same build even when --release= is not used.
+                # file generates the same build even when --release not used.
                 wf.write(fr.read().replace("@BUILD_ID@", release))
         outimages.append(new_kspath)
 
@@ -1194,7 +1199,7 @@ class BaseImageCreator(object):
 
                 md5sum = misc.get_md5sum(_rpath(f))
                 # There needs to be two spaces between the sum and
-                # filepath to match the syntax with md5sum. 
+                # filepath to match the syntax with md5sum.
                 # This way also md5sum -c MANIFEST can be used by users
                 wf.write("%s *%s\n" % (md5sum, f))
 
@@ -1207,7 +1212,6 @@ class BaseImageCreator(object):
 
     def copy_kernel(self):
         """ Copy kernel files to the outimage directory.
-        
         NOTE: This needs to be called before unmounting the instroot.
         """
 
@@ -1218,11 +1222,13 @@ class BaseImageCreator(object):
             os.makedirs(self.destdir)
 
         for kernel in glob.glob("%s/boot/vmlinuz-*" % self._instroot):
-            kernelfilename = "%s/%s-%s" % (self.destdir, self.name, os.path.basename(kernel))
-            msger.info('copy kernel file %s as %s' % (os.path.basename(kernel), kernelfilename))
+            kernelfilename = "%s/%s-%s" % (self.destdir,
+                                           self.name,
+                                           os.path.basename(kernel))
+            msger.info('copy kernel file %s as %s' % (os.path.basename(kernel),
+                                                      kernelfilename))
             shutil.copy(kernel, kernelfilename)
             self.outimage.append(kernelfilename)
-
 
     def copy_attachment(self):
         """ Subclass implement it to handle attachment files
@@ -1232,4 +1238,6 @@ class BaseImageCreator(object):
         pass
 
     def get_pkg_manager(self):
-        return self.pkgmgr(target_arch = self.target_arch, instroot = self._instroot, cachedir = self.cachedir)
+        return self.pkgmgr(target_arch = self.target_arch,
+                           instroot = self._instroot,
+                           cachedir = self.cachedir)

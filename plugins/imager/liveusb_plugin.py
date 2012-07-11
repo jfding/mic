@@ -70,7 +70,7 @@ class LiveUSBPlugin(ImagerPlugin):
                                        creatoropts['arch'])
 
         configmgr._ksconf = ksconf
-    
+
         # Called After setting the configmgr._ksconf as the creatoropts['name'] is reset there.
         if creatoropts['release'] is not None:
             creatoropts['outdir'] = "%s/%s/images/%s/" % (creatoropts['outdir'], creatoropts['release'], creatoropts['name'])
@@ -156,7 +156,7 @@ class LiveUSBPlugin(ImagerPlugin):
                 cmdline = "%s HOME=/root /bin/bash" % envcmd
             else:
                 cmdline = "/bin/bash"
-            chroot.chroot(extmnt, None, cmdline) 
+            chroot.chroot(extmnt, None, cmdline)
         except:
             raise errors.CreatorError("Failed to chroot to %s." %target)
         finally:
