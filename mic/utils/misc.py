@@ -55,29 +55,29 @@ RPM_RE  = re.compile("(.*)\.(.*) (.*)-(.*)")
 RPM_FMT = "%(name)s.%(arch)s %(ver_rel)s"
 SRPM_RE = re.compile("(.*)-(\d+.*)-(\d+\.\d+).src.rpm")
 
-SUPPORT_DISTS = (
-    'SuSE',
-    'debian',
-    'fedora',
-    'redhat',
-    'centos',
-    'meego',
-    'moblin',
-    'tizen',
-)
-
-get_machine = platform.machine
-
-# detect linux distribution, support "meego"
 def get_distro():
+    """Detect linux distribution, support "meego"
+    """
+
+    support_dists = ('SuSE',
+                     'debian',
+                     'fedora',
+                     'redhat',
+                     'centos',
+                     'meego',
+                     'moblin',
+                     'tizen')
     try:
         (dist, ver, id) = platform.linux_distribution( \
-                              supported_dists = SUPPORT_DISTS)
+                              supported_dists = support_dists)
     except:
         (dist, ver, id) = platform.dist( \
-                              supported_dists = SUPPORT_DISTS)
+                              supported_dists = support_dists)
 
-    return (dist, ver, id)
+    if not dist:
+        return 'Unknown Linux Distro'
+    else:
+        return ' '.join(map(str.strip, (dist, ver, id)))
 
 _LOOP_RULE_PTH = "/etc/udev/rules.d/80-prevent-loop-present.rules"
 def hide_loopdev_presentation():
