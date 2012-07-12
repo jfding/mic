@@ -74,6 +74,13 @@ def get_distro():
         (dist, ver, id) = platform.dist( \
                               supported_dists = support_dists)
 
+    return (dist, ver, id)
+
+def get_distro_str():
+    """Get composited string for current linux distribution
+    """
+    (dist, ver, id) = get_distro()
+
     if not dist:
         return 'Unknown Linux Distro'
     else:

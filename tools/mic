@@ -204,7 +204,7 @@ class MicCmd(cmdln.Cmdln):
 
 if __name__ == "__main__":
     try:
-        msger.raw("mic %s (%s)" % (VERSION, misc.get_distro()))
+        msger.raw("mic %s (%s)" % (VERSION, misc.get_distro_str()))
         mic = MicCmd()
         sys.exit(mic.main())
 
