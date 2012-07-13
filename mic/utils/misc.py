@@ -134,14 +134,21 @@ def compressing(fpath, method):
 
 def taring(dstfile, target):
     import tarfile
-    ext = os.path.splitext(dstfile)[1]
+    basen, ext = os.path.splitext(dstfile)
     comp = {".tar": None,
             ".gz": "gz", # for .tar.gz
             ".bz2": "bz2", # for .tar.bz2
             ".tgz": "gz",
             ".tbz": "bz2"}[ext]
 
-    wf = tarfile.open(dstfile, 'w')
+    # specify tarball file path
+    if not comp:
+        tarpath = dstfile
+    elif basen.endswith(".tar"):
+        tarpath = basen
+    else:
+        tarpath = basen + ".tar"
+    wf = tarfile.open(tarpath, 'w')
 
     if os.path.isdir(target):
         for item in os.listdir(target):
@@ -151,8 +158,10 @@ def taring(dstfile, target):
     wf.close()
 
     if comp:
-        compressing(dstfile, comp)
-        shutil.move("%s.%s" % (dstfile, comp), dstfile)
+        compressing(tarpath, comp)
+        # when dstfile ext is ".tgz" and ".tbz", should rename
+        if not basen.endswith(".tar"):
+            shutil.move("%s.%s" % (tarpath, comp), dstfile)
 
 def ziping(dstfile, target):
     import zipfile
