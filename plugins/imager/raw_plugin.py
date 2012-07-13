@@ -149,7 +149,11 @@ class RawPlugin(ImagerPlugin):
             rootpart = msger.choice("please choose root partition", partnum)
 
         # Check the partitions from raw disk.
-        root_mounted = False
+        # if choose root part, the mark it as mounted
+        if rootpart:
+            root_mounted = True
+        else:
+            root_mounted = False
         partition_mounts = 0
         for line in runner.outs([partedcmd,"-s",img,"unit","B","print"]).splitlines():
             line = line.strip()
@@ -187,9 +191,8 @@ class RawPlugin(ImagerPlugin):
             else:
                 raise errors.CreatorError("Could not recognize partition fs type '%s'." % partition_info[5])
 
-            if rootpart == line[0]:
+            if rootpart and rootpart == line[0]:
                 mountpoint = '/'
-                root_mounted = True
             elif not root_mounted and fstype in ["ext2","ext3","ext4","btrfs"]:
                 # TODO: Check that this is actually the valid root partition from /etc/fstab
                 mountpoint = "/"
