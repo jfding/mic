@@ -36,7 +36,7 @@ class LoopPlugin(ImagerPlugin):
                   # alias to compress-image for compatibility
     @cmdln.option("--compress-image", dest="compress_image",
                   type='choice', choices=("gz", "bz2"), default=None,
-                  help="Compress all loop images wiht 'gz' or 'bz2'")
+                  help="Compress all loop images with 'gz' or 'bz2'")
     @cmdln.option("--shrink", action='store_true', default=False,
                   help="Whether to shrink loop images to minimal size")
     def do_create(self, subcmd, opts, *args):
