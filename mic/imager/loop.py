@@ -378,7 +378,8 @@ class LoopImageCreator(BaseImageCreator):
             misc.packing(dstfile, self.__imgdir)
 
         if self.pack_to:
-            mountfp_xml = os.path.splitext(self.pack_to)[0].rstrip('.tar') + ".xml"
+            mountfp_xml = os.path.splitext(self.pack_to)[0]
+            mountfp_xml = misc.strip_end(mountfp_xml, '.tar') + ".xml"
         else:
             mountfp_xml = self.name + ".xml"
         # save mount points mapping file to xml

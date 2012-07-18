@@ -144,7 +144,9 @@ def setup_chrootenv(chrootdir, bindmounts = None):
 
         """Default bind mounts"""
         for pt in BIND_MOUNTS:
-            chrootmounts.append(fs_related.BindChrootMount(pt, chrootdir, None))
+            chrootmounts.append(fs_related.BindChrootMount(pt,
+                                                           chrootdir,
+                                                           None))
 
         chrootmounts.append(fs_related.BindChrootMount("/",
                                                        chrootdir,
@@ -152,10 +154,11 @@ def setup_chrootenv(chrootdir, bindmounts = None):
                                                        "ro"))
 
         for kernel in os.listdir("/lib/modules"):
-            chrootmounts.append(fs_related.BindChrootMount("/lib/modules/"+kernel,
-                                                           chrootdir,
-                                                           None,
-                                                           "ro"))
+            chrootmounts.append(fs_related.BindChrootMount(
+                                                "/lib/modules/"+kernel,
+                                                chrootdir,
+                                                None,
+                                                "ro"))
 
         return chrootmounts
 

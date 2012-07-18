@@ -175,9 +175,11 @@ class ConfigMgr(object):
 
                     if val.split(':')[0] in ('file', 'http', 'https', 'ftp'):
                         if repostr.has_key(option):
-                            repostr[option] += "name:%s,baseurl:%s," % (option, val)
+                            repostr[option] += "name:%s,baseurl:%s," % \
+                                                (option, val)
                         else:
-                            repostr[option]  = "name:%s,baseurl:%s," % (option, val)
+                            repostr[option]  = "name:%s,baseurl:%s," % \
+                                                (option, val)
                         continue
 
                 self.bootstraps[name] = repostr

@@ -63,7 +63,8 @@ class LiveImageCreatorBase(LoopImageCreator):
 
         #The default kernel type from kickstart.
         if self.ks:
-            self._default_kernel = kickstart.get_default_kernel(self.ks, "kernel")
+            self._default_kernel = kickstart.get_default_kernel(self.ks,
+                                                                "kernel")
         else:
             self._default_kernel = None
 
@@ -717,6 +718,5 @@ if arch in ("i386", "x86_64"):
     LiveCDImageCreator = x86LiveImageCreator
 elif arch.startswith("arm"):
     LiveCDImageCreator = LiveImageCreatorBase
-
 else:
     raise CreatorError("Architecture not supported!")

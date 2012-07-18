@@ -103,7 +103,7 @@ class RawImageCreator(BaseImageCreator):
         return s
 
     def _create_mkinitrd_config(self):
-        #write  to tell which modules to be included in initrd
+        """write to tell which modules to be included in initrd"""
 
         mkinitrd = ""
         mkinitrd += "PROBE=\"no\"\n"
@@ -442,7 +442,7 @@ class RawImageCreator(BaseImageCreator):
                                  % (self.name,
                                     name,
                                     self.__disk_format))
-                xml += "    <disk file='%s-%s.%s' use='system' format='%s'>\n" \
+                xml += "    <disk file='%s-%s.%s' use='system' format='%s'>\n"\
                        % (self.name,
                           name,
                           self.__disk_format,

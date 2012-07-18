@@ -58,7 +58,7 @@ def runmic_in_runtime(runmode, opts, ksfile, argv=None):
             #repostrs = misc.get_repostrs_from_ks(opts['ks'])
             #for item in repostrs:
             #    repolist.append(convert_repostr(item))
-            msger.info("Failed to find propery bootstrap, please check config file")
+            msger.info("cannot find valid bootstrap, please check the config")
             msger.info("Back to native running")
             return
         else:
@@ -129,7 +129,8 @@ def runmic_in_bootstrap(name, argv, opts, ksfile, repolist):
     bootstrap_lst = bootstrap_env.bootstraps
     setattr(bootstrap_env, 'rootdir', name)
     if not bootstrap_lst or not name in bootstrap_lst:
-        msger.info("Creating bootstrap %s under %s" %  (name, bootstrap_env.homedir))
+        msger.info("Creating bootstrap %s under %s" % \
+                   (name, bootstrap_env.homedir))
         bootstrap_env.create(name, repolist)
 
     msger.info("Use bootstrap: %s" % bootstrap_env.rootdir)
@@ -155,7 +156,8 @@ def runmic_in_bootstrap(name, argv, opts, ksfile, repolist):
     # make unique and remain the original order
     lst = sorted(set(lst), key=lst.index)
 
-    bindmounts = ';'.join(map(lambda p: os.path.abspath(os.path.expanduser(p)), lst))
+    bindmounts = ';'.join(map(lambda p: os.path.abspath(os.path.expanduser(p)),
+                              lst))
 
     msger.info("Start mic command in bootstrap")
     bootstrap_env.run(name, argv, cwd, bindmounts)
