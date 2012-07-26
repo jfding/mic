@@ -665,7 +665,7 @@ def get_image_fstype(ks, default = None):
 def get_image_fsopts(ks, default = None):
     for p in ks.handler.partition.partitions:
         if p.mountpoint == "/" and p.fsopts:
-            return p.fstype
+            return p.fsopts
     return default
 
 def get_modules(ks):

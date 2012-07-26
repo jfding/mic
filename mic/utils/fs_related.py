@@ -63,8 +63,8 @@ def makedirs(dirname):
     """
     try:
         os.makedirs(dirname)
-    except OSError, (err, msg):
-        if err != errno.EEXIST:
+    except OSError, err:
+        if err.errno != errno.EEXIST:
             raise
 
 def mksquashfs(in_img, out_img):
