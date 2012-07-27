@@ -52,7 +52,8 @@ class Creator(cmdln.Cmdln):
 
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self)
-        optparser.add_option('-d', '--debug', action='store_true', dest='debug',
+        optparser.add_option('-d', '--debug', action='store_true',
+                             dest='debug',
                              help=SUPPRESS_HELP)
         optparser.add_option('-v', '--verbose', action='store_true',
                              dest='verbose',
@@ -127,7 +128,7 @@ class Creator(cmdln.Cmdln):
                     try:
                         largs.append(argv.pop(0))
                     except IndexError:
-                        raise errors.Usage("%s option requires an argument" % arg)
+                        raise errors.Usage("option %s requires arguments" % arg)
 
             else:
                 if arg.startswith("--"):
@@ -169,6 +170,7 @@ class Creator(cmdln.Cmdln):
         if self.options.cachedir is not None:
             configmgr.create['cachedir'] = abspath(self.options.cachedir)
         os.environ['ZYPP_LOCKFILE_ROOT'] = configmgr.create['cachedir']
+
         if self.options.local_pkgs_path is not None:
             if not os.path.exists(self.options.local_pkgs_path):
                 msger.error('Local pkgs directory: \'%s\' not exist' \

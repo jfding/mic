@@ -44,7 +44,10 @@ class ImagerPlugin(_Plugin):
     mic_plugin_type = "imager"
 
     @classmethod
-    def check_image_exists(self, destdir, apacking=None, images=[], release=None):
+    def check_image_exists(self, destdir, apacking=None,
+                                          images=[],
+                                          release=None):
+
         # if it's a packing file, reset images
         if apacking:
             images = [apacking]

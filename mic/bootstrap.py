@@ -82,7 +82,7 @@ class Bootstrap(object):
 
     def _getRootdir(self):
         if not os.path.exists(self._rootdir):
-            raise errors.BootstrapError("Root dir: %s not exist" % self._rootdir)
+            raise errors.BootstrapError("dir: %s not exist" % self._rootdir)
         return self._rootdir
 
     rootdir = property(fget = lambda self: self._getRootdir(),
@@ -95,7 +95,8 @@ class Bootstrap(object):
             if key == name:
                 self._pkgmgr = cls
         if not self._pkgmgr:
-            raise errors.BootstrapError("Backend: %s can't be loaded correctly" % name)
+            raise errors.BootstrapError("Backend: %s can't be loaded correctly"\
+                                        % name)
 
     pkgmgr = property(fget = lambda self: self._pkgmgr,
                       fset = lambda self, name: self._setPkgmgr(name),
@@ -190,8 +191,9 @@ class Bootstrap(object):
         pkg_manager.setup()
 
         for repo in repolist:
-            if 'proxy' in repo.keys():
-                pkg_manager.addRepository(repo['name'], repo['baseurl'], proxy = repo['proxy'])
+            if 'proxy' in repo:
+                pkg_manager.addRepository(repo['name'], repo['baseurl'],
+                                          proxy=repo['proxy'])
             else:
                 pkg_manager.addRepository(repo['name'], repo['baseurl'])
 
@@ -225,8 +227,9 @@ class Bootstrap(object):
         shutil.rmtree(destdir, ignore_errors = True)
         shutil.copytree(srcdir, destdir)
         # create '/tmp' in chroot
-        if not os.path.exists(os.path.join(os.path.abspath(self.rootdir), "tmp")):
-            os.makedirs(os.path.join(os.path.abspath(self.rootdir), "tmp"))
+        _tmpdir = os.path.join(os.path.abspath(self.rootdir), "tmp")
+        if not os.path.exists(_tmpdir):
+            os.makedirs(_tmpdir)
 
         msger.info("Bootstrap created.")
 
@@ -242,9 +245,11 @@ class Bootstrap(object):
 
         shutil.copyfile("/etc/resolv.conf", chrootdir + "/etc/resolv.conf")
         try:
-            subprocess.call("zypper -n --no-gpg-checks update", preexec_fn=mychroot, shell=True)
+            subprocess.call("zypper -n --no-gpg-checks update",
+                            preexec_fn=mychroot, shell=True)
         except OSError, err:
-            raise errors.BootstrapError("Bootstrap: %s Update fail" % chrootdir)
+            raise errors.BootstrapError("Bootstrap: %s update failed" %\
+                                        chrootdir)
 
     def cleanup(self, name):
         self.rootdir = name
@@ -252,4 +257,5 @@ class Bootstrap(object):
             chroot.cleanup_mounts(self.rootdir)
             shutil.rmtree(self.rootdir, ignore_errors=True)
         except:
-            raise errors.BootstrapError("Bootstrap: %s clean up fail " % self.rootdir)
+            raise errors.BootstrapError("Bootstrap: %s clean up failed" %\
+                                        self.rootdir)
