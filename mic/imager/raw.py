@@ -279,24 +279,34 @@ class RawImageCreator(BaseImageCreator):
 
         versions = []
         kernels = self._get_kernel_versions()
-        for kernel in kernels:
-            for version in kernels[kernel]:
-                versions.append(version)
+        symkern = "%s/boot/vmlinuz" % self._instroot
 
-        footlabel = 0
-        for v in versions:
-            shutil.copy("%s/boot/vmlinuz-%s" %(self._instroot, v),
-                        "%s%s/vmlinuz-%s" % (self._instroot,
-                                             "/boot/extlinux/", v))
-            syslinux_conf += "label %s%d\n" \
-                             % (self.distro_name.lower(), footlabel)
+        if os.path.lexists(symkern):
+            v = os.path.realpath(symkern).replace('%s-' % symkern, "")
+            syslinux_conf += "label %s\n" % self.distro_name.lower()
             syslinux_conf += "\tmenu label %s (%s)\n" % (self.distro_name, v)
-            syslinux_conf += "\tkernel vmlinuz-%s\n" % v
-            syslinux_conf += "\tappend ro root=%s %s\n" \
-                             % (rootdev, options)
-            if footlabel == 0:
-               syslinux_conf += "\tmenu default\n"
-            footlabel += 1;
+            syslinux_conf += "\tlinux /vmlinuz\n"
+            syslinux_conf += "\tappend ro root=%s %s\n" % (rootdev, options)
+            syslinux_conf += "\tmenu default\n"
+        else:
+            for kernel in kernels:
+                for version in kernels[kernel]:
+                    versions.append(version)
+
+            footlabel = 0
+            for v in versions:
+                shutil.copy("%s/boot/vmlinuz-%s" %(self._instroot, v),
+                            "%s%s/vmlinuz-%s" % (self._instroot,
+                                                 "/boot/extlinux/", v))
+                syslinux_conf += "label %s%d\n" \
+                                 % (self.distro_name.lower(), footlabel)
+                syslinux_conf += "\tmenu label %s (%s)\n" % (self.distro_name, v)
+                syslinux_conf += "\tlinux vmlinuz-%s\n" % v
+                syslinux_conf += "\tappend ro root=%s %s\n" \
+                                 % (rootdev, options)
+                if footlabel == 0:
+                    syslinux_conf += "\tmenu default\n"
+                footlabel += 1;
 
         msger.debug("Writing syslinux config %s/boot/extlinux/extlinux.conf" \
                     % self._instroot)
