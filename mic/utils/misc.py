@@ -453,9 +453,19 @@ def _get_uncompressed_data_from_url(url, filename, proxies):
         filename = filename.replace(suffix, "")
     return filename
 
-def _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, filename):
+def _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, filename,
+                            sumtype=None, checksum=None):
     url = os.path.join(baseurl, filename)
     filename_tmp = str("%s/%s/%s" % (cachedir, reponame, os.path.basename(filename)))
+    if os.path.splitext(filename_tmp)[1] in (".gz", ".bz2"):
+        filename = os.path.splitext(filename_tmp)[0]
+    else:
+        filename = filename_tmp
+    if sumtype and checksum and os.path.exists(filename):
+        sumcmd = "%ssum" % sumtype
+        file_checksum = runner.outs([sumcmd, filename]).split()[0]
+        if file_checksum == checksum:
+            return filename
     return _get_uncompressed_data_from_url(url,filename_tmp,proxies)
 
 def get_metadata_from_repos(repos, cachedir):
@@ -486,55 +496,70 @@ def get_metadata_from_repos(repos, cachedir):
         ns = root.getroot().tag
         ns = ns[0:ns.rindex("}")+1]
 
-        patterns = None
+        filepaths = {}
+        checksums = {}
+        sumtypes = {}
+
         for elm in root.getiterator("%sdata" % ns):
             if elm.attrib["type"] == "patterns":
-                patterns = elm.find("%slocation" % ns).attrib['href']
+                filepaths['patterns'] = elm.find("%slocation" % ns).attrib['href']
+                checksums['patterns'] = elm.find("%sopen-checksum" % ns).text
+                sumtypes['patterns'] = elm.find("%sopen-checksum" % ns).attrib['type']
                 break
 
-        comps = None
         for elm in root.getiterator("%sdata" % ns):
-            if elm.attrib["type"] == "group_gz":
-                comps = elm.find("%slocation" % ns).attrib['href']
+            if elm.attrib["type"] in ("group_gz", "group"):
+                filepaths['comps'] = elm.find("%slocation" % ns).attrib['href']
+                checksums['comps'] = elm.find("%sopen-checksum" % ns).text
+                sumtypes['comps'] = elm.find("%sopen-checksum" % ns).attrib['type']
                 break
-        if not comps:
-            for elm in root.getiterator("%sdata" % ns):
-                if elm.attrib["type"] == "group":
-                    comps = elm.find("%slocation" % ns).attrib['href']
-                    break
 
         primary_type = None
         for elm in root.getiterator("%sdata" % ns):
-            if elm.attrib["type"] == "primary_db":
-                primary_type=".sqlite"
+            if elm.attrib["type"] in ("primary_db", "primary"):
+                primary_type = elm.attrib["type"]
+                filepaths['primary'] = elm.find("%slocation" % ns).attrib['href']
+                checksums['primary'] = elm.find("%sopen-checksum" % ns).text
+                sumtypes['primary'] = elm.find("%sopen-checksum" % ns).attrib['type']
                 break
-
-        if not primary_type:
-            for elm in root.getiterator("%sdata" % ns):
-                if elm.attrib["type"] == "primary":
-                    primary_type=".xml"
-                    break
 
         if not primary_type:
             continue
 
-        primary = elm.find("%slocation" % ns).attrib['href']
-        primary = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, primary)
-
-        if patterns:
-            patterns = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, patterns)
-
-        if comps:
-            comps = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, comps)
+        for item in ("primary", "patterns", "comps"):
+            if item not in filepaths:
+                filepaths[item] = None
+                continue
+            if not filepaths[item]:
+                continue
+            filepaths[item] = _get_metadata_from_repo(baseurl,
+                                                      proxies,
+                                                      cachedir,
+                                                      reponame,
+                                                      filepaths[item],
+                                                      sumtypes[item],
+                                                      checksums[item])
 
         """ Get repo key """
         try:
-            repokey = _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, "repodata/repomd.xml.key")
+            repokey = _get_metadata_from_repo(baseurl,
+                                              proxies,
+                                              cachedir,
+                                              reponame,
+                                              "repodata/repomd.xml.key")
         except CreatorError:
             repokey = None
             msger.debug("\ncan't get %s/%s" % (baseurl, "repodata/repomd.xml.key"))
 
-        my_repo_metadata.append({"name":reponame, "baseurl":baseurl, "repomd":repomd, "primary":primary, "cachedir":cachedir, "proxies":proxies, "patterns":patterns, "comps":comps, "repokey":repokey})
+        my_repo_metadata.append({"name":reponame,
+                                 "baseurl":baseurl,
+                                 "repomd":repomd,
+                                 "primary":filepaths['primary'],
+                                 "cachedir":cachedir,
+                                 "proxies":proxies,
+                                 "patterns":filepaths['patterns'],
+                                 "comps":filepaths['comps'],
+                                 "repokey":repokey})
 
     return my_repo_metadata
 
