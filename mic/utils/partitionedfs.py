@@ -62,7 +62,7 @@ class PartitionedMount(Mount):
         # Size of a sector used in calculations
         self.sector_size = SECTOR_SIZE
 
-    def add_partition(self, size, disk, mountpoint, fstype = None, fsopts = None, boot = False, align = None):
+    def add_partition(self, size, disk, mountpoint, fstype = None, label=None, fsopts = None, boot = False, align = None):
         # Converting MB to sectors for parted
         size = size * 1024 * 1024 / self.sector_size
 
@@ -103,6 +103,7 @@ class PartitionedMount(Mount):
                                     'mountpoint': mountpoint, # Mount relative to chroot
                                     'fstype': fstype, # Filesystem type
                                     'fsopts': fsopts, # Filesystem mount options
+                                    'label': label, # Partition label
                                     'disk': disk, # physical disk name holding partition
                                     'device': None, # kpartx device node for partition
                                     'mount': None, # Mount object
@@ -624,11 +625,17 @@ class PartitionedMount(Mount):
             if p['fstype'] == "btrfs" and not p['fsopts']:
                 p['fsopts'] = "subvolid=0"
 
+            if not p['label']:
+                if p['mountpoint'] == "/":
+                    p['label'] = 'platform'
+                else:
+                    p['label'] = mp.split('/')[-1]
+
             pdisk = myDiskMount(RawDisk(p['size'] * self.sector_size, p['device']),
                                  self.mountdir + p['mountpoint'],
                                  p['fstype'],
                                  4096,
-                                 p['mountpoint'],
+                                 p['label'],
                                  rmmountdir,
                                  self.skipformat,
                                  fsopts = p['fsopts'])

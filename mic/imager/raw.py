@@ -202,6 +202,7 @@ class RawImageCreator(BaseImageCreator):
                                           p.disk,
                                           p.mountpoint,
                                           p.fstype,
+                                          p.label,
                                           fsopts = p.fsopts,
                                           boot = p.active,
                                           align = p.align)
