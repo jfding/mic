@@ -645,6 +645,7 @@ class PartitionedMount(Mount):
                     self.__create_subvolumes(p, pdisk)
                 self.__mount_subvolumes(p, pdisk)
             p['mount'] = pdisk
+            p['uuid'] = pdisk.uuid
 
     def resparse(self, size = None):
         # Can't re-sparse a disk image - too hard

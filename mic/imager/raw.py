@@ -81,7 +81,7 @@ class RawImageCreator(BaseImageCreator):
                     break
 
             s += "%(device)s  %(mountpoint)s  %(fstype)s  %(fsopts)s 0 0\n" % {
-               'device': "/dev/%s%-d" % (p['disk'], p['num']),
+               'device': "UUID=%s" % p['uuid'],
                'mountpoint': p['mountpoint'],
                'fstype': p['fstype'],
                'fsopts': "defaults,noatime" if not p['fsopts'] else p['fsopts']}
