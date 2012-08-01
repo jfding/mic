@@ -112,23 +112,19 @@ def read_kickstart(path):
             self.prepackages = ksparser.Packages()
             self.attachment = ksparser.Packages()
 
-    ks = ksparser.KickstartParser(KSHandlers())
+    ks = ksparser.KickstartParser(KSHandlers(), errorsAreFatal=False)
     ks.registerSection(PrepackageSection(ks.handler))
     ks.registerSection(AttachmentSection(ks.handler))
 
     try:
         ks.readKickstart(path)
-    except kserrors.KickstartParseError, e:
-        msgptn = re.compile("^\D*(\d+).*(Section does not end with.*)$", re.S)
-        m = msgptn.match(str(e))
-        if m:
-            lineno = m.group(1)
-            wrnmsg = m.group(2)
-            msger.warning("'%s:%s': %s" % (path, lineno, wrnmsg))
+    except (kserrors.KickstartParseError, kserrors.KickstartError), err:
+        if msger.ask("Errors occured on kickstart file, skip and continue?"):
+            msger.warning("%s" % err)
+            pass
         else:
-            raise errors.KsError("'%s': %s" % (path, str(e)))
-    except kserrors.KickstartError, e:
-        raise errors.KsError("'%s': %s" % (path, str(e)))
+            raise errors.KsError("%s" % err)
+
     return ks
 
 def build_name(kscfg, prefix = None, suffix = None, maxlen = None):
