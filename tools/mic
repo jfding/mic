@@ -39,6 +39,8 @@ class MicCmd(cmdln.Cmdln):
 
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self, version=self.version)
+        # don't output version info by optparse, mic shows it
+        optparser.version = ""
         optparser.add_option('-d', '--debug', action='store_true',
                              dest='debug',
                              help='print debug message')
