@@ -69,6 +69,20 @@ class AttachmentSection(kssections.Section):
     def handleHeader(self, lineno, args):
         kssections.Section.handleHeader(self, lineno, args)
 
+def apply_wrapper(func):
+    def wrapper(*kargs, **kwargs):
+        try:
+            func(*kargs, **kwargs)
+        except (OSError, IOError, errors.KsError), err:
+            cfgcls = kargs[0].__class__.__name__
+            if msger.ask("Failed to apply %s, skip and continue?" % cfgcls):
+                msger.warning("%s" % err)
+                pass
+            else:
+                # just throw out the exception
+                raise
+    return wrapper
+
 def read_kickstart(path):
     """Parse a kickstart file and return a KickstartParser instance.
 
@@ -177,8 +191,7 @@ class KickstartConfig(object):
 
     def call(self, args):
         if not os.path.exists("%s/%s" %(self.instroot, args[0])):
-            msger.warning("%s/%s" %(self.instroot, args[0]))
-            raise errors.KsError("Unable to run %s!" %(args))
+            raise errors.KsError("Can't find %s in chroot" % args[0])
         subprocess.call(args, preexec_fn = self.chroot)
 
     def apply(self):
@@ -186,6 +199,7 @@ class KickstartConfig(object):
 
 class LanguageConfig(KickstartConfig):
     """A class to apply a kickstart language configuration to a system."""
+    @apply_wrapper
     def apply(self, kslang):
         self._check_sysconfig()
         if kslang.lang:
@@ -195,6 +209,7 @@ class LanguageConfig(KickstartConfig):
 
 class KeyboardConfig(KickstartConfig):
     """A class to apply a kickstart keyboard configuration to a system."""
+    @apply_wrapper
     def apply(self, kskeyboard):
         #
         # FIXME:
@@ -209,6 +224,7 @@ class KeyboardConfig(KickstartConfig):
 
 class TimezoneConfig(KickstartConfig):
     """A class to apply a kickstart timezone configuration to a system."""
+    @apply_wrapper
     def apply(self, kstimezone):
         self._check_sysconfig()
         tz = kstimezone.timezone or "America/New_York"
@@ -228,6 +244,7 @@ class TimezoneConfig(KickstartConfig):
 
 class AuthConfig(KickstartConfig):
     """A class to apply a kickstart authconfig configuration to a system."""
+    @apply_wrapper
     def apply(self, ksauthconfig):
         auth = ksauthconfig.authconfig or "--useshadow --enablemd5"
         args = ["/usr/share/authconfig/authconfig.py", "--update", "--nostart"]
@@ -235,6 +252,7 @@ class AuthConfig(KickstartConfig):
 
 class FirewallConfig(KickstartConfig):
     """A class to apply a kickstart firewall configuration to a system."""
+    @apply_wrapper
     def apply(self, ksfirewall):
         #
         # FIXME: should handle the rest of the options
@@ -272,6 +290,7 @@ class RootPasswordConfig(KickstartConfig):
                               preexec_fn = self.chroot)
         p2.communicate()
 
+    @apply_wrapper
     def apply(self, ksrootpw):
         if ksrootpw.isCrypted:
             self.set_encrypted(ksrootpw.password)
@@ -331,6 +350,7 @@ class UserConfig(KickstartConfig):
             raise errors.KsError("Invalid kickstart command: %s" \
                                  % userconfig.__str__())
 
+    @apply_wrapper
     def apply(self, user):
         for userconfig in user.userList:
             try:
@@ -340,6 +360,7 @@ class UserConfig(KickstartConfig):
 
 class ServicesConfig(KickstartConfig):
     """A class to apply a kickstart services configuration to a system."""
+    @apply_wrapper
     def apply(self, ksservices):
         if not os.path.exists(self.path("/sbin/chkconfig")):
             return
@@ -350,6 +371,7 @@ class ServicesConfig(KickstartConfig):
 
 class XConfig(KickstartConfig):
     """A class to apply a kickstart X configuration to a system."""
+    @apply_wrapper
     def apply(self, ksxconfig):
         if ksxconfig.startX and os.path.exists(self.path("/etc/inittab")):
             f = open(self.path("/etc/inittab"), "rw+")
@@ -366,6 +388,7 @@ class XConfig(KickstartConfig):
 
 class DesktopConfig(KickstartConfig):
     """A class to apply a kickstart desktop configuration to a system."""
+    @apply_wrapper
     def apply(self, ksdesktop):
         if ksdesktop.defaultdesktop:
             self._check_sysconfig()
@@ -470,6 +493,7 @@ class MoblinRepoConfig(KickstartConfig):
             self.__create_repo_section(repo, "source", f)
         f.close()
 
+    @apply_wrapper
     def apply(self, ksrepo, repodata):
         for repo in ksrepo.repoList:
             if repo.save:
@@ -486,6 +510,7 @@ class MoblinRepoConfig(KickstartConfig):
 
 class RPMMacroConfig(KickstartConfig):
     """A class to apply the specified rpm macros to the filesystem"""
+    @apply_wrapper
     def apply(self, ks):
         if not ks:
             return
@@ -604,6 +629,7 @@ class NetworkConfig(KickstartConfig):
 
         f.close()
 
+    @apply_wrapper
     def apply(self, ksnet):
         fs.makedirs(self.path("/etc/sysconfig/network-scripts"))
 
