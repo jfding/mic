@@ -237,10 +237,16 @@ class TimezoneConfig(KickstartConfig):
         tz_source = "/usr/share/zoneinfo/%s" % (tz)
         tz_dest = "/etc/localtime"
         try:
-            self.call(["/bin/cp", "-f", tz_source, tz_dest])
+            cpcmd = fs.find_binary_inchroot('cp', self.instroot)
+            if cpcmd:
+                self.call([cpcmd, "-f", tz_source, tz_dest])
+            else:
+                cpcmd = fs.find_binary_path('cp')
+                subprocess.call([cpcmd, "-f", 
+                                 self.path(tz_source), 
+                                 self.path(tz_dest)])
         except (IOError, OSError), (errno, msg):
-            msger.warning("Failed to copy timezone info from '%s' to '%s': %s" \
-                          % (tz_source, tz_dest, msg))
+            raise errors.KsError("Timezone setting error: %s" % msg)
 
 class AuthConfig(KickstartConfig):
     """A class to apply a kickstart authconfig configuration to a system."""
