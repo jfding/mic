@@ -80,12 +80,6 @@ class ImagerPlugin(_Plugin):
     def do_chroot(self):
         pass
 
-    def do_pack(self):
-        pass
-
-    def do_unpack(self):
-        pass
-
 class BackendPlugin(_Plugin):
     mic_plugin_type="backend"
 
