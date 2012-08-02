@@ -37,10 +37,15 @@ class MicCmd(cmdln.Cmdln):
     name = 'mic'
     version = VERSION
 
+    def print_version(self):
+        msger.raw("%s %s (%s)" % (self.name,
+                                  self.version,
+                                  misc.get_distro_str()))
+
     def get_optparser(self):
         optparser = cmdln.CmdlnOptionParser(self, version=self.version)
-        # don't output version info by optparse, mic shows it
-        optparser.version = ""
+        # hook optparse print_version here
+        optparser.print_version = self.print_version
         optparser.add_option('-d', '--debug', action='store_true',
                              dest='debug',
                              help='print debug message')
@@ -61,6 +66,8 @@ class MicCmd(cmdln.Cmdln):
                 pass
 
             msger.set_loglevel('debug')
+
+        self.print_version()
 
     def help_create(self):
         cr = creator.Creator()
@@ -206,7 +213,6 @@ class MicCmd(cmdln.Cmdln):
 
 if __name__ == "__main__":
     try:
-        msger.raw("mic %s (%s)" % (VERSION, misc.get_distro_str()))
         mic = MicCmd()
         sys.exit(mic.main())
 
