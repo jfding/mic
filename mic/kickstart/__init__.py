@@ -238,8 +238,8 @@ class TimezoneConfig(KickstartConfig):
                 self.call([cpcmd, "-f", tz_source, tz_dest])
             else:
                 cpcmd = fs.find_binary_path('cp')
-                subprocess.call([cpcmd, "-f", 
-                                 self.path(tz_source), 
+                subprocess.call([cpcmd, "-f",
+                                 self.path(tz_source),
                                  self.path(tz_dest)])
         except (IOError, OSError), (errno, msg):
             raise errors.KsError("Timezone setting error: %s" % msg)

@@ -73,6 +73,9 @@ class LiveImageCreatorBase(LoopImageCreator):
             if len(parts) > 1:
                 raise CreatorError("Can't support multi partitions in ks file "
                                    "for this image type")
+            # FIXME: rename rootfs img to self.name,
+            # else can't find files when create iso
+            self._instloops[0]['name'] = self.name + ".img"
 
         self.__isodir = None
 
