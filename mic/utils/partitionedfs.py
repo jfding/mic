@@ -606,8 +606,19 @@ class PartitionedMount(Mount):
                     p = p1
                     break
 
+            if not p['label']:
+                if p['mountpoint'] == "/":
+                    p['label'] = 'platform'
+                else:
+                    p['label'] = mp.split('/')[-1]
+
             if mp == 'swap':
-                runner.show([self.mkswap, p['device']])
+                import uuid
+                p['uuid'] = str(uuid.uuid1())
+                runner.show([self.mkswap,
+                             '-L', p['label'],
+                             '-U', p['uuid'],
+                             p['device']])
                 continue
 
             rmmountdir = False
@@ -624,12 +635,6 @@ class PartitionedMount(Mount):
 
             if p['fstype'] == "btrfs" and not p['fsopts']:
                 p['fsopts'] = "subvolid=0"
-
-            if not p['label']:
-                if p['mountpoint'] == "/":
-                    p['label'] = 'platform'
-                else:
-                    p['label'] = mp.split('/')[-1]
 
             pdisk = myDiskMount(RawDisk(p['size'] * self.sector_size, p['device']),
                                  self.mountdir + p['mountpoint'],
