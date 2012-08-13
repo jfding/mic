@@ -43,17 +43,8 @@ class FsPlugin(ImagerPlugin):
         ${cmd_option_list}
         """
 
-        if not args:
-            raise errors.Usage("need one argument as the path of ks file")
-
-        if len(args) != 1:
-            raise errors.Usage("Extra arguments given")
-
         creatoropts = configmgr.create
         ksconf = args[0]
-
-        if not os.path.exists(ksconf):
-            raise errors.CreatorError("Can't find the file: %s" % ksconf)
 
         recording_pkgs = []
         if len(creatoropts['record_pkgs']) > 0:
