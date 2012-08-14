@@ -462,10 +462,16 @@ def _get_metadata_from_repo(baseurl, proxies, cachedir, reponame, filename,
     else:
         filename = filename_tmp
     if sumtype and checksum and os.path.exists(filename):
-        sumcmd = "%ssum" % sumtype
-        file_checksum = runner.outs([sumcmd, filename]).split()[0]
-        if file_checksum == checksum:
+        try:
+            sumcmd = find_binary_path("%ssum" % sumtype)
+        except:
+            file_checksum = None
+        else:
+            file_checksum = runner.outs([sumcmd, filename]).split()[0]
+
+        if file_checksum and file_checksum == checksum:
             return filename
+
     return _get_uncompressed_data_from_url(url,filename_tmp,proxies)
 
 def get_metadata_from_repos(repos, cachedir):
