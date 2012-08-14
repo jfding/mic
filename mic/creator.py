@@ -240,10 +240,23 @@ class Creator(cmdln.Cmdln):
 
         self.postoptparse()
 
-        if os.geteuid() != 0 and args[0] != 'help':
-            msger.error('root permission is required to continue, abort')
-
         return self.cmd(args)
+
+    def precmd(self, argv): # check arguments before cmd
+        if argv[0] == 'help' or argv[0] == '?':
+            return argv
+        if len(argv) == 1:
+            return ['help', argv[0]]
+        elif len(argv) > 2:
+            raise errors.Usage("Extra arguments given")
+
+        if not os.path.exists(argv[1]):
+            raise errors.CreatorError("Can't find file: %s" % argv[1])
+
+        if os.geteuid() != 0:
+            raise msger.error("Root permission is required, abort")
+
+        return argv
 
     def do_auto(self, subcmd, opts, *args):
         """${cmd_name}: auto detect image type from magic header
@@ -274,16 +287,6 @@ class Creator(cmdln.Cmdln):
                 return (cmdname, inline_argv)
 
             return None
-
-        if not args:
-            self.do_help(['help', subcmd])
-            return None
-
-        if len(args) != 1:
-            raise errors.Usage("Extra arguments given")
-
-        if not os.path.exists(args[0]):
-            raise errors.CreatorError("Can't find the file: %s" % args[0])
 
         with open(args[0], 'r') as rf:
             first_line = rf.readline()
