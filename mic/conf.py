@@ -42,7 +42,6 @@ class ConfigMgr(object):
                     "tmpdir": '/var/tmp/mic',
                     "cachedir": '/var/tmp/mic/cache',
                     "outdir": './mic-output',
-                    "bootstrapdir": '/var/tmp/mic/bootstrap',
 
                     "arch": None, # None means auto-detect
                     "pkgmgr": "yum",
@@ -54,14 +53,11 @@ class ConfigMgr(object):
                     "release": None,
                     "logfile": None,
                     "record_pkgs": [],
-                    "rpmver": None,
                     "pack_to": None,
                     "name_prefix": None,
                     "proxy": None,
                     "no_proxy": None,
                     "copy_kernel": False,
-
-                    "runtime": None,
                 },
                 'chroot': {
                     "saveto": None,
@@ -69,7 +65,11 @@ class ConfigMgr(object):
                 'convert': {
                     "shell": False,
                 },
-                'bootstraps': {},
+                'bootstrap': {
+                    "enable": False,
+                    "distro_name": None,
+                    "rootdir": '/var/tmp/mic-bootstrap',
+                },
                }
 
     # make the manager class as singleton
@@ -89,6 +89,10 @@ class ConfigMgr(object):
 
         # initial options from siteconf
         self._siteconf = siteconf
+
+        # set bootstrap from bootstrap.conf
+        bsconf = os.path.join(os.path.dirname(siteconf), 'bootstrap.conf')
+        self._parse_bootstrap(bsconf)
 
         if ksconf:
             self._ksconf = ksconf
@@ -155,35 +159,6 @@ class ConfigMgr(object):
 
         proxy.set_proxies(self.create['proxy'], self.create['no_proxy'])
 
-        for section in parser.sections():
-            if section.startswith('bootstrap'):
-                name = section
-                repostr = {}
-                for option in parser.options(section):
-                    if option == 'name':
-                        name = parser.get(section, 'name')
-                        continue
-
-                    val = parser.get(section, option)
-                    if '_' in option:
-                        (reponame, repoopt) = option.split('_')
-                        if repostr.has_key(reponame):
-                            repostr[reponame] += "%s:%s," % (repoopt, val)
-                        else:
-                            repostr[reponame] = "%s:%s," % (repoopt, val)
-                        continue
-
-                    if val.split(':')[0] in ('file', 'http', 'https', 'ftp'):
-                        if repostr.has_key(option):
-                            repostr[option] += "name:%s,baseurl:%s," % \
-                                                (option, val)
-                        else:
-                            repostr[option]  = "name:%s,baseurl:%s," % \
-                                                (option, val)
-                        continue
-
-                self.bootstraps[name] = repostr
-
     def _parse_kickstart(self, ksconf=None):
         if not ksconf:
             return
@@ -207,8 +182,6 @@ class ConfigMgr(object):
                                                     self.create['cachedir'])
         msger.raw(" DONE")
 
-        self.create['rpmver'] = misc.get_rpmver_in_repo(self.create['repomd'])
-
         target_archlist, archlist = misc.get_arch(self.create['repomd'])
         if self.create['arch']:
             if self.create['arch'] not in archlist:
@@ -229,5 +202,32 @@ class ConfigMgr(object):
         # check selinux, it will block arm and btrfs image creation
         misc.selinux_check(self.create['arch'],
                            [p.fstype for p in ks.handler.partition.partitions])
+
+
+    def _parse_bootstrap(self, bsconf):
+        if not bsconf or not os.path.exists(bsconf):
+            self.bootstrap['enable'] = False
+            return
+
+        parser = ConfigParser.SafeConfigParser()
+        parser.read(bsconf)
+
+        for section in parser.sections():
+            if section == "main":
+                self.bootstrap.update(dict(parser.items(section)))
+            elif parser.has_option(section, 'packages'):
+                pkglist = parser.get(section, 'packages')
+                pkglist = pkglist.replace('\n', ' ')
+                self.bootstrap[section.lower()] = pkglist.split()
+                self.bootstrap['enable'] = True
+
+        # update bootstrap options
+        if self.bootstrap['enable'] not in (True, False):
+            try:
+                self.bootstrap['enable'] = parser.getboolean('main', 'enable')
+            except:
+                self.bootstrap['enable'] = False
+        if self.bootstrap['distro_name']:
+            self.bootstrap['distro_name'] = self.common['distro_name']
 
 configmgr = ConfigMgr()
