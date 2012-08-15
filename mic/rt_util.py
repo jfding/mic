@@ -155,6 +155,12 @@ def sync_mic(bootstrap, binpth = '/usr/bin/mic', libpth='/usr/lib/mic', \
     with open(_path(conf), 'w') as wf:
         wf.write(conf_str)
 
+    # correct python interpreter
+    mic_cont = file(_path(binpth)).read()
+    mic_cont = "#!/usr/bin/python\n" + mic_cont
+    with open(_path(binpth), 'w') as wf:
+        wf.write(mic_cont)
+
 def safecopy(src, dst, override=True):
     if os.path.exists(dst):
         os.system('rm -rf %s' % dst)
