@@ -19,7 +19,7 @@ import os
 import shutil
 import tempfile
 
-from mic import chroot, msger, rt_util
+from mic import chroot, msger
 from mic.utils import misc, fs_related, errors
 from mic.utils.partitionedfs import PartitionedMount
 from mic.conf import configmgr
@@ -76,9 +76,6 @@ class LiveUSBPlugin(ImagerPlugin):
         if not pkgmgr:
             pkgmgrs = pluginmgr.get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
-
-        if creatoropts['runtime']:
-            rt_util.runmic_in_runtime(creatoropts['runtime'], creatoropts, ksconf, None)
 
         creator = liveusb.LiveUSBImageCreator(creatoropts, pkgmgr)
 
