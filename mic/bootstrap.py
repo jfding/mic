@@ -20,6 +20,7 @@ import os
 import sys
 import shutil
 import rpm
+from mic import msger
 from mic.utils import errors, runner
 from mic.utils.misc import get_package
 from mic.utils.rpmmisc import readRpmHeader, RPMInstallCallback
@@ -75,16 +76,25 @@ class MiniBackend(object):
         self.installPkgs()
 
     def downloadPkgs(self):
+        nonexist = []
         for pkg in self.dlpkgs:
             try:
                 localpth = get_package(pkg, self.repomd, None)
+                if not localpth:
+                    # skip non-existent rpm
+                    nonexist.append(pkg)
+                    continue
                 self.localpkgs[pkg] = localpth
             except:
                 raise
 
+        if nonexist:
+            msger.warning("\ncan't get rpm binary: %s" % ','.join(nonexist))
+
     def installPkgs(self):
         for pkg in self.localpkgs.keys():
             rpmpath = self.localpkgs[pkg]
+
             hdr = readRpmHeader(self.ts, rpmpath)
 
             # save prein and postin scripts
