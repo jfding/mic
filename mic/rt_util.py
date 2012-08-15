@@ -68,6 +68,7 @@ def bootstrap_mic(argv=None):
     # run mic in bootstrap
     globalmounts = None
     bindmounts = get_bindmounts(cropts)
+    msger.info("Start mic in bootstrap: %s\n" % rootdir)
     try:
         proxy.set_proxy_environ()
         globalmounts = setup_chrootenv(rootdir, bindmounts)

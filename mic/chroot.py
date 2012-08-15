@@ -164,7 +164,7 @@ def setup_chrootenv(chrootdir, bindmounts = None):
 
     def bind_mount(chrootmounts):
         for b in chrootmounts:
-            msger.info("bind_mount: %s -> %s" % (b.src, b.dest))
+            msger.verbose("bind_mount: %s -> %s" % (b.src, b.dest))
             b.mount()
 
     def setup_resolv(chrootdir):
@@ -194,7 +194,7 @@ def cleanup_chrootenv(chrootdir, bindmounts = None, globalmounts = []):
     def bind_unmount(chrootmounts):
         chrootmounts.reverse()
         for b in chrootmounts:
-            msger.info("bind_unmount: %s -> %s" % (b.src, b.dest))
+            msger.verbose("bind_unmount: %s -> %s" % (b.src, b.dest))
             b.unmount()
 
     def cleanup_resolv(chrootdir):
