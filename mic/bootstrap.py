@@ -18,6 +18,7 @@
 from __future__ import with_statement
 import os
 import sys
+import tempfile
 import shutil
 import subprocess
 import rpm
@@ -41,6 +42,8 @@ class MiniBackend(object):
         self.repomd = repomd
         self.dlpkgs = []
         self.localpkgs = {}
+        self.preins = {}
+        self.postins = {}
 
     def __del__(self):
         if not os.path.exists('/etc/fedora-release') and \
@@ -62,7 +65,7 @@ class MiniBackend(object):
     def del_ts(self):
         if self._ts:
             self._ts.closeDB()
-            self.ts = None
+            self._ts = None
 
     ts = property(fget = lambda self: self.get_ts(),
                   fdel = lambda self: self.del_ts(),
@@ -76,6 +79,13 @@ class MiniBackend(object):
         # FIXME: check space
         self.downloadPkgs()
         self.installPkgs()
+
+        for pkg in self.preins.keys():
+            prog, script = self.preins[pkg]
+            self.run_pkg_script(pkg, prog, script, '0')
+        for pkg in self.postins.keys():
+            prog, script = self.postins[pkg]
+            self.run_pkg_script(pkg, prog, script, '1')
 
     def downloadPkgs(self):
         nonexist = []
@@ -100,6 +110,8 @@ class MiniBackend(object):
             hdr = readRpmHeader(self.ts, rpmpath)
 
             # save prein and postin scripts
+            self.preins[pkg] = (hdr['PREINPROG'], hdr['PREIN'])
+            self.postins[pkg] = (hdr['POSTINPROG'], hdr['POSTIN'])
 
             # mark pkg as install
             self.ts.addInstall(hdr, rpmpath, 'u')
@@ -108,6 +120,32 @@ class MiniBackend(object):
         self.ts.order()
         cb = RPMInstallCallback(self.ts)
         self.ts.run(cb.callback, '')
+
+    def run_pkg_script(self, pkg, prog, script, arg):
+        mychroot = lambda: os.chroot(self.rootdir)
+
+        if not script:
+            return
+
+        if prog == "<lua>":
+             prog = "/usr/bin/lua"
+
+        tmpdir = os.path.join(self.rootdir, "tmp")
+        if not os.path.exists(tmpdir):
+            os.makedirs(tmpdir)
+        tmpfd, tmpfp = tempfile.mkstemp(dir=tmpdir, prefix="%s.pre-" % pkg)
+        script = script.replace('\r', '')
+        os.write(tmpfd, script)
+        os.close(tmpfd)
+        os.chmod(tmpfp, 0700)
+
+        try:
+            script_fp = os.path.join('/tmp', os.path.basename(tmpfp))
+            subprocess.call([prog, script_fp, arg], preexec_fn=mychroot)
+        except (OSError, IOError), err:
+            raise RuntimeError(err)
+        finally:
+            os.unlink(tmpfp)
 
 class Bootstrap(object):
     def __init__(self, rootdir, distro):
