@@ -84,7 +84,8 @@ def get_distro_str():
     if not dist:
         return 'Unknown Linux Distro'
     else:
-        return ' '.join(map(str.strip, (dist, ver, id)))
+        distro_str = ' '.join(map(str.strip, (dist, ver, id)))
+        return distro_str.strip()
 
 _LOOP_RULE_PTH = "/etc/udev/rules.d/80-prevent-loop-present.rules"
 def hide_loopdev_presentation():
@@ -678,9 +679,18 @@ def get_package(pkg, repometadata, arch = None):
                     break
             con.close()
     if target_repo:
-        makedirs("%s/%s/packages" % (target_repo["cachedir"], target_repo["name"]))
+        makedirs("%s/packages/%s" % (target_repo["cachedir"], target_repo["name"]))
         url = os.path.join(target_repo["baseurl"], pkgpath)
-        filename = str("%s/%s/packages/%s" % (target_repo["cachedir"], target_repo["name"], os.path.basename(pkgpath)))
+        filename = str("%s/packages/%s/%s" % (target_repo["cachedir"], target_repo["name"], os.path.basename(pkgpath)))
+        if os.path.exists(filename):
+            ret = rpmmisc.checkRpmIntegrity('rpm', filename)
+            if ret == 0:
+                return filename
+
+            msger.warning("package %s is damaged: %s" %
+                          (os.path.basename(filename), filename))
+            os.unlink(filename)
+
         pkg = myurlgrab(str(url), filename, target_repo["proxies"])
         return pkg
     else:
