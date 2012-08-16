@@ -54,30 +54,27 @@ def bootstrap_mic(argv=None):
     pkglist = bsopts[distro]
     cwd = os.getcwd()
 
-    # create bootstrap
-    bsenv = bootstrap.Bootstrap(rootdir)
+    # create bootstrap and run mic in bootstrap
+    bsenv = bootstrap.Bootstrap(rootdir, distro)
     try:
+        msger.info("Creating %s bootstrap ..." % distro)
         bsenv.create(cropts['repomd'], pkglist)
         sync_mic(rootdir)
-    except errors.BootstrapError, err:
-        bsenv.cleanup()
-        msger.warning('\n%s' % err)
-        msger.info("Use native running for failure to create bootstrap")
-        return
 
-    # run mic in bootstrap
-    globalmounts = None
-    bindmounts = get_bindmounts(cropts)
-    msger.info("Start mic in bootstrap: %s\n" % rootdir)
-    try:
-        proxy.set_proxy_environ()
-        globalmounts = setup_chrootenv(rootdir, bindmounts)
-        subprocess.call(argv, preexec_fn=mychroot)
-    except (OSError, IOError), err:
-        raise errors.BootstrapError("Failed to run mic in bootstrap: %s" % err)
+        msger.info("Start mic in bootstrap: %s\n" % rootdir)
+        bindmounts = get_bindmounts(cropts)
+        bsenv.run(argv, cwd, bindmounts)
+
+    except errors.BootstrapError, err:
+        msger.warning('\n%s' % err)
+        if msger.ask("Switch to native mode and continue?"):
+            return
+        else:
+            raise errors.BootstrapError("Failed to create bootstrap: %s" % err)
+    except RuntimeError, err:
+        raise errors.BootstrapError("Failed to create bootstrap: %s" % err)
     finally:
-        cleanup_chrootenv(rootdir, bindmounts, globalmounts)
-        proxy.unset_proxy_environ()
+        bsenv.cleanup()
 
     sys.exit(0)
 

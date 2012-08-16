@@ -19,11 +19,12 @@ from __future__ import with_statement
 import os
 import sys
 import shutil
+import subprocess
 import rpm
 from mic import msger
-from mic.utils import errors, runner
-from mic.utils.misc import get_package
+from mic.utils import errors, proxy, misc
 from mic.utils.rpmmisc import readRpmHeader, RPMInstallCallback
+from mic.chroot import setup_chrootenv, cleanup_chrootenv
 
 RPMTRANS_FLAGS = [rpm.RPMTRANS_FLAG_ALLFILES,
                   rpm.RPMTRANS_FLAG_NOSCRIPTS,
@@ -80,7 +81,7 @@ class MiniBackend(object):
         nonexist = []
         for pkg in self.dlpkgs:
             try:
-                localpth = get_package(pkg, self.repomd, None)
+                localpth = misc.get_package(pkg, self.repomd, None)
                 if not localpth:
                     # skip non-existent rpm
                     nonexist.append(pkg)
@@ -143,9 +144,31 @@ class Bootstrap(object):
             tzdist = self._path('/etc/%s-release' % self.distro)
             if not os.path.exists(tzdist):
                 with open(tzdist, 'w') as wf:
-                    wf.wrtie("bootstrap")
-        except:
-            raise errors.BootstrapError("Failed to create bootstrap")
+                    wf.write("bootstrap")
+
+        except (OSError, IOError, errors.CreatorError), err:
+            raise errors.BootstrapError("%s" % err)
+
+    def run(self, cmd, chdir, bindmounts=None):
+        def mychroot():
+            os.chroot(self.rootdir)
+            os.chdir(chdir)
+
+        if isinstance(cmd, list):
+            shell = False
+        else:
+            shell = True
+
+        gloablmounts = None
+        try:
+            proxy.set_proxy_environ()
+            gloablmounts = setup_chrootenv(self.rootdir, bindmounts)
+            subprocess.call(cmd, preexec_fn = mychroot, shell=shell)
+        except (OSError, IOError), err:
+            raise RuntimeError(err)
+        finally:
+            cleanup_chrootenv(self.rootdir, bindmounts, gloablmounts)
+            proxy.unset_proxy_environ()
 
     def cleanup(self):
         try:
