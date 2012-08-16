@@ -46,14 +46,10 @@ class MiniBackend(object):
         self.postins = {}
 
     def __del__(self):
-        if not os.path.exists('/etc/fedora-release') and \
-           not os.path.exists('/etc/meego-release') and \
-           not os.path.exists('/etc/tizen-release'):
-            for i in range(3, os.sysconf("SC_OPEN_MAX")):
-                try:
-                    os.close(i)
-                except:
-                    pass
+        try:
+            del self.ts
+        except:
+            pass
 
     def get_ts(self):
         if not self._ts:
