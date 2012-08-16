@@ -43,7 +43,8 @@ class MiniBackend(object):
 
     def __del__(self):
         if not os.path.exists('/etc/fedora-release') and \
-           not os.path.exists('/etc/meego-release'):
+           not os.path.exists('/etc/meego-release') and \
+           not os.path.exists('/etc/tizen-release'):
             for i in range(3, os.sysconf("SC_OPEN_MAX")):
                 try:
                     os.close(i)
@@ -108,8 +109,9 @@ class MiniBackend(object):
         self.ts.run(cb.callback, '')
 
 class Bootstrap(object):
-    def __init__(self, rootdir):
+    def __init__(self, rootdir, distro):
         self.rootdir = rootdir
+        self.distro = distro
         self.pkgslist = []
         self.repomd = None
 
@@ -122,6 +124,9 @@ class Bootstrap(object):
         os.makedirs(self.rootdir)
         return self.rootdir
 
+    def _path(self, pth):
+        return os.path.join(self.rootdir, pth.lstrip('/'))
+
     def create(self, repomd, pkglist):
         try:
             pkgmgr = MiniBackend(self.get_rootdir())
@@ -130,9 +135,15 @@ class Bootstrap(object):
             pkgmgr.runInstall()
 
             # make /tmp path
-            tmpdir = os.path.join(self.rootdir, 'tmp')
+            tmpdir = self._path('/tmp')
             if not os.path.exists(tmpdir):
                 os.makedirs(tmpdir)
+
+            # touch distro file
+            tzdist = self._path('/etc/%s-release' % self.distro)
+            if not os.path.exists(tzdist):
+                with open(tzdist, 'w') as wf:
+                    wf.wrtie("bootstrap")
         except:
             raise errors.BootstrapError("Failed to create bootstrap")
 
