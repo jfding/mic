@@ -25,7 +25,7 @@ import rpm
 from mic import msger
 from mic.utils import errors, proxy, misc
 from mic.utils.rpmmisc import readRpmHeader, RPMInstallCallback
-from mic.chroot import setup_chrootenv, cleanup_chrootenv
+from mic.chroot import cleanup_mounts, setup_chrootenv, cleanup_chrootenv
 
 RPMTRANS_FLAGS = [rpm.RPMTRANS_FLAG_ALLFILES,
                   rpm.RPMTRANS_FLAG_NOSCRIPTS,
@@ -206,6 +206,8 @@ class Bootstrap(object):
 
     def cleanup(self):
         try:
+            # clean mounts
+            cleanup_mounts(self.rootdir)
             # remove rootdir
             shutil.rmtree(self.rootdir, ignore_errors=True)
         except:
