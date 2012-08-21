@@ -18,6 +18,7 @@
 from __future__ import with_statement
 import os
 import sys
+import glob
 import re
 import shutil
 import subprocess
@@ -130,6 +131,15 @@ def sync_mic(bootstrap, binpth = '/usr/bin/mic',
                  'pylib': get_mic_modpath(),
                  'conf': '/etc/mic/mic.conf',
                }
+
+    if not os.path.exists(_path(pylib)):
+        pyptn = '/usr/lib/python?.?/site-packages'
+        pylibs = glob.glob(_path(pyptn))
+        if pylibs:
+            pylib = pylibs[0].replace(bootstrap, '')
+        else:
+            raise errors.BootstrapError("Can't find python site dir in: %s" %
+                                        bootstrap)
 
     for key, value in micpaths.items():
         try:
