@@ -57,6 +57,7 @@ def bootstrap_mic(argv=None):
 
     # create bootstrap and run mic in bootstrap
     bsenv = bootstrap.Bootstrap(rootdir, distro, cropts['arch'])
+    bsenv.logfile = cropts['logfile']
     try:
         msger.info("Creating %s bootstrap ..." % distro)
         bsenv.create(cropts['repomd'], pkglist)

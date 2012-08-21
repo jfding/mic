@@ -152,6 +152,7 @@ class Bootstrap(object):
         self.rootdir = rootdir
         self.distro = distro
         self.arch = arch
+        self.logfile = None
         self.pkgslist = []
         self.repomd = None
 
@@ -208,6 +209,8 @@ class Bootstrap(object):
         except (OSError, IOError), err:
             raise RuntimeError(err)
         finally:
+            if self.logfile:
+                msger.log(file(self.logfile).read())
             cleanup_chrootenv(self.rootdir, bindmounts, gloablmounts)
             proxy.unset_proxy_environ()
         return retcode
