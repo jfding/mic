@@ -64,7 +64,7 @@ def bootstrap_mic(argv=None):
 
         msger.info("Start mic in bootstrap: %s\n" % rootdir)
         bindmounts = get_bindmounts(cropts)
-        bsenv.run(argv, cwd, bindmounts)
+        ret = bsenv.run(argv, cwd, bindmounts)
 
     except errors.BootstrapError, err:
         msger.warning('\n%s' % err)
@@ -74,10 +74,10 @@ def bootstrap_mic(argv=None):
             raise errors.BootstrapError("Failed to create bootstrap: %s" % err)
     except RuntimeError, err:
         raise errors.BootstrapError("Failed to run in bootstrap: %s" % err)
+    else:
+        sys.exit(ret)
     finally:
         bsenv.cleanup()
-
-    sys.exit(0)
 
 def get_bindmounts(cropts):
     binddirs =  [

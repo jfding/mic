@@ -199,16 +199,18 @@ class Bootstrap(object):
         else:
             shell = True
 
+        retcode = 0
         gloablmounts = None
         try:
             proxy.set_proxy_environ()
             gloablmounts = setup_chrootenv(self.rootdir, bindmounts)
-            subprocess.call(cmd, preexec_fn = mychroot, shell=shell)
+            retcode = subprocess.call(cmd, preexec_fn = mychroot, shell=shell)
         except (OSError, IOError), err:
             raise RuntimeError(err)
         finally:
             cleanup_chrootenv(self.rootdir, bindmounts, gloablmounts)
             proxy.unset_proxy_environ()
+        return retcode
 
     def cleanup(self):
         try:
