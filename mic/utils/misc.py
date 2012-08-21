@@ -87,8 +87,22 @@ def get_distro_str():
         distro_str = ' '.join(map(str.strip, (dist, ver, id)))
         return distro_str.strip()
 
-_LOOP_RULE_PTH = "/etc/udev/rules.d/80-prevent-loop-present.rules"
+_LOOP_RULE_PTH = None
 def hide_loopdev_presentation():
+    udev_rules = "80-prevent-loop-present.rules"
+    udev_rules_dir = [
+                       '/usr/lib/udev/rules.d/',
+                       '/lib/udev/rules.d/',
+                       '/etc/udev/rules.d/'
+                     ]
+
+    for rdir in udev_rules_dir:
+        if os.path.exists(rdir):
+            _LOOP_RULE_PTH = os.path.join(rdir, udev_rules)
+
+    if not _LOOP_RULE_PTH:
+        return
+
     try:
         with open(_LOOP_RULE_PTH, 'w') as wf:
             wf.write('KERNEL=="loop*", ENV{UDISKS_PRESENTATION_HIDE}="1"')
@@ -98,6 +112,9 @@ def hide_loopdev_presentation():
         pass
 
 def unhide_loopdev_presentation():
+    if not _LOOP_RULE_PTH:
+        return
+
     try:
         os.unlink(_LOOP_RULE_PTH)
         runner.quiet('udevadm trigger')
