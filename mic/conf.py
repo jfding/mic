@@ -44,7 +44,7 @@ class ConfigMgr(object):
                     "outdir": './mic-output',
 
                     "arch": None, # None means auto-detect
-                    "pkgmgr": "yum",
+                    "pkgmgr": "auto",
                     "name": "output",
                     "ksfile": None,
                     "ks": None,
@@ -227,7 +227,7 @@ class ConfigMgr(object):
                 self.bootstrap['enable'] = parser.getboolean('main', 'enable')
             except:
                 self.bootstrap['enable'] = False
-        if self.bootstrap['distro_name']:
+        if not self.bootstrap['distro_name']:
             self.bootstrap['distro_name'] = self.common['distro_name']
 
 configmgr = ConfigMgr()

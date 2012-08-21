@@ -149,10 +149,8 @@ def sync_mic(bootstrap, binpth = '/usr/bin/mic',
             raise errors.BootstrapError(err)
 
     # clean stuff:
-    # yum backend, not available in bootstrap;
     # bootstrap.conf, disable bootstrap mode inside bootstrap
-    clrpaths = [os.path.join(libpth, 'plugins/backend/yumpkgmgr.py'),
-                os.path.join(libpth, 'plugins/backend/yumpkgmgr.pyc'),
+    clrpaths = [
                 '/etc/mic/bootstrap.conf',
                ]
 
@@ -162,9 +160,9 @@ def sync_mic(bootstrap, binpth = '/usr/bin/mic',
         except:
             pass
 
-    # use default zypp backend
+    # auto select backend
     conf_str = file(_path(conf)).read()
-    conf_str = re.sub("pkgmgr\s*=\s*yum", "pkgmgr=zypp", conf_str)
+    conf_str = re.sub("pkgmgr\s*=\s*.*", "pkgmgr=auto", conf_str)
     with open(_path(conf), 'w') as wf:
         wf.write(conf_str)
 

@@ -74,7 +74,10 @@ class LoopPlugin(ImagerPlugin):
         # try to find the pkgmgr
         pkgmgr = None
         for (key, pcls) in pluginmgr.get_plugins('backend').iteritems():
-            if key == creatoropts['pkgmgr']:
+            if 'auto' == creatoropts['pkgmgr']:
+                pkgmgr = pcls
+                break
+            elif key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
