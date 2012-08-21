@@ -25,7 +25,7 @@ import subprocess
 from mic import bootstrap, msger
 from mic.conf import configmgr
 from mic.utils import errors, proxy
-from mic.utils.fs_related import find_binary_path
+from mic.utils.fs_related import find_binary_path, makedirs
 from mic.chroot import setup_chrootenv, cleanup_chrootenv
 
 expath = lambda p: os.path.abspath(os.path.expanduser(p))
@@ -118,8 +118,9 @@ def get_mic_libpath():
     return "/usr/lib/mic"
 
 # the hard code path is prepared for bootstrap
-def sync_mic(bootstrap, binpth = '/usr/bin/mic', libpth='/usr/lib/mic', \
-             pylib = '/usr/lib/python2.7/site-packages/mic',
+def sync_mic(bootstrap, binpth = '/usr/bin/mic',
+             libpth='/usr/lib',
+             pylib = '/usr/lib/python2.7/site-packages',
              conf = '/etc/mic/mic.conf'):
     _path = lambda p: os.path.join(bootstrap, p.lstrip('/'))
 
@@ -131,7 +132,10 @@ def sync_mic(bootstrap, binpth = '/usr/bin/mic', libpth='/usr/lib/mic', \
                }
 
     for key, value in micpaths.items():
-        safecopy(value, _path(eval(key)))
+        try:
+            safecopy(value, _path(eval(key)), False, ["*.pyc", "*.pyo"])
+        except (OSError, IOError), err:
+            raise errors.BootstrapError(err)
 
     # clean stuff:
     # yum backend, not available in bootstrap;
@@ -159,10 +163,30 @@ def sync_mic(bootstrap, binpth = '/usr/bin/mic', libpth='/usr/lib/mic', \
     with open(_path(binpth), 'w') as wf:
         wf.write(mic_cont)
 
-def safecopy(src, dst, override=True):
-    if os.path.exists(dst):
-        os.system('rm -rf %s' % dst)
-    else:
-        os.system('mkdir -p %s' % os.path.dirname(dst))
-    os.system('cp -af %s %s' % (src, dst))
+def safecopy(src, dst, symlinks=False, ignore_ptns=[]):
+    if os.path.isdir(src):
+        if os.path.isdir(dst):
+            dst = os.path.join(dst, os.path.basename(src))
+        if os.path.exists(dst):
+            shutil.rmtree(dst, ignore_errors=True)
 
+        src = src.rstrip('/')
+        # check common prefix to ignore copying itself
+        if dst.startswith(src + '/'):
+            ignore_ptns += os.path.basename(src)
+
+        try:
+            ignores = shutil.ignore_patterns(*ignore_ptns)
+            shutil.copytree(src, dst, symlinks, ignores)
+        except OSError, IOError:
+            shutil.rmtree(dst, ignore_errors=True)
+            raise
+
+    else:
+        try:
+            if not os.path.isdir(dst):
+                makedirs(os.path.dirname(dst))
+
+            shutil.copy2(src, dst)
+        except:
+            raise
