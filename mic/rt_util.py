@@ -56,7 +56,7 @@ def bootstrap_mic(argv=None):
     cwd = os.getcwd()
 
     # create bootstrap and run mic in bootstrap
-    bsenv = bootstrap.Bootstrap(rootdir, distro)
+    bsenv = bootstrap.Bootstrap(rootdir, distro, cropts['arch'])
     try:
         msger.info("Creating %s bootstrap ..." % distro)
         bsenv.create(cropts['repomd'], pkglist)
@@ -73,7 +73,7 @@ def bootstrap_mic(argv=None):
         else:
             raise errors.BootstrapError("Failed to create bootstrap: %s" % err)
     except RuntimeError, err:
-        raise errors.BootstrapError("Failed to create bootstrap: %s" % err)
+        raise errors.BootstrapError("Failed to run in bootstrap: %s" % err)
     finally:
         bsenv.cleanup()
 

@@ -645,6 +645,14 @@ def get_arch(repometadata):
 def get_package(pkg, repometadata, arch = None):
     ver = ""
     target_repo = None
+    if not arch:
+        arches = []
+    elif arch not in rpmmisc.archPolicies:
+        arches = [arch]
+    else:
+        arches = rpmmisc.archPolicies[arch].split(':')
+        arches.append('noarch')
+
     for repo in repometadata:
         if repo["primary"].endswith(".xml"):
             root = xmlparse(repo["primary"])
@@ -652,7 +660,7 @@ def get_package(pkg, repometadata, arch = None):
             ns = ns[0:ns.rindex("}")+1]
             for elm in root.getiterator("%spackage" % ns):
                 if elm.find("%sname" % ns).text == pkg:
-                    if elm.find("%sarch" % ns).text != "src":
+                    if elm.find("%sarch" % ns).text in arches:
                         version = elm.find("%sversion" % ns)
                         tmpver = "%s-%s" % (version.attrib['ver'], version.attrib['rel'])
                         if tmpver > ver:
@@ -663,15 +671,20 @@ def get_package(pkg, repometadata, arch = None):
                         break
         if repo["primary"].endswith(".sqlite"):
             con = sqlite.connect(repo["primary"])
-            if not arch:
-                for row in con.execute("select version, release,location_href from packages where name = \"%s\" and arch != \"src\"" % pkg):
+            if arch:
+                sql = 'select version, release, location_href from packages ' \
+                      'where name = "%s" and arch IN ("%s")' % \
+                      (pkg, '","'.join(arches))
+                for row in con.execute(sql):
                     tmpver = "%s-%s" % (row[0], row[1])
                     if tmpver > ver:
                         pkgpath = "%s" % row[2]
                         target_repo = repo
                     break
             else:
-                for row in con.execute("select version, release,location_href from packages where name = \"%s\"" % pkg):
+                sql = 'select version, release, location_href from packages ' \
+                      'where name = "%s"' % pkg
+                for row in con.execute(sql):
                     tmpver = "%s-%s" % (row[0], row[1])
                     if tmpver > ver:
                         pkgpath = "%s" % row[2]

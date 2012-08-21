@@ -27,18 +27,22 @@ from mic.utils import errors, proxy, misc
 from mic.utils.rpmmisc import readRpmHeader, RPMInstallCallback
 from mic.chroot import cleanup_mounts, setup_chrootenv, cleanup_chrootenv
 
-RPMTRANS_FLAGS = [rpm.RPMTRANS_FLAG_ALLFILES,
-                  rpm.RPMTRANS_FLAG_NOSCRIPTS,
-                  rpm.RPMTRANS_FLAG_NOTRIGGERS,
-                  rpm.RPMTRANS_FLAG_NODOCS]
+RPMTRANS_FLAGS = [
+                   rpm.RPMTRANS_FLAG_ALLFILES,
+                   rpm.RPMTRANS_FLAG_NOSCRIPTS,
+                   rpm.RPMTRANS_FLAG_NOTRIGGERS,
+                 ]
 
-RPMVSF_FLAGS = [rpm._RPMVSF_NOSIGNATURES,
-                rpm._RPMVSF_NODIGESTS]
+RPMVSF_FLAGS = [
+                 rpm._RPMVSF_NOSIGNATURES,
+                 rpm._RPMVSF_NODIGESTS
+               ]
 
 class MiniBackend(object):
-    def __init__(self, rootdir, repomd=None):
+    def __init__(self, rootdir, arch=None, repomd=None):
         self._ts = None
         self.rootdir = os.path.abspath(rootdir)
+        self.arch = arch
         self.repomd = repomd
         self.dlpkgs = []
         self.localpkgs = {}
@@ -87,7 +91,7 @@ class MiniBackend(object):
         nonexist = []
         for pkg in self.dlpkgs:
             try:
-                localpth = misc.get_package(pkg, self.repomd, None)
+                localpth = misc.get_package(pkg, self.repomd, self.arch)
                 if not localpth:
                     # skip non-existent rpm
                     nonexist.append(pkg)
@@ -139,14 +143,15 @@ class MiniBackend(object):
             script_fp = os.path.join('/tmp', os.path.basename(tmpfp))
             subprocess.call([prog, script_fp, arg], preexec_fn=mychroot)
         except (OSError, IOError), err:
-            raise RuntimeError(err)
+            msger.warning(str(err))
         finally:
             os.unlink(tmpfp)
 
 class Bootstrap(object):
-    def __init__(self, rootdir, distro):
+    def __init__(self, rootdir, distro, arch=None):
         self.rootdir = rootdir
         self.distro = distro
+        self.arch = arch
         self.pkgslist = []
         self.repomd = None
 
@@ -165,6 +170,7 @@ class Bootstrap(object):
     def create(self, repomd, pkglist):
         try:
             pkgmgr = MiniBackend(self.get_rootdir())
+            pkgmgr.arch = self.arch
             pkgmgr.repomd = repomd
             map(pkgmgr.selectPackage, pkglist)
             pkgmgr.runInstall()
