@@ -16,246 +16,210 @@
 # Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 from __future__ import with_statement
-import os, sys
-import pickle
+import os
+import sys
+import tempfile
 import shutil
 import subprocess
 import rpm
-
 from mic import msger
-from mic import chroot
-from mic.plugin import pluginmgr
-from mic.utils import proxy
-from mic.utils import misc
-from mic.utils import errors
+from mic.utils import errors, proxy, misc
+from mic.utils.rpmmisc import readRpmHeader, RPMInstallCallback
+from mic.chroot import cleanup_mounts, setup_chrootenv, cleanup_chrootenv
 
-minibase_grps = [ "tizen-bootstrap" ]
-minibase_pkgs = [ ]
-required_pkgs = [ "syslinux", "syslinux-extlinux", "satsolver-tools",
-                  "libzypp", "python-zypp", "qemu-arm-static", "mic" ]
+RPMTRANS_FLAGS = [
+                   rpm.RPMTRANS_FLAG_ALLFILES,
+                   rpm.RPMTRANS_FLAG_NOSCRIPTS,
+                   rpm.RPMTRANS_FLAG_NOTRIGGERS,
+                 ]
 
+RPMVSF_FLAGS = [
+                 rpm._RPMVSF_NOSIGNATURES,
+                 rpm._RPMVSF_NODIGESTS
+               ]
 
-def query_package_rpmdb(root='/', tag='name', pattern=None):
-    name = pattern
-    version = None
-    ts = rpm.TransactionSet(root)
-    mi = ts.dbMatch(tag, pattern)
-    for hdr in mi:
-        version = hdr['version']
-    return (name, version)
+class MiniBackend(object):
+    def __init__(self, rootdir, arch=None, repomd=None):
+        self._ts = None
+        self.rootdir = os.path.abspath(rootdir)
+        self.arch = arch
+        self.repomd = repomd
+        self.dlpkgs = []
+        self.localpkgs = {}
+        self.preins = {}
+        self.postins = {}
 
-def query_package_metadat(root='/', tag='name', pattern=None):
-    name = pattern
-    version = None
-    try:
-        with open(root + '/.metadata', 'r') as f:
-            metadata = pickle.load(f)
-        f.close()
-    except:
-        raise errors.BootstrapError("Load %s/.metadata error" % root)
-    else:
-        for pkg in metadata.keys():
-            m = misc.RPM_RE.match(pkg)
-            if m:
-                (n, a, v, r) = m.groups()
-            else:
-                raise errors.BootstrapError("Wrong Format .metadata in %s"
-                                            % root)
-            if n == pattern:
-                version = v
-    return (name, version)
+    def __del__(self):
+        try:
+            del self.ts
+        except:
+            pass
+
+    def get_ts(self):
+        if not self._ts:
+            self._ts = rpm.TransactionSet(self.rootdir)
+            self._ts.setFlags(reduce(lambda x, y: x|y, RPMTRANS_FLAGS))
+            self._ts.setVSFlags(reduce(lambda x, y: x|y, RPMVSF_FLAGS))
+        return self._ts
+
+    def del_ts(self):
+        if self._ts:
+            self._ts.closeDB()
+            self._ts = None
+
+    ts = property(fget = lambda self: self.get_ts(),
+                  fdel = lambda self: self.del_ts(),
+                  doc="TransactionSet object")
+
+    def selectPackage(self, pkg):
+        if not pkg in self.dlpkgs:
+            self.dlpkgs.append(pkg)
+
+    def runInstall(self):
+        # FIXME: check space
+        self.downloadPkgs()
+        self.installPkgs()
+
+        for pkg in self.preins.keys():
+            prog, script = self.preins[pkg]
+            self.run_pkg_script(pkg, prog, script, '0')
+        for pkg in self.postins.keys():
+            prog, script = self.postins[pkg]
+            self.run_pkg_script(pkg, prog, script, '1')
+
+    def downloadPkgs(self):
+        nonexist = []
+        for pkg in self.dlpkgs:
+            try:
+                localpth = misc.get_package(pkg, self.repomd, self.arch)
+                if not localpth:
+                    # skip non-existent rpm
+                    nonexist.append(pkg)
+                    continue
+                self.localpkgs[pkg] = localpth
+            except:
+                raise
+
+        if nonexist:
+            msger.warning("\ncan't get rpm binary: %s" % ','.join(nonexist))
+
+    def installPkgs(self):
+        for pkg in self.localpkgs.keys():
+            rpmpath = self.localpkgs[pkg]
+
+            hdr = readRpmHeader(self.ts, rpmpath)
+
+            # save prein and postin scripts
+            self.preins[pkg] = (hdr['PREINPROG'], hdr['PREIN'])
+            self.postins[pkg] = (hdr['POSTINPROG'], hdr['POSTIN'])
+
+            # mark pkg as install
+            self.ts.addInstall(hdr, rpmpath, 'u')
+
+        # run transaction
+        self.ts.order()
+        cb = RPMInstallCallback(self.ts)
+        self.ts.run(cb.callback, '')
+
+    def run_pkg_script(self, pkg, prog, script, arg):
+        mychroot = lambda: os.chroot(self.rootdir)
+
+        if not script:
+            return
+
+        if prog == "<lua>":
+             prog = "/usr/bin/lua"
+
+        tmpdir = os.path.join(self.rootdir, "tmp")
+        if not os.path.exists(tmpdir):
+            os.makedirs(tmpdir)
+        tmpfd, tmpfp = tempfile.mkstemp(dir=tmpdir, prefix="%s.pre-" % pkg)
+        script = script.replace('\r', '')
+        os.write(tmpfd, script)
+        os.close(tmpfd)
+        os.chmod(tmpfp, 0700)
+
+        try:
+            script_fp = os.path.join('/tmp', os.path.basename(tmpfp))
+            subprocess.call([prog, script_fp, arg], preexec_fn=mychroot)
+        except (OSError, IOError), err:
+            msger.warning(str(err))
+        finally:
+            os.unlink(tmpfp)
 
 class Bootstrap(object):
-    def __init__(self, homedir='/var/mic/bootstrap', **kwargs):
-        self._pkgmgr = None
-        self._rootdir = None
-        self._bootstraps = []
-        self.homedir = homedir
+    def __init__(self, rootdir, distro, arch=None):
+        self.rootdir = rootdir
+        self.distro = distro
+        self.arch = arch
+        self.logfile = None
+        self.pkgslist = []
+        self.repomd = None
 
-        if not os.path.exists(self.homedir):
-            os.makedirs(self.homedir)
+    def __del__(self):
+        self.cleanup()
 
-        self.__dict__.update(**kwargs)
+    def get_rootdir(self):
+        if os.path.exists(self.rootdir):
+            shutil.rmtree(self.rootdir, ignore_errors=True)
+        os.makedirs(self.rootdir)
+        return self.rootdir
 
-    def _setRootdir(self, name):
-        self._rootdir = os.path.join(self.homedir, name)
+    def _path(self, pth):
+        return os.path.join(self.rootdir, pth.lstrip('/'))
 
-    def _getRootdir(self):
-        if not os.path.exists(self._rootdir):
-            raise errors.BootstrapError("dir: %s not exist" % self._rootdir)
-        return self._rootdir
+    def create(self, repomd, pkglist):
+        try:
+            pkgmgr = MiniBackend(self.get_rootdir())
+            pkgmgr.arch = self.arch
+            pkgmgr.repomd = repomd
+            map(pkgmgr.selectPackage, pkglist)
+            pkgmgr.runInstall()
 
-    rootdir = property(fget = lambda self: self._getRootdir(),
-                       fset = lambda self, name: self._setRootdir(name),
-                       doc = 'root directory')
+            # make /tmp path
+            tmpdir = self._path('/tmp')
+            if not os.path.exists(tmpdir):
+                os.makedirs(tmpdir)
 
-    def _setPkgmgr(self, name):
-        backend_plugins = pluginmgr.get_plugins('backend')
-        for (key, cls) in backend_plugins.iteritems():
-            if key == name:
-                self._pkgmgr = cls
-        if not self._pkgmgr:
-            raise errors.BootstrapError("Backend: %s can't be loaded correctly"\
-                                        % name)
+            # touch distro file
+            tzdist = self._path('/etc/%s-release' % self.distro)
+            if not os.path.exists(tzdist):
+                with open(tzdist, 'w') as wf:
+                    wf.write("bootstrap")
 
-    pkgmgr = property(fget = lambda self: self._pkgmgr,
-                      fset = lambda self, name: self._setPkgmgr(name),
-                      doc = 'package manager')
+        except (OSError, IOError, errors.CreatorError), err:
+            raise errors.BootstrapError("%s" % err)
 
-    @property
-    def bootstraps(self):
-        if self._bootstraps:
-            return self._bootstraps
-        for dir in os.listdir(self.homedir):
-            metadata_fp = os.path.join(self.homedir, dir, '.metadata')
-            if os.path.exists(metadata_fp) \
-                and 0 != os.path.getsize(metadata_fp):
-                self._bootstraps.append(dir)
-        return self._bootstraps
-
-    def run(self, name, cmd, chdir='/', bindmounts=None):
-        self.rootdir = name
+    def run(self, cmd, chdir, bindmounts=None):
         def mychroot():
             os.chroot(self.rootdir)
             os.chdir(chdir)
 
         if isinstance(cmd, list):
-            cmd = ' '.join(cmd)
+            shell = False
+        else:
+            shell = True
 
-        lvl = msger.get_loglevel()
-        msger.set_loglevel('quiet')
-        globalmounts = chroot.setup_chrootenv(self.rootdir, bindmounts)
+        retcode = 0
+        gloablmounts = None
         try:
             proxy.set_proxy_environ()
-            subprocess.call(cmd, preexec_fn=mychroot, shell=True)
+            gloablmounts = setup_chrootenv(self.rootdir, bindmounts)
+            retcode = subprocess.call(cmd, preexec_fn = mychroot, shell=shell)
+        except (OSError, IOError), err:
+            raise RuntimeError(err)
+        finally:
+            if self.logfile:
+                msger.log(file(self.logfile).read())
+            cleanup_chrootenv(self.rootdir, bindmounts, gloablmounts)
             proxy.unset_proxy_environ()
-        except:
-            raise errors.BootstrapError("Run in bootstrap fail")
-        finally:
-            chroot.cleanup_chrootenv(self.rootdir, bindmounts, globalmounts)
+        return retcode
 
-        msger.set_loglevel(lvl)
-
-    def list(self, **kwargs):
-        bslist = []
-        for binst in self.bootstraps:
-            (mver, kver, rver) = self.status(binst)
-            bsinfo = {'name':binst, 'meego':mver, 'kernel':kver, 'rpm': rver}
-            bslist.append(bsinfo)
-
-        return bslist
-
-    def status(self, name):
-        self.rootdir = name
-        if os.path.exists(self.rootdir + '/.metadata'):
-            query_package = query_package_metadat
-        else:
-            query_package = query_package_rpmdb
-
-        name, mver = query_package(self.rootdir, 'name', 'meego-release')
-        msger.debug("MeeGo Release: %s" % mver)
-
-        name, kver = query_package(self.rootdir, 'name', 'kernel')
-        msger.debug("Kernel Version: %s" % kver)
-
-        name, rver = query_package(self.rootdir, 'name', 'rpm')
-        msger.debug("RPM Version: %s" % rver)
-
-        return (mver, kver, rver)
-
-    def create(self, name, repolist, **kwargs):
-        self.name = name
-        self.pkgmgr = 'zypp'
-        self.arch = 'i686'
-        self.rootdir = name
-        self.cachedir = '/var/tmp/mic/cache' # TBD from conf, do NOT hardcode
-
-        if 'arch' in kwargs:
-            self.arch = kwargs['arch']
-        if 'cachedir' in kwargs:
-            self.cachedir = kwargs['cachedir']
-
-        if os.path.exists(self._rootdir):
-            metadata_fp = os.path.join(self._rootdir, '.metadata')
-            if os.path.exists(metadata_fp) and \
-               0 != os.path.getsize(metadata_fp):
-                msger.warning("bootstrap already exists") # TBD more details
-                return
-            else:
-                shutil.rmtree(self._rootdir)
-
-        if not os.path.exists(self._rootdir):
-            os.makedirs(self._rootdir)
-
-        pkg_manager = self.pkgmgr(self.arch, self.rootdir, self.cachedir)
-        pkg_manager.setup()
-
-        for repo in repolist:
-            if 'proxy' in repo:
-                pkg_manager.addRepository(repo['name'], repo['baseurl'],
-                                          proxy=repo['proxy'])
-            else:
-                pkg_manager.addRepository(repo['name'], repo['baseurl'])
-
-        rpm.addMacro("_dbpath", "/var/lib/rpm")
-        rpm.addMacro("__file_context_path", "%{nil}")
-
-        for grp in minibase_grps:
-            pkg_manager.selectGroup(grp)
-        for pkg in minibase_pkgs:
-            pkg_manager.selectPackage(pkg)
-        for pkg in required_pkgs:
-            pkg_manager.selectPackage(pkg)
-
+    def cleanup(self):
         try:
-            pkg_manager.runInstall(512 * 1024L * 1024L)
-        except:
-            raise errors.BootstrapError("Create bootstrap fail")
-        else:
-            metadata = pkg_manager.getAllContent()
-            metadata_fp = os.path.join(self.rootdir, '.metadata')
-            with open(metadata_fp, 'w') as f:
-                pickle.dump(metadata, f)
-            f.close()
-        finally:
-            pkg_manager.closeRpmDB()
-            pkg_manager.close()
-
-        # Copy bootstrap repo files
-        srcdir = "%s/etc/zypp/repos.d/" % self.cachedir
-        destdir= "%s/etc/zypp/repos.d/" % os.path.abspath(self.rootdir)
-        shutil.rmtree(destdir, ignore_errors = True)
-        shutil.copytree(srcdir, destdir)
-        # create '/tmp' in chroot
-        _tmpdir = os.path.join(os.path.abspath(self.rootdir), "tmp")
-        if not os.path.exists(_tmpdir):
-            os.makedirs(_tmpdir)
-
-        msger.info("Bootstrap created.")
-
-    def rebuild(self):
-        pass
-
-    def update(self, name):
-        self.rootdir = name
-        chrootdir = self.rootdir
-
-        def mychroot():
-            os.chroot(chrootdir)
-
-        shutil.copyfile("/etc/resolv.conf", chrootdir + "/etc/resolv.conf")
-        try:
-            subprocess.call("zypper -n --no-gpg-checks update",
-                            preexec_fn=mychroot, shell=True)
-        except OSError, err:
-            raise errors.BootstrapError("Bootstrap: %s update failed" %\
-                                        chrootdir)
-
-    def cleanup(self, name):
-        self.rootdir = name
-        try:
-            chroot.cleanup_mounts(self.rootdir)
+            # clean mounts
+            cleanup_mounts(self.rootdir)
+            # remove rootdir
             shutil.rmtree(self.rootdir, ignore_errors=True)
         except:
-            raise errors.BootstrapError("Bootstrap: %s clean up failed" %\
-                                        self.rootdir)
+            pass

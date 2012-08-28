@@ -18,7 +18,7 @@
 import os, sys, re
 from optparse import SUPPRESS_HELP
 
-from mic import msger
+from mic import msger, rt_util
 from mic.utils import cmdln, errors, rpmmisc
 from conf import configmgr
 from plugin import pluginmgr
@@ -255,6 +255,10 @@ class Creator(cmdln.Cmdln):
 
         if os.geteuid() != 0:
             raise msger.error("Root permission is required, abort")
+
+        if configmgr.bootstrap['enable']:
+            configmgr._ksconf = argv[1]
+            rt_util.bootstrap_mic()
 
         return argv
 

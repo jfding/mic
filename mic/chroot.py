@@ -81,27 +81,20 @@ def check_bind_mounts(chrootdir, bindmounts):
 
 def cleanup_mounts(chrootdir):
     umountcmd = misc.find_binary_path("umount")
-    for point in BIND_MOUNTS:
-        args = [ umountcmd, "-l", chrootdir + point ]
-        runner.quiet(args)
-    point = '/parentroot'
-    args = [ umountcmd, "-l", chrootdir + point ]
-    runner.quiet(args)
-
     abs_chrootdir = os.path.abspath(chrootdir)
-    with open('/proc/mounts') as f:
-        for line in f:
-            if abs_chrootdir in line:
-                point = line.split()[1]
+    mounts = open('/proc/mounts').readlines()
+    for line in reversed(mounts):
+        if abs_chrootdir not in line:
+            continue
 
-                if abs_chrootdir == point:
-                    continue
+        point = line.split()[1]
 
-                args = [ umountcmd, "-l", point ]
-                ret = runner.quiet(args)
-                if ret != 0:
-                    msger.warning("failed to unmount %s" % point)
-                    return ret
+        # '/' to avoid common name prefix
+        if abs_chrootdir == point or point.startswith(abs_chrootdir + '/'):
+            args = [ umountcmd, "-l", point ]
+            ret = runner.quiet(args)
+            if ret != 0:
+                msger.warning("failed to unmount %s" % point)
 
     return 0
 
@@ -164,7 +157,7 @@ def setup_chrootenv(chrootdir, bindmounts = None):
 
     def bind_mount(chrootmounts):
         for b in chrootmounts:
-            msger.info("bind_mount: %s -> %s" % (b.src, b.dest))
+            msger.verbose("bind_mount: %s -> %s" % (b.src, b.dest))
             b.mount()
 
     def setup_resolv(chrootdir):
@@ -194,7 +187,7 @@ def cleanup_chrootenv(chrootdir, bindmounts = None, globalmounts = []):
     def bind_unmount(chrootmounts):
         chrootmounts.reverse()
         for b in chrootmounts:
-            msger.info("bind_unmount: %s -> %s" % (b.src, b.dest))
+            msger.verbose("bind_unmount: %s -> %s" % (b.src, b.dest))
             b.unmount()
 
     def cleanup_resolv(chrootdir):

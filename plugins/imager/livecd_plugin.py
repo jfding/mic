@@ -19,7 +19,7 @@ import os
 import shutil
 import tempfile
 
-from mic import chroot, msger, rt_util
+from mic import chroot, msger
 from mic.utils import misc, fs_related, errors
 from mic.conf import configmgr
 import mic.imager.livecd as livecd
@@ -67,16 +67,16 @@ class LiveCDPlugin(ImagerPlugin):
         # try to find the pkgmgr
         pkgmgr = None
         for (key, pcls) in pluginmgr.get_plugins('backend').iteritems():
-            if key == creatoropts['pkgmgr']:
+            if 'auto' == creatoropts['pkgmgr']:
+                pkgmgr = pcls
+                break
+            elif key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
         if not pkgmgr:
             pkgmgrs = pluginmgr.get_plugins('backend').keys()
             raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
-
-        if creatoropts['runtime']:
-            rt_util.runmic_in_runtime(creatoropts['runtime'], creatoropts, ksconf, None)
 
         creator = livecd.LiveCDImageCreator(creatoropts, pkgmgr)
 

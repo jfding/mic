@@ -84,10 +84,25 @@ def get_distro_str():
     if not dist:
         return 'Unknown Linux Distro'
     else:
-        return ' '.join(map(str.strip, (dist, ver, id)))
+        distro_str = ' '.join(map(str.strip, (dist, ver, id)))
+        return distro_str.strip()
 
-_LOOP_RULE_PTH = "/etc/udev/rules.d/80-prevent-loop-present.rules"
+_LOOP_RULE_PTH = None
 def hide_loopdev_presentation():
+    udev_rules = "80-prevent-loop-present.rules"
+    udev_rules_dir = [
+                       '/usr/lib/udev/rules.d/',
+                       '/lib/udev/rules.d/',
+                       '/etc/udev/rules.d/'
+                     ]
+
+    for rdir in udev_rules_dir:
+        if os.path.exists(rdir):
+            _LOOP_RULE_PTH = os.path.join(rdir, udev_rules)
+
+    if not _LOOP_RULE_PTH:
+        return
+
     try:
         with open(_LOOP_RULE_PTH, 'w') as wf:
             wf.write('KERNEL=="loop*", ENV{UDISKS_PRESENTATION_HIDE}="1"')
@@ -97,6 +112,9 @@ def hide_loopdev_presentation():
         pass
 
 def unhide_loopdev_presentation():
+    if not _LOOP_RULE_PTH:
+        return
+
     try:
         os.unlink(_LOOP_RULE_PTH)
         runner.quiet('udevadm trigger')
@@ -644,6 +662,14 @@ def get_arch(repometadata):
 def get_package(pkg, repometadata, arch = None):
     ver = ""
     target_repo = None
+    if not arch:
+        arches = []
+    elif arch not in rpmmisc.archPolicies:
+        arches = [arch]
+    else:
+        arches = rpmmisc.archPolicies[arch].split(':')
+        arches.append('noarch')
+
     for repo in repometadata:
         if repo["primary"].endswith(".xml"):
             root = xmlparse(repo["primary"])
@@ -651,7 +677,7 @@ def get_package(pkg, repometadata, arch = None):
             ns = ns[0:ns.rindex("}")+1]
             for elm in root.getiterator("%spackage" % ns):
                 if elm.find("%sname" % ns).text == pkg:
-                    if elm.find("%sarch" % ns).text != "src":
+                    if elm.find("%sarch" % ns).text in arches:
                         version = elm.find("%sversion" % ns)
                         tmpver = "%s-%s" % (version.attrib['ver'], version.attrib['rel'])
                         if tmpver > ver:
@@ -662,15 +688,20 @@ def get_package(pkg, repometadata, arch = None):
                         break
         if repo["primary"].endswith(".sqlite"):
             con = sqlite.connect(repo["primary"])
-            if not arch:
-                for row in con.execute("select version, release,location_href from packages where name = \"%s\" and arch != \"src\"" % pkg):
+            if arch:
+                sql = 'select version, release, location_href from packages ' \
+                      'where name = "%s" and arch IN ("%s")' % \
+                      (pkg, '","'.join(arches))
+                for row in con.execute(sql):
                     tmpver = "%s-%s" % (row[0], row[1])
                     if tmpver > ver:
                         pkgpath = "%s" % row[2]
                         target_repo = repo
                     break
             else:
-                for row in con.execute("select version, release,location_href from packages where name = \"%s\"" % pkg):
+                sql = 'select version, release, location_href from packages ' \
+                      'where name = "%s"' % pkg
+                for row in con.execute(sql):
                     tmpver = "%s-%s" % (row[0], row[1])
                     if tmpver > ver:
                         pkgpath = "%s" % row[2]
@@ -678,9 +709,18 @@ def get_package(pkg, repometadata, arch = None):
                     break
             con.close()
     if target_repo:
-        makedirs("%s/%s/packages" % (target_repo["cachedir"], target_repo["name"]))
+        makedirs("%s/packages/%s" % (target_repo["cachedir"], target_repo["name"]))
         url = os.path.join(target_repo["baseurl"], pkgpath)
-        filename = str("%s/%s/packages/%s" % (target_repo["cachedir"], target_repo["name"], os.path.basename(pkgpath)))
+        filename = str("%s/packages/%s/%s" % (target_repo["cachedir"], target_repo["name"], os.path.basename(pkgpath)))
+        if os.path.exists(filename):
+            ret = rpmmisc.checkRpmIntegrity('rpm', filename)
+            if ret == 0:
+                return filename
+
+            msger.warning("package %s is damaged: %s" %
+                          (os.path.basename(filename), filename))
+            os.unlink(filename)
+
         pkg = myurlgrab(str(url), filename, target_repo["proxies"])
         return pkg
     else:

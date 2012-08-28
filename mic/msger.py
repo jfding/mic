@@ -179,6 +179,12 @@ def set_interactive(mode=True):
     else:
         INTERACTIVE = False
 
+def log(msg=''):
+    # log msg to LOG_CONTENT then save to logfile
+    global LOG_CONTENT
+    if msg:
+        LOG_CONTENT += msg
+
 def raw(msg=''):
     _general_print('', NO_COLOR, msg)
 

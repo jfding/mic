@@ -19,7 +19,7 @@ import os
 import shutil
 import tempfile
 
-from mic import chroot, msger, rt_util
+from mic import chroot, msger
 from mic.utils import misc, fs_related, errors, cmdln
 from mic.conf import configmgr
 from mic.plugin import pluginmgr
@@ -74,7 +74,10 @@ class LoopPlugin(ImagerPlugin):
         # try to find the pkgmgr
         pkgmgr = None
         for (key, pcls) in pluginmgr.get_plugins('backend').iteritems():
-            if key == creatoropts['pkgmgr']:
+            if 'auto' == creatoropts['pkgmgr']:
+                pkgmgr = pcls
+                break
+            elif key == creatoropts['pkgmgr']:
                 pkgmgr = pcls
                 break
 
@@ -84,9 +87,6 @@ class LoopPlugin(ImagerPlugin):
                                       "(availables: %s)" \
                                       % (creatoropts['pkgmgr'],
                                          ', '.join(pkgmgrs)))
-
-        if creatoropts['runtime']:
-            rt_util.runmic_in_runtime(creatoropts['runtime'], creatoropts, ksconf, None)
 
         creator = LoopImageCreator(creatoropts,
                                    pkgmgr,
