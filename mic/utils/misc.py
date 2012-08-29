@@ -282,15 +282,19 @@ def normalize_ksfile(ksconf, release, arch):
 
     return ksconf
 
-def _check_meego_chroot(rootdir):
-    if not os.path.exists(rootdir + "/etc/moblin-release") and \
-       not os.path.exists(rootdir + "/etc/meego-release") and \
-       not os.path.exists(rootdir + "/etc/tizen-release"):
-        raise CreatorError("Directory %s is not a MeeGo/Tizen chroot env"\
-                           % rootdir)
+def _check_mic_chroot(rootdir):
+    def _path(path):
+        return rootdir.rstrip('/') + path
+
+    release_files = map(_path, [ "/etc/moblin-release",
+                                 "/etc/meego-release",
+                                 "/etc/tizen-release"])
+
+    if not any(map(os.path.exists, release_files)):
+        msger.warning("Dir %s is not a MeeGo/Tizen chroot env")
 
     if not glob.glob(rootdir + "/boot/vmlinuz-*"):
-        raise CreatorError("Failed to find kernel module under %s" % rootdir)
+        msger.warning("Failed to find kernel module under %s" % rootdir)
 
     return
 
@@ -319,7 +323,7 @@ def get_image_type(path):
             return None
 
     if os.path.isdir(path):
-        _check_meego_chroot(path)
+        _check_mic_chroot(path)
         return "fs"
 
     maptab = {
