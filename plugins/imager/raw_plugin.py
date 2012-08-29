@@ -59,10 +59,6 @@ class RawPlugin(ImagerPlugin):
             if 'name' not in recording_pkgs:
                 recording_pkgs.append('name')
 
-        ksconf = misc.normalize_ksfile(ksconf,
-                                       creatoropts['release'],
-                                       creatoropts['arch'])
-
         configmgr._ksconf = ksconf
 
         # Called After setting the configmgr._ksconf as the creatoropts['name'] is reset there.

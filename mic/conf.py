@@ -165,6 +165,10 @@ class ConfigMgr(object):
         if not ksconf:
             return
 
+        ksconf = misc.normalize_ksfile(ksconf,
+                                       self.create['release'],
+                                       self.create['arch'])
+
         ks = kickstart.read_kickstart(ksconf)
 
         self.create['ks'] = ks
