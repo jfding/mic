@@ -101,10 +101,25 @@ def get_bindmounts(cropts):
 
 
 def get_mic_binpath():
+    fp = None
     try:
-        fp = find_binary_path('mic')
+        # depends on 'setuptools'
+        import pkg_resources
+        dist = pkg_resources.get_distribution('mic')
+        # the real script is under EGG_INFO/scripts
+        if dist.has_metadata('scripts/mic'):
+            fp = os.path.join(dist.egg_info, "scripts/mic")
+
+    except:
+        pass
+
+    try:
+        # not found script if 'flat' egg installed
+        if not fp:
+            fp = find_binary_path('mic')
     except:
         raise errors.BootstrapError("Can't find mic binary in host OS")
+
     return fp
 
 def get_mic_modpath():
