@@ -47,12 +47,13 @@ def bootstrap_mic(argv=None):
     cropts = configmgr.create
     bsopts = configmgr.bootstrap
     distro = bsopts['distro_name'].lower()
-    if distro not in bsopts:
+    if distro not in bsopts['distros'] or \
+       'packages' not in bsopts[distro]:
         msger.info("Use native running for distro don't support bootstrap")
         return
 
     rootdir = bsopts['rootdir']
-    pkglist = bsopts[distro]
+    pkglist = bsopts[distro]['packages']
     cwd = os.getcwd()
 
     # create bootstrap and run mic in bootstrap

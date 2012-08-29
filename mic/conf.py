@@ -69,6 +69,7 @@ class ConfigMgr(object):
                 },
                 'bootstrap': {
                     "enable": False,
+                    "distros": [], # supported distros
                     "distro_name": None,
                     "rootdir": '/var/tmp/mic-bootstrap',
                 },
@@ -221,11 +222,13 @@ class ConfigMgr(object):
         for section in parser.sections():
             if section == "main":
                 self.bootstrap.update(dict(parser.items(section)))
-            elif parser.has_option(section, 'packages'):
-                pkglist = parser.get(section, 'packages')
-                pkglist = pkglist.replace('\n', ' ')
-                self.bootstrap[section.lower()] = pkglist.split()
-                self.bootstrap['enable'] = True
+            else:
+                self.bootstrap['distros'].append(section)
+                distro = section.lower()
+                self.bootstrap[distro] = dict(parser.items(section))
+                if 'packages' in self.bootstrap[distro]:
+                    pks = self.bootstrap[distro]['packages'].replace('\n', ' ')
+                    self.bootstrap[distro]['packages'] = pks.split()
 
         # update bootstrap options
         if self.bootstrap['enable'] not in (True, False):
@@ -235,5 +238,7 @@ class ConfigMgr(object):
                 self.bootstrap['enable'] = False
         if not self.bootstrap['distro_name']:
             self.bootstrap['distro_name'] = self.common['distro_name']
+        if  self.bootstrap['distro_name'] not in self.bootstrap['distros']:
+            self.bootstrap['enable'] = False
 
 configmgr = ConfigMgr()
