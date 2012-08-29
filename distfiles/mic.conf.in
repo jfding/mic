@@ -11,7 +11,7 @@ cachedir= /var/tmp/mic/cache
 outdir= ./mic-output
 bootstrapdir= /var/tmp/mic/bootstrap
 
-pkgmgr = zypp
+pkgmgr = auto
 
 # to set global proxy for repos
 #proxy = http://proxy.yourcompany.com:8080/

@@ -66,17 +66,23 @@ class FsPlugin(ImagerPlugin):
 
         # try to find the pkgmgr
         pkgmgr = None
-        for (key, pcls) in pluginmgr.get_plugins('backend').iteritems():
-            if 'auto' == creatoropts['pkgmgr']:
-                pkgmgr = pcls
-                break
-            elif key == creatoropts['pkgmgr']:
-                pkgmgr = pcls
-                break
+        backends = pluginmgr.get_plugins('backend')
+        if 'auto' == creatoropts['pkgmgr']:
+            for key in configmgr.prefer_backends:
+                if key in backends:
+                    pkgmgr = backends[key]
+                    break
+        else:
+            for key in backends.keys():
+                if key == creatoropts['pkgmgr']:
+                    pkgmgr = backends[key]
+                    break
 
         if not pkgmgr:
-            pkgmgrs = pluginmgr.get_plugins('backend').keys()
-            raise errors.CreatorError("Can't find package manager: %s (availables: %s)" % (creatoropts['pkgmgr'], ', '.join(pkgmgrs)))
+            raise errors.CreatorError("Can't find backend: %s, "
+                                      "available choices: %s" %
+                                      (creatoropts['pkgmgr'],
+                                       ','.join(backends.keys())))
 
         creator = fs.FsImageCreator(creatoropts, pkgmgr)
         creator._include_src = opts.include_src

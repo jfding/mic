@@ -34,6 +34,8 @@ def get_siteconf():
     return DEFAULT_GSITECONF
 
 class ConfigMgr(object):
+    prefer_backends = ["zypp", "yum"]
+
     DEFAULTS = {'common': {
                     "distro_name": "Default Distribution",
                     "plugin_dir": "/usr/lib/mic/plugins", # TODO use prefix also?
