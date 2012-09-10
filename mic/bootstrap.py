@@ -101,7 +101,8 @@ class MiniBackend(object):
                 raise
 
         if nonexist:
-            msger.warning("\ncan't get rpm binary: %s" % ','.join(nonexist))
+            raise errors.BootstrapError("Can't get rpm binary: %s" %
+                                        ','.join(nonexist))
 
     def installPkgs(self):
         for pkg in self.localpkgs.keys():
