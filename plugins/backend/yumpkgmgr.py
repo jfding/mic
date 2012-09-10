@@ -73,11 +73,13 @@ class MyYumRepository(yum.yumRepo.YumRepository):
             M2Crypto.SSL.Connection.clientPostConnectionCheck = None
 
         proxy = None
-        proxies = None
         if url:
              proxy = get_proxy_for(url)
+        else:
+             proxy = get_proxy_for(self.urls[0])
+
         if proxy:
-             proxies = {str(url.split(':')[0]): str(proxy)}
+             self.proxy = str(proxy)
 
         size = int(size) if size else None
         rvalue = super(MyYumRepository, self)._getFile(url,
@@ -90,8 +92,7 @@ class MyYumRepository(yum.yumRepo.YumRepository):
                                                        text,
                                                        reget,
                                                        cache,
-                                                       size,
-                                                       proxies=proxies)
+                                                       size)
 
         if m2c_connection and \
            not M2Crypto.SSL.Connection.clientPostConnectionCheck:
