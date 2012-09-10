@@ -18,7 +18,7 @@
 import os
 import sys
 
-from mic import chroot, msger
+from mic import chroot, msger, rt_util
 from mic.utils import cmdln, misc, errors, fs_related
 from mic.imager import fs
 from mic.conf import configmgr
@@ -43,8 +43,15 @@ class FsPlugin(ImagerPlugin):
         ${cmd_option_list}
         """
 
+        if len(args) != 1:
+            raise errors.Usage("Extra arguments given")
+
         creatoropts = configmgr.create
         ksconf = args[0]
+
+        if configmgr.bootstrap['enable']:
+            configmgr._ksconf = ksconf
+            rt_util.bootstrap_mic()
 
         recording_pkgs = []
         if len(creatoropts['record_pkgs']) > 0:

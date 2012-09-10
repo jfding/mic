@@ -242,23 +242,15 @@ class Creator(cmdln.Cmdln):
 
         return self.cmd(args)
 
-    def precmd(self, argv): # check arguments before cmd
-        if argv[0] == 'help' or argv[0] == '?':
-            return argv
+    def precmd(self, argv): # check help before cmd
         if len(argv) == 1:
             return ['help', argv[0]]
-        elif len(argv) > 2:
-            raise errors.Usage("Extra arguments given")
 
-        if not os.path.exists(argv[1]):
-            raise errors.CreatorError("Can't find file: %s" % argv[1])
+        if '-h' in argv or '?' in argv or '--help' in argv or 'help' in argv:
+            return argv
 
         if os.geteuid() != 0:
             raise msger.error("Root permission is required, abort")
-
-        if configmgr.bootstrap['enable']:
-            configmgr._ksconf = argv[1]
-            rt_util.bootstrap_mic()
 
         return argv
 
@@ -291,6 +283,12 @@ class Creator(cmdln.Cmdln):
                 return (cmdname, inline_argv)
 
             return None
+
+        if len(args) != 1:
+            raise errors.Usage("Extra arguments given")
+
+        if not os.path.exists(args[0]):
+            raise errors.CreatorError("Can't find the file: %s" % args[0])
 
         with open(args[0], 'r') as rf:
             first_line = rf.readline()

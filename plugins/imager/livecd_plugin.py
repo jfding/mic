@@ -19,7 +19,7 @@ import os
 import shutil
 import tempfile
 
-from mic import chroot, msger
+from mic import chroot, msger, rt_util
 from mic.utils import misc, fs_related, errors
 from mic.conf import configmgr
 import mic.imager.livecd as livecd
@@ -39,8 +39,15 @@ class LiveCDPlugin(ImagerPlugin):
         ${cmd_option_list}
         """
 
+        if len(args) != 1:
+            raise errors.Usage("Extra arguments given")
+
         creatoropts = configmgr.create
         ksconf = args[0]
+
+        if configmgr.bootstrap['enable']:
+            configmgr._ksconf = ksconf
+            rt_util.bootstrap_mic()
 
         if creatoropts['arch'] and creatoropts['arch'].startswith('arm'):
             msger.warning('livecd cannot support arm images, Quit')
