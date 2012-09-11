@@ -52,6 +52,7 @@ class MiniBackend(object):
         self.repomd = repomd
         self.dlpkgs = []
         self.localpkgs = {}
+        self.optionals = []
         self.preins = {}
         self.postins = {}
 
@@ -103,11 +104,14 @@ class MiniBackend(object):
         for pkg in self.dlpkgs:
             try:
                 localpth = misc.get_package(pkg, self.repomd, self.arch)
-                if not localpth:
-                    # skip non-existent rpm
-                    nonexist.append(pkg)
+                if localpth:
+                    self.localpkgs[pkg] = localpth
+                elif pkg in self.optionals:
+                    # skip optional rpm
                     continue
-                self.localpkgs[pkg] = localpth
+                else:
+                    # mark nonexist rpm
+                    nonexist.append(pkg)
             except:
                 raise
 
@@ -180,11 +184,12 @@ class Bootstrap(object):
     def _path(self, pth):
         return os.path.join(self.rootdir, pth.lstrip('/'))
 
-    def create(self, repomd, pkglist):
+    def create(self, repomd, pkglist, optlist=[]):
         try:
             pkgmgr = MiniBackend(self.get_rootdir())
             pkgmgr.arch = self.arch
             pkgmgr.repomd = repomd
+            pkgmgr.optionals = optlist
             map(pkgmgr.selectPackage, pkglist)
             pkgmgr.runInstall()
 

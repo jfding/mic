@@ -226,9 +226,11 @@ class ConfigMgr(object):
                 self.bootstrap['distros'].append(section)
                 distro = section.lower()
                 self.bootstrap[distro] = dict(parser.items(section))
-                if 'packages' in self.bootstrap[distro]:
-                    pks = self.bootstrap[distro]['packages'].replace('\n', ' ')
-                    self.bootstrap[distro]['packages'] = pks.split()
+                for item in ('optional', 'packages'):
+                    if not item in self.bootstrap[distro]:
+                        continue 
+                    pks = self.bootstrap[distro][item].replace('\n', ' ')
+                    self.bootstrap[distro][item] = pks.split()
 
         # update bootstrap options
         if self.bootstrap['enable'] not in (True, False):
