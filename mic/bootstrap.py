@@ -38,6 +38,12 @@ RPMVSF_FLAGS = [
                  rpm._RPMVSF_NODIGESTS
                ]
 
+RPMPROB_FLAGS = [
+                  rpm.RPMPROB_FILTER_OLDPACKAGE,
+                  rpm.RPMPROB_FILTER_REPLACEPKG,
+                  rpm.RPMPROB_FILTER_IGNOREARCH
+                ]
+
 class MiniBackend(object):
     def __init__(self, rootdir, arch=None, repomd=None):
         self._ts = None
@@ -60,6 +66,8 @@ class MiniBackend(object):
             self._ts = rpm.TransactionSet(self.rootdir)
             self._ts.setFlags(reduce(lambda x, y: x|y, RPMTRANS_FLAGS))
             self._ts.setVSFlags(reduce(lambda x, y: x|y, RPMVSF_FLAGS))
+            self._ts.setProbFilter(reduce(lambda x, y: x|y, RPMPROB_FLAGS))
+
         return self._ts
 
     def del_ts(self):
@@ -79,6 +87,9 @@ class MiniBackend(object):
         # FIXME: check space
         self.downloadPkgs()
         self.installPkgs()
+
+        if self.arch.startswith("arm"):
+            misc.setup_qemu_emulator(self.rootdir, self.arch)
 
         for pkg in self.preins.keys():
             prog, script = self.preins[pkg]
