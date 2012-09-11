@@ -188,6 +188,9 @@ def sync_mic(bootstrap, binpth = '/usr/bin/mic',
     with open(_path(conf), 'w') as wf:
         wf.write(conf_str)
 
+    # chmod +x /usr/bin/mic
+    os.chmod(_path(binpth), 0777)
+
     # correct python interpreter
     mic_cont = file(_path(binpth)).read()
     mic_cont = "#!/usr/bin/python\n" + mic_cont
