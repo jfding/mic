@@ -351,7 +351,10 @@ class LoopImageCreator(BaseImageCreator):
 
     def _unmount_instroot(self):
         for item in reversed(self._instloops):
-            item['loop'].cleanup()
+            try:
+                item['loop'].cleanup()
+            except:
+                pass
 
     def _stage_final_image(self):
 
