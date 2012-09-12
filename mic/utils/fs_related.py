@@ -314,7 +314,11 @@ class SparseLoopbackDisk(LoopbackDisk):
         else:
             fd = os.open(self.lofile, flags)
 
-        os.lseek(fd, size, os.SEEK_SET)
+        try:
+            os.lseek(fd, size, os.SEEK_SET)
+        except:
+            # may be limited by 2G in 32bit env
+            os.lseek(fd, 2**31L - 1, os.SEEK_SET)
         os.write(fd, '\x00')
         os.close(fd)
 
