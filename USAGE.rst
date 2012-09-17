@@ -55,9 +55,21 @@ Options:
   --local-pkgs-path=LOCAL_PKGS_PATH  specify the path for local rpm packages, which would be stored your own rpm packages
   --pkgmgr=PKGMGR  specify backend package mananger, currently yum and zypp available
   --record-pkgs=RECORD_PKGS  record the info of installed packages, multiple values can be specified which joined by ",", valid values: "name", "content", "license"
-  --copy-kernel  Copy kernel files from image /boot directory to the image output directory.
-  --compress-disk-image=COMPRESS_DISK_IMAGE  Sets the disk image compression. NOTE: The available values might depend on the used filesystem type.
-  --release=RID  Generate a release of RID with all necessary files, when @BUILD_ID@ is contained in kickstart file, it will be replaced by RID. sample values: "latest", "tizen_20120101.1"
+  --pack-to=PACK_TO   pack the images together into the specified achive, extension supported: .zip, .tar, .tar.gz, .tar.bz2, etc. by default, .tar will be used
+  --release=RID  generate a release of RID with all necessary files, when @BUILD_ID@ is contained in kickstart file, it will be replaced by RID. sample values: "latest", "tizen_20120101.1"
+  --copy-kernel  copy kernel files from image /boot directory to the image output directory
+
+Options for fs image:
+  --include-src  generate a image with source rpms included; to enable it, user should specify the source repo in the ks file
+
+Options for loop image:
+  --shrink       whether to shrink loop images to minimal size
+  --compress-image=COMPRESS_IMAGE compress all loop images with 'gz' or 'bz2'
+  --compress-disk-image=COMPRESS_DISK_IMAGE same with --compress-image
+
+Options for raw image:
+  --compress-image=COMPRESS_IMAGE compress all raw images with 'gz' or 'bz2'
+  --compress-disk-image=COMPRESS_DISK_IMAGE same with --compress-image
 
 Examples:
 
@@ -102,6 +114,27 @@ Examples:
  | mic convert tizen.iso liveusb
  | mic convert tizen.usbimg livecd
  | mic cv --shell tizen.iso liveusb
+
+Advanced Usage
+==============
+The advanced usage is just for bootstrap, please skip it if you don't care about it.
+
+The major purpose to use bootstrap is that some important packages (like rpm) are customized
+a lot in the repo which you want to create image, and mic must use the customized rpm to 
+create images, or the images can't be boot. So mic will create a bootstrap using the repo
+in the ks file at first, then create the image via chrooting, which can make mic using the
+chroot environment with the customized rpm.
+
+Now mic will use bootstrap to create image by default, and to meet your requirement, you can
+also change the setting for bootstrap (/etc/mic/bootstrap.conf):
+[main]
+distro_name = tizen  # which distro will be used for creating bootstrap
+rootdir = /var/tmp/mic-bootstrap  # which dir will be located when creating bootstrap
+enable = true # whether to enable the bootstrap mode
+
+[tizen] # the supported distro for creating bootstrap
+optional:  # which packages will be optional when creating bootstrap for this distro
+packages:  # which packages will be required when creating bootstrap for this distro
 
 KNOWN ISSUES
 ============
