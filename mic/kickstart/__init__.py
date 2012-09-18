@@ -496,8 +496,10 @@ class MoblinRepoConfig(KickstartConfig):
         f.close()
 
     @apply_wrapper
-    def apply(self, ksrepo, repodata):
+    def apply(self, ksrepo, repodata, repourl):
         for repo in ksrepo.repoList:
+            if repo.name in repourl:
+                repo.baseurl = repourl[repo.name]
             if repo.save:
                 #self.__create_repo_file(repo, "/etc/yum.repos.d")
                 self.__create_repo_file(repo, "/etc/zypp/repos.d")

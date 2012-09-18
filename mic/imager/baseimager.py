@@ -75,6 +75,7 @@ class BaseImageCreator(object):
         self.target_arch = "noarch"
         self._local_pkgs_path = None
         self.pack_to = None
+        self.repourl = {}
 
         # If the kernel is save to the destdir when copy_kernel cmd is called.
         self._need_copy_kernel = False
@@ -1035,7 +1036,7 @@ class BaseImageCreator(object):
             kickstart.RPMMacroConfig(self._instroot).apply(self.ks)
             kickstart.DesktopConfig(self._instroot).apply(ksh.desktop)
             self.__save_repo_keys(repodata)
-            kickstart.MoblinRepoConfig(self._instroot).apply(ksh.repo, repodata)
+            kickstart.MoblinRepoConfig(self._instroot).apply(ksh.repo, repodata, self.repourl)
         except:
             msger.warning("Failed to apply configuration to image")
             raise

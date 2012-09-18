@@ -60,6 +60,7 @@ class ConfigMgr(object):
                     "proxy": None,
                     "no_proxy": None,
                     "copy_kernel": False,
+                    "repourl": {},
                 },
                 'chroot': {
                     "saveto": None,

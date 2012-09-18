@@ -108,6 +108,9 @@ class Creator(cmdln.Cmdln):
                              dest='copy_kernel',
                              help='Copy kernel files from image /boot directory'
                                   ' to the image output directory.')
+        optparser.add_option('', '--repourl', action='append',
+                             dest='repourl', default=[],
+                             help=SUPPRESS_HELP)
         return optparser
 
     def preoptparse(self, argv):
@@ -211,6 +214,14 @@ class Creator(cmdln.Cmdln):
 
         if self.options.copy_kernel:
             configmgr.create['copy_kernel'] = self.options.copy_kernel
+
+        if self.options.repourl:
+            for item in self.options.repourl:
+                try:
+                    key, val = item.split('=')
+                except:
+                    continue
+                configmgr.create['repourl'][key] = val
 
     def main(self, argv=None):
         if argv is None:
