@@ -39,6 +39,8 @@ import custom_commands.moblinrepo as moblinrepo
 import custom_commands.micboot as micboot
 import custom_commands.partition as partition
 
+AUTH_URL_PTN = r"(?P<scheme>.*)://(?P<username>.*)(:?P<password>.*)?@(?P<url>.*)"
+
 class PrepackageSection(kssections.Section):
     sectionOpen = "%prepackages"
 
@@ -464,6 +466,10 @@ class MoblinRepoConfig(KickstartConfig):
         fd.write("name=" + reponame + "\n")
         fd.write("failovermethod=priority\n")
         if baseurl:
+            auth_url = re.compile(AUTH_URL_PTN)
+            m = auth_url.match(baseurl)
+            if m:
+                baseurl = "%s://%s" % (m.group('scheme'), m.group('url'))
             fd.write("baseurl=" + baseurl + "\n")
         if mirrorlist:
             fd.write("mirrorlist=" + mirrorlist + "\n")
