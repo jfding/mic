@@ -27,6 +27,8 @@ from mic.utils import errors, proxy, misc
 from mic.utils.rpmmisc import readRpmHeader, RPMInstallCallback
 from mic.chroot import cleanup_mounts, setup_chrootenv, cleanup_chrootenv
 
+PATH_BOOTSTRAP = "/usr/sbin:/usr/bin:/sbin:/bin"
+
 RPMTRANS_FLAGS = [
                    rpm.RPMTRANS_FLAG_ALLFILES,
                    rpm.RPMTRANS_FLAG_NOSCRIPTS,
@@ -217,12 +219,15 @@ class Bootstrap(object):
         else:
             shell = True
 
+        env = os.environ
+        env['PATH'] = "%s:%s" % (PATH_BOOTSTRAP, env['PATH'])
+
         retcode = 0
         gloablmounts = None
         try:
             proxy.set_proxy_environ()
             gloablmounts = setup_chrootenv(self.rootdir, bindmounts)
-            retcode = subprocess.call(cmd, preexec_fn = mychroot, shell=shell)
+            retcode = subprocess.call(cmd, preexec_fn=mychroot, env=env, shell=shell)
         except (OSError, IOError), err:
             raise RuntimeError(err)
         finally:
